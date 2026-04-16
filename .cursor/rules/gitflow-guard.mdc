@@ -1,0 +1,57 @@
+---
+description: GitFlow guardrails — never change main/develop; ask user to branch; ask to close branch after changes
+alwaysApply: true
+---
+
+# GitFlow guardrails (workspace)
+
+## Hard rules
+
+- **Do not make code or configuration changes on `main` or `develop`.**
+  - If the current branch is `main` or `develop`, you must **stop before editing** and ask the user which GitFlow branch type to create.
+- **All work must happen on a GitFlow branch**:
+  - `feature/*` (from `develop`)
+  - `release/*` (from `develop`, name must be a SemVer like `release/0.2.0`)
+  - `hotfix/*` (from `main`, name must be a SemVer like `hotfix/0.2.1`)
+
+## Required user prompts
+
+### On `main` or `develop`
+
+- Stop before editing. Ask which GitFlow branch type to use (`feature`, `release`, `hotfix`) and how to name it (or confirm the agent’s proposal).
+
+### Already on `feature/*`, `release/*`, or `hotfix/*` (in `backend/` or `frontend/`)
+
+- **Ask** whether to **keep the current branch** for this work or **start on a new** GitFlow branch.
+- If the user **stays**: do **not** debate whether the branch name matches the task.
+- If the user **opts for a new** branch:
+  1. **Ask** whether to **close the previous branch first** (merge + delete) or **leave it open**.
+  2. **New branch from the correct parent**: `feature/*` and `release/*` from **`develop` updated**; `hotfix/*` from **`main` updated** (`checkout` → `pull` → `checkout -b …`). Do **not** chain the new feature off the old feature tip unless the user explicitly asks.
+
+### After a completed chunk of work
+
+- Ask whether to **close the branch** (merge per GitFlow + tag if release/hotfix) or **continue** on it.
+
+- Do **not** push to remote automatically. Only push when the user explicitly asks.
+- Do **not** commit changes until they have been verified to work (checks and/or visual verification).
+
+## Closing branches (GitFlow hygiene)
+
+When the user chooses to **close** a branch:
+
+- Merge to the appropriate base branch (GitFlow), using `--no-ff`.
+- For `release/*` and `hotfix/*`, create the tag derived from the branch name.
+- After the merge, **delete the feature/release/hotfix branch**:
+  - delete it locally
+  - delete it on the remote
+
+## Communication style for git operations
+
+- Keep git-operation updates extremely short (e.g. “Sto eseguendo un pull”, “Sto creando la branch”, “Sto facendo merge”). Avoid long explanations unless the user asks.
+
+## Versioning rules (SemVer, major stays 0)
+
+- Release branches bump **MINOR**: `v0.x.y` → `release/0.(x+1).0`, tag `v0.(x+1).0`.
+- Hotfix branches bump **PATCH**: `v0.x.y` → `hotfix/0.x.(y+1)`, tag `v0.x.(y+1)`.
+- Tag name must be derived from the branch name (`release/0.2.0` → tag `v0.2.0`).
+

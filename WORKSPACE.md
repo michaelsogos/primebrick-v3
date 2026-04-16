@@ -1,77 +1,80 @@
 # Primebrick workspace (backend + frontend)
 
-Questo workspace è solo un **contenitore** per due repository git separati:
+This workspace is only a **container** for two separate Git repositories:
 
-- `backend/` — API Primebrick (Express + TypeScript)
-- `frontend/` — UI Primebrick (SvelteKit + Svelte 5 + TypeScript)
+- `backend/` — Primebrick API (Express + TypeScript)
+- `frontend/` — Primebrick UI (SvelteKit + Svelte 5 + TypeScript)
 
-Ogni repo è **autosufficiente**: puoi clonarli e usarli separatamente senza questo workspace.
+Each repo is **self-contained**: you can clone and use them without this workspace.
 
-## Come ricreare il workspace
+## Recreating the workspace
 
-1. Clona il repo backend in `backend/`:
+1. Clone the backend repo into `backend/`:
 
    ```bash
    git clone <URL_BACKEND_REPO> backend
    ```
 
-2. Clona il repo frontend in `frontend/`:
+2. Clone the frontend repo into `frontend/`:
 
    ```bash
    git clone <URL_FRONTEND_REPO> frontend
    ```
 
-3. Installa le dipendenze:
+3. Install dependencies:
 
-   - Solo backend:
+   - Backend only:
 
      ```bash
      cd backend
      pnpm install
      ```
 
-   - Solo frontend:
+   - Frontend only:
 
      ```bash
      cd frontend
      pnpm install
      ```
 
-   - Oppure dal workspace root (opzionale, se vuoi usare il workspace pnpm):
+   - Or from the workspace root (optional, if you use the workspace pnpm layout):
 
      ```bash
      pnpm install
      ```
 
-## Comandi comodi (se usi il workspace)
+## Useful commands (if you use the workspace)
 
-Dal root di questo workspace puoi:
+From the workspace root you can:
 
-- Avviare solo il backend:
+- Run the backend only:
 
   ```bash
   pnpm -C backend dev
   ```
 
-- Avviare solo il frontend:
+- Run the frontend only:
 
   ```bash
   pnpm -C frontend dev
   ```
 
-Gli script dettagliati vivono nei singoli `backend/package.json` e `frontend/package.json`.
+Detailed scripts live in `backend/package.json` and `frontend/package.json`.
 
-## Uso con Cursor o altri agent
+## Using Cursor or other agents
 
-- Se lavori **solo sul backend**, apri la cartella `backend/` come progetto:
-  - L'agente userà `backend/AGENTS.md`, `backend/CLAUDE.md`, `backend/.cursor/*`, `backend/docs/ai/*`.
+- If you work **on the backend only**, open the `backend/` folder as the project:
+  - The agent will use `backend/AGENTS.md`, `backend/CLAUDE.md`, `backend/.cursor/*`, `backend/docs/ai/*`.
 
-- Se lavori **solo sul frontend**, apri la cartella `frontend/` come progetto:
-  - L'agente userà `frontend/AGENTS.md`, `frontend/CLAUDE.md`, `frontend/.cursor/*`, `frontend/docs/ai/*`.
+- If you work **on the frontend only**, open the `frontend/` folder as the project:
+  - The agent will use `frontend/AGENTS.md`, `frontend/CLAUDE.md`, `frontend/.cursor/*`, `frontend/docs/ai/*`.
 
-- Se vuoi una **vista full‑stack**, apri questa cartella workspace:
-  - L'agente vedrà entrambe le sottocartelle e potrà combinare le informazioni, seguendo comunque le regole locali definite nei due repo.
+- For a **full-stack view**, open this workspace folder:
+  - The agent will see both subfolders and can combine context, still following the rules in each repo.
 
-\n- GitFlow test change
-\n## v0.1.0\n- First release (GitFlow dry run)\n
-\n- Hotfix test change
+## GitFlow (team rule)
+
+- Do not work directly on `main` or `develop`.
+- If you are already on `feature/*`, `release/*`, or `hotfix/*`, the agent must **ask** whether to stay on that branch or open a new one for the task. If you stay on the current branch, **do not** debate whether the branch name “fits” the work.
+- If you choose a **new** branch: the agent must **ask** whether to **close the previous branch first** (merge + delete) or leave it open; new `feature/*` / `release/*` branches always start from an **up-to-date `develop`**, and `hotfix/*` from an **up-to-date `main`** (`checkout` → `pull` → `checkout -b …`), unless you explicitly request otherwise.
+- After a merge, delete the local and remote branch when you close out the flow.
