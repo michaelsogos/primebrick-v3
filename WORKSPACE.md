@@ -72,3 +72,4 @@ Gli script dettagliati vivono nei singoli `backend/package.json` e `frontend/pac
 - Se vuoi una **vista full‑stack**, apri questa cartella workspace:
   - L'agente vedrà entrambe le sottocartelle e potrà combinare le informazioni, seguendo comunque le regole locali definite nei due repo.
 
+\n- GitFlow test change
