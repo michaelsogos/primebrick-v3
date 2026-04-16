@@ -72,6 +72,11 @@ Gli script dettagliati vivono nei singoli `backend/package.json` e `frontend/pac
 - Se vuoi una **vista full‑stack**, apri questa cartella workspace:
   - L'agente vedrà entrambe le sottocartelle e potrà combinare le informazioni, seguendo comunque le regole locali definite nei due repo.
 
+## GitFlow (team rule)
+
+- Non lavorare direttamente su `main` o `develop`.
+- Apri sempre una branch GitFlow (`feature/*`, `release/*`, `hotfix/*`) e mantieni la pulizia: dopo il merge elimina la branch sia localmente che sul remote.
+
 \n- GitFlow test change
 \n## v0.1.0\n- First release (GitFlow dry run)\n
 \n- Hotfix test change
