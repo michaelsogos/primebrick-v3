@@ -29,4 +29,5 @@ Each repo is **self-contained** and has its own agent docs and rules.
 - Use this workspace when you need a **full‑stack view** (both repos at once) or shared tooling (e.g. `pnpm -C backend dev` / `pnpm -C frontend dev`).
 - Avoid duplicating technical rules here: keep backend/frontend behavior defined in their respective repos.
 - For human developers, see `WORKSPACE.md` in this folder for cloning and workflow instructions.
+- **Language**: team-facing `*.md` documentation (workspace, backend, frontend) must be **English**. Do not add or extend Italian prose in Markdown files; keep Italian for direct chat with the user only.
 
