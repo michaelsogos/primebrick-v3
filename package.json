@@ -1,0 +1,10 @@
+{
+  "name": "primebrick",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "pnpm": {
+    "overrides": {
+      "esbuild": "0.28.0"
+    }
+  }
+}

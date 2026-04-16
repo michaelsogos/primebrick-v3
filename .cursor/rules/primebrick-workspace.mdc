@@ -1,0 +1,32 @@
+---
+description: Primebrick workspace — meta routing for backend and frontend repos
+alwaysApply: true
+---
+
+# Primebrick workspace
+
+This folder is a **workspace container** that holds two independent git repositories:
+
+- `backend/` — Primebrick API (Express + TypeScript)
+- `frontend/` — Primebrick UI (SvelteKit + Svelte 5 + TypeScript)
+
+Each repo is **self-contained** and has its own agent docs and rules.
+
+## How agents should use docs and rules
+
+- When working under `backend/`:
+  - Prefer `backend/AGENTS.md` and `backend/CLAUDE.md` for instructions.
+  - Use rules and skills from `backend/.cursor/*`.
+  - Use backend-specific docs under `backend/docs/ai/*`.
+
+- When working under `frontend/`:
+  - Prefer `frontend/AGENTS.md` and `frontend/CLAUDE.md` for instructions.
+  - Use rules and skills from `frontend/.cursor/*`.
+  - Use frontend-specific docs under `frontend/docs/ai/*`.
+
+## Workspace-level guidance
+
+- Use this workspace when you need a **full‑stack view** (both repos at once) or shared tooling (e.g. `pnpm -C backend dev` / `pnpm -C frontend dev`).
+- Avoid duplicating technical rules here: keep backend/frontend behavior defined in their respective repos.
+- For human developers, see `WORKSPACE.md` in this folder for cloning and workflow instructions.
+
