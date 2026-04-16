@@ -16,12 +16,21 @@ alwaysApply: true
 
 ## Required user prompts
 
-- **Before the first modification** in a session, if not already on a GitFlow branch, ask the user to choose:
-  - `feature`, `release`, or `hotfix`
-  - and provide/confirm the exact branch name.
+### On `main` or `develop`
 
-- **After any set of changes is completed** (i.e., after edits/tests/commits in response to a user request), always ask:
-  - “Do you want to **close the branch** (merge according to GitFlow + tag if release/hotfix) or **continue working** on this branch?”
+- Stop before editing. Ask which GitFlow branch type to use (`feature`, `release`, `hotfix`) and how to name it (or confirm the agent’s proposal).
+
+### Already on `feature/*`, `release/*`, or `hotfix/*` (in `backend/` or `frontend/`)
+
+- **Ask** whether to **keep the current branch** for this work or **start on a new** GitFlow branch.
+- If the user **stays**: do **not** debate whether the branch name matches the task.
+- If the user **opts for a new** branch:
+  1. **Ask** whether to **close the previous branch first** (merge + delete) or **leave it open**.
+  2. **New branch from the correct parent**: `feature/*` and `release/*` from **`develop` updated**; `hotfix/*` from **`main` updated** (`checkout` → `pull` → `checkout -b …`). Do **not** chain the new feature off the old feature tip unless the user explicitly asks.
+
+### After a completed chunk of work
+
+- Ask whether to **close the branch** (merge per GitFlow + tag if release/hotfix) or **continue** on it.
 
 - Do **not** push to remote automatically. Only push when the user explicitly asks.
 - Do **not** commit changes until they have been verified to work (checks and/or visual verification).

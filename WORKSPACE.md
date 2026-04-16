@@ -75,8 +75,6 @@ Gli script dettagliati vivono nei singoli `backend/package.json` e `frontend/pac
 ## GitFlow (team rule)
 
 - Non lavorare direttamente su `main` o `develop`.
-- Apri sempre una branch GitFlow (`feature/*`, `release/*`, `hotfix/*`) e mantieni la pulizia: dopo il merge elimina la branch sia localmente che sul remote.
-
-\n- GitFlow test change
-\n## v0.1.0\n- First release (GitFlow dry run)\n
-\n- Hotfix test change
+- Se sei già su `feature/*`, `release/*` o `hotfix/*`, l’agente deve **chiedere** se restare su quella branch o aprirne una nuova per il compito. Se resti sulla branch attuale, **niente** discussioni sul nome della branch.
+- Se scegli una **nuova** branch: l’agente deve **chiedere** se **chiudere prima** la branch precedente (merge + delete) o lasciarla aperta; la nuova `feature/*` / `release/*` parte sempre da **`develop` aggiornata**, la `hotfix/*` da **`main` aggiornata** (`checkout` → `pull` → `checkout -b …`), salvo richiesta esplicita diversa.
+- Dopo il merge, elimina la branch locale e quella remota quando chiudi il flusso.
