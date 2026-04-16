@@ -74,3 +74,4 @@ Gli script dettagliati vivono nei singoli `backend/package.json` e `frontend/pac
 
 \n- GitFlow test change
 \n## v0.1.0\n- First release (GitFlow dry run)\n
+\n- Hotfix test change
