@@ -5,6 +5,15 @@ alwaysApply: true
 
 # GitFlow guardrails (workspace)
 
+## Zero tolerance (agents — non-negotiable)
+
+1. **Never work from `develop` or `main`.** Do **not** patch, write, delete tracked files, or **commit** while `git branch --show-current` is `develop` or `main`. You may `checkout develop` / `main` **only** to `fetch`/`pull` and **immediately** `checkout -b fix/<slug>` or `feature/<slug>`. Remaining on `develop`/`main` for the whole task is **forbidden**.
+2. **Never create commits on `develop`/`main` and then push them.** All implementation commits happen on **`fix/*`**, **`feature/*`**, **`release/*`**, or **`hotfix/*`**. To land work on `develop`, **merge** the task branch into `develop`, then push. Phrases like *"push and close"*, *"ship it"*, or *"integrate"* mean **merge the branch first**—they **do not** authorize committing directly on `develop`.
+3. **Only explicit overrides count.** The **only** exception to (1)–(2) is a **clear** user instruction such as *"commit directly on `develop`"* or *"bypass GitFlow"*. General requests to push or finish work **never** waive branching.
+4. **If you are on `develop`/`main`:** run `git checkout -b fix/<slug>` (or `feature/<slug>`) **before** any file edit—no exceptions for docs-only or “tiny” changes.
+
+The short **“Mandatory order”** section below is the operational checklist for (1)–(4).
+
 ## Mandatory order (agents): branch **before** any tracked-file edit
 
 This rule applies to **every** coding or documentation task in a Git-backed repo (`backend/`, `frontend/`, workspace root), including `.md`, `.mdc`, and config—**not** only application source.
@@ -17,7 +26,7 @@ This rule applies to **every** coding or documentation task in a Git-backed repo
 4. If the result is already **`feature/*`**, **`fix/*`**, **`release/*`**, or **`hotfix/*`**, you may edit without creating another branch unless the task should be isolated (then ask or branch off as usual).
 5. **Skipping this sequence** (editing while still on `develop`/`main`) is a **process violation**, same as committing on `develop`. The rule is not satisfied by documenting GitFlow elsewhere—you must **run the commands** first.
 
-If the user **explicitly** orders a direct commit to `develop`/`main`, follow their instruction and note the exception once.
+If the user **explicitly** orders a direct commit to `develop`/`main` (see **Zero tolerance** → only explicit overrides), follow their instruction and note the exception once.
 
 ## Hard rules
 

@@ -4,6 +4,12 @@ This document applies when the **workspace root** (this folder) is the Cursor pr
 
 **Documentation language:** All `*.md` files must use **English** for team-facing prose.
 
+## GitFlow — zero tolerance (agents)
+
+- **Do not** perform edits or commits while checked out on **`develop` or `main`**. Create **`fix/<slug>`** or **`feature/<slug>`** first (`git fetch`, `git checkout develop`, `git pull`, `git checkout -b …`).
+- **Do not** push work that was committed directly on `develop`. Merge the task branch into `develop`, then push.
+- Vague instructions (*"push"*, *"close"*) **do not** override this. Only an **explicit** *"commit on `develop`"* / *"bypass GitFlow"* does. Authoritative detail: **`.cursor/rules/gitflow-guard.mdc`** (*Zero tolerance*).
+
 ## What this repository is
 
 - The **workspace / meta** repo holds convenience tooling: root `package.json` (e.g. `pnpm run dev` via `concurrently`), `WORKSPACE.md`, and `scripts/` where present.

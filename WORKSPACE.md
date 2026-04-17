@@ -128,6 +128,7 @@ When the user asks only to **commit** or **push** feature work (without “rilas
 
 ## GitFlow (team rule)
 
+- **Agents — zero tolerance:** never keep working on **`develop` or `main`** (no patches/commits there). Never push commits authored on `develop`; merge a **`fix/*` / `feature/*`** branch first. *"Push and close"* means merge then push—not commit on `develop`. See **`.cursor/rules/gitflow-guard.mdc`** (*Zero tolerance*).
 - **Do not commit** changes on `main` or `develop`—use **`feature/*` or `fix/*`** from **`develop`** (see **`.cursor/rules/gitflow-guard.mdc`**). Checkout `develop` only to branch off it, not to land commits.
 - **Agents:** run **`git checkout -b fix/...` or `feature/...`** *before* editing any tracked file if `HEAD` is `develop` or `main`—see **Mandatory order** in **`gitflow-guard.mdc`**.
 - If you are already on `feature/*`, `release/*`, or `hotfix/*`, the agent must **ask** whether to stay on that branch or open a new one for the task. If you stay on the current branch, **do not** debate whether the branch name “fits” the work.

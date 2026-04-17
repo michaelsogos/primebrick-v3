@@ -16,6 +16,7 @@ Each repo is **self-contained**, has its own `.git` and remotes, and has its own
 ## Git: commit, push, release
 
 - Run **`git` in the repo that contains the changed files.** A push from the workspace root does **not** publish backend or frontend code.
+- **Zero tolerance:** agents must **not** stay on **`develop` or `main`** while editing or committing; **not** push commits that were made on `develop`/`main`. Create **`fix/*` or `feature/*`**, commit there, **merge** into `develop`, then push. *"Push and close"* means merge the task branch—**not** commit on `develop`. See **`gitflow-guard.mdc`** → *Zero tolerance*.
 - **Never commit** implementation work on **`develop` or `main`** without a **`feature/*` / `fix/*` / `release/*` / `hotfix/*`** branch—see **`gitflow-guard.mdc`** (this applies per repo).
 - **Before editing files:** follow **Mandatory order (agents): branch before any tracked-file edit** in **`gitflow-guard.mdc`** (shell `git` first, then patches).
 - **rilascia tutto** / **release everything** means the **full GitFlow release completion** in **all three** repos (versioned `release/*` → `main` → tag → `develop` → delete branch)—see **`gitflow-guard.mdc`**, not “push `develop` only”.
