@@ -16,7 +16,7 @@ Each repo is **self-contained**, has its own `.git` and remotes, and has its own
 ## Git: commit, push, release
 
 - Run **`git` in the repo that contains the changed files.** A push from the workspace root does **not** publish backend or frontend code.
-- When the user asks to **release** / **ship** / **rilascia** “everything” or “all repos”, perform the release flow **in each affected repository** (typically backend + frontend + workspace meta if root files changed)—not a single assumed monorepo push.
+- **rilascia tutto** / **release everything** means the **full GitFlow release completion** in **all three** repos (versioned `release/*` → `main` → tag → `develop` → delete branch)—see **`gitflow-guard.mdc`**, not “push `develop` only”.
 
 ## How agents should use docs and rules
 

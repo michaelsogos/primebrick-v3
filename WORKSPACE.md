@@ -104,9 +104,26 @@ Detailed scripts live in `backend/package.json` and `frontend/package.json`.
 
 - **Run `git` in the repository that contains the files you changed.** Example: commits for `frontend/src/...` belong to the **frontend** repo (`cd frontend` first).
 - **Do not assume** a single `git push` updates everything. Pushing the workspace root does **not** publish backend or frontend code.
-- When the user asks to **release** / **ship** / **rilascia** work that touched multiple areas:
-  - **Release (commit + push + follow team GitFlow: PR, merge, tag on `release/*` or `hotfix/*` as applicable) in every repo that has changes**—typically **backend**, **frontend**, and **workspace root** if root scripts or `WORKSPACE.md` changed.
-  - If only one repo changed, scope git operations to that repo unless the user explicitly asks for all three.
+
+### “Release everything” / **rilascia tutto** (full GitFlow close)
+
+This phrase means: complete the **entire GitFlow release** for **all three** repositories (meta workspace, backend, frontend)—not merely pushing `develop`.
+
+For **each** repo, in order (usually align **the same SemVer** across backend, frontend, and meta for one coordinated release):
+
+1. Verify (build/tests as usual).
+2. Update `develop` from `origin`, then create **`release/<version>`** from `develop` (next **minor** from latest `v0.*.*` tag—see `.cursor/rules/gitflow-guard.mdc`).
+3. Run **`pnpm run version:auto`** so `package.json` matches `<version>` (script applies on `release/*` branches).
+4. Push the release branch, **merge `--no-ff` to `main`**, **tag `v<version>`**, push `main` + tags, merge back into **`develop`**, delete **`release/*`** locally and on the remote.
+
+Details, hotfix vs release, and branch-protection caveats: **`.cursor/rules/gitflow-guard.mdc`** (section *“Release everything” / rilascia tutto*).
+
+For a smaller scope (“release backend only”), run the same chain **only** in that repo.
+
+### Ordinary commits and pushes
+
+When the user asks only to **commit** or **push** feature work (without “rilascia tutto”), follow the usual feature-branch flow; do **not** assume they want a finished release merge and tag unless they say so.
+
 - Agents should **state clearly** which repo each command targets when operating from a multi-folder workspace.
 
 ## GitFlow (team rule)
