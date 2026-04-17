@@ -59,7 +59,30 @@ From the workspace root you can:
   pnpm -C frontend dev
   ```
 
+- Run both (dev):
+
+  ```bash
+  pnpm run dev
+  ```
+
 Detailed scripts live in `backend/package.json` and `frontend/package.json`.
+
+## Quick map (where things live)
+
+- Backend entrypoint: `backend/src/index.ts`
+  - Modules menu endpoint: `GET /api/v1/modules` (static, should not depend on DB)
+  - Customers meta endpoint: `GET /api/v1/entities/customer/meta` (static, no DB)
+  - Customers list endpoint: `GET /api/v1/entities/customer/list` (DB-backed)
+- Frontend API forwarding (dev/preview): `frontend/src/hooks.server.ts`
+  - Forwards `/api/*` to `API_ORIGIN` (default `http://127.0.0.1:3001`)
+- Sidebar: `frontend/src/lib/components/AppSidebar.svelte`
+- Customers page: `frontend/src/routes/(app)/customers/+page.svelte`
+
+## Troubleshooting
+
+- Sidebar is empty in dev:
+  - Ensure backend is running on `http://127.0.0.1:3001`
+  - Check `frontend/src/hooks.server.ts` forwarding and `API_ORIGIN` env var
 
 ## Using Cursor or other agents
 

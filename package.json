@@ -4,7 +4,13 @@
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "version:auto": "node scripts/version-sync.mjs"
+    "version:auto": "node scripts/version-sync.mjs",
+    "be:dev": "pnpm -C backend dev",
+    "fe:dev": "pnpm -C frontend dev",
+    "dev": "concurrently -n BE,FE -c green,cyan \"pnpm run be:dev\" \"pnpm run fe:dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   },
   "pnpm": {
     "overrides": {
