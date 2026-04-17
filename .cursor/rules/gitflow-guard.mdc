@@ -1,24 +1,42 @@
 ---
-description: GitFlow guardrails — never change main/develop; ask user to branch; ask to close branch after changes
+description: GitFlow guardrails — branch before ANY edit; never commit on main/develop; release/hotfix rules
 alwaysApply: true
 ---
 
 # GitFlow guardrails (workspace)
 
+## Mandatory order (agents): branch **before** any tracked-file edit
+
+This rule applies to **every** coding or documentation task in a Git-backed repo (`backend/`, `frontend/`, workspace root), including `.md`, `.mdc`, and config—**not** only application source.
+
+1. **Before** the first use of any tool that **creates, modifies, or deletes** a tracked file (patch, write, delete, etc.), determine the **repository root** for that path (`backend`, `frontend`, or workspace meta).
+2. Run in a terminal: `git -C <repo-root> rev-parse --abbrev-ref HEAD` (or `cd` + `git branch --show-current`).
+3. If the result is **`main` or `develop`**:
+   - Run `git -C <repo-root> fetch` (or `git pull` as appropriate), then **`git -C <repo-root> checkout -b fix/<short-slug>`** or **`feature/<short-slug>`** (choose `fix/` for small corrections, `feature/` for new capability). Use a **distinct slug per task** if needed.
+   - **Only after** the branch exists locally, apply file edits.
+4. If the result is already **`feature/*`**, **`fix/*`**, **`release/*`**, or **`hotfix/*`**, you may edit without creating another branch unless the task should be isolated (then ask or branch off as usual).
+5. **Skipping this sequence** (editing while still on `develop`/`main`) is a **process violation**, same as committing on `develop`. The rule is not satisfied by documenting GitFlow elsewhere—you must **run the commands** first.
+
+If the user **explicitly** orders a direct commit to `develop`/`main`, follow their instruction and note the exception once.
+
 ## Hard rules
 
-- **Do not make code or configuration changes on `main` or `develop`.**
-  - If the current branch is `main` or `develop`, you must **stop before editing** and ask the user which GitFlow branch type to create.
-- **All work must happen on a GitFlow branch**:
-  - `feature/*` (from `develop`)
-  - `release/*` (from `develop`, name must be a SemVer like `release/0.2.0`)
+- **Do not commit code or configuration changes on `main` or `develop`.** There is **no** exception for “small fixes”, “one-liners”, or “urgent” work unless the user **explicitly** tells you to bypass GitFlow.
+  - If `HEAD` is **`main` or `develop`**, you must **not** edit project files until you have created a working branch:
+    1. `git fetch` and `git checkout develop` (or `main` for hotfix) **only** to update refs.
+    2. `git checkout -b feature/<short-name>` or `git checkout -b fix/<short-name>` from **`develop`** (use `hotfix/<semver>` from **`main`** only for production hotfixes).
+    3. Then apply changes and commit **on that branch**.
+  - **Checking out** `develop` to **create** `feature/*` / `fix/*` is allowed; **committing** new work directly onto `develop` or `main` is not.
+- **All implementation work must happen on a GitFlow branch**:
+  - `feature/*` or `fix/*` (from `develop`) — prefer these for normal bugfixes and features.
+  - `release/*` (from `develop`, name must be a SemVer like `release/0.2.0`) — version bumps and release-only edits **as part of the release process**, not arbitrary app changes.
   - `hotfix/*` (from `main`, name must be a SemVer like `hotfix/0.2.1`)
 
 ## Required user prompts
 
 ### On `main` or `develop`
 
-- Stop before editing. Ask which GitFlow branch type to use (`feature`, `release`, `hotfix`) and how to name it (or confirm the agent’s proposal).
+- **Do not** start changing source files. Create a **`feature/*`** or **`fix/*`** branch from **`develop`** (or **`hotfix/*`** from **`main`** if the fix targets production only), then work there. Ask the user to confirm the branch name if unsure.
 
 ### Already on `feature/*`, `release/*`, or `hotfix/*` (in `backend/` or `frontend/`)
 

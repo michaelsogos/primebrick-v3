@@ -24,7 +24,8 @@ If **GitHub/GitLab branch protection** blocks direct pushes to `main`, stop and 
 
 ## GitFlow (team rule)
 
-- Do not work directly on `main` or `develop` on **this** repo without team agreement; same GitFlow conventions as backend/frontend unless the team defines otherwise for the meta repo.
+- Same as backend/frontend: **do not commit** changes on **`main` or `develop`**; create **`feature/*` or `fix/*`** from **`develop`** (or **`hotfix/*`** from **`main`**) before editing tracked files, unless the user explicitly overrides.
+- **Before the first file edit in this repo:** if `git branch --show-current` is `develop` or `main`, run **`git checkout -b fix/<slug>`** (or `feature/<slug>`) first—see **`.cursor/rules/gitflow-guard.mdc`** → *Mandatory order*.
 
 ## Further reading
 
