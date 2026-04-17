@@ -4,6 +4,12 @@ This document applies when the **workspace root** (this folder) is the Cursor pr
 
 **Documentation language:** All `*.md` files must use **English** for team-facing prose.
 
+## GitFlow — zero tolerance (agents)
+
+- **Do not** perform edits or commits while checked out on **`develop` or `main`**. Create **`feature/<slug>`** first (`git fetch`, `git checkout develop`, `git pull`, `git checkout -b feature/…`).
+- **Do not** push work that was committed directly on `develop`. Merge the **`feature/*`** branch into `develop`, then push.
+- Vague instructions (*"push"*, *"close"*) **do not** override this. Only an **explicit** *"commit on `develop`"* / *"bypass GitFlow"* does. Authoritative detail: **`.cursor/rules/gitflow-guard.mdc`** (*Zero tolerance*).
+
 ## What this repository is
 
 - The **workspace / meta** repo holds convenience tooling: root `package.json` (e.g. `pnpm run dev` via `concurrently`), `WORKSPACE.md`, and `scripts/` where present.
@@ -24,8 +30,8 @@ If **GitHub/GitLab branch protection** blocks direct pushes to `main`, stop and 
 
 ## GitFlow (team rule)
 
-- Same as backend/frontend: **do not commit** changes on **`main` or `develop`**; create **`feature/*` or `fix/*`** from **`develop`** (or **`hotfix/*`** from **`main`**) before editing tracked files, unless the user explicitly overrides.
-- **Before the first file edit in this repo:** if `git branch --show-current` is `develop` or `main`, run **`git checkout -b fix/<slug>`** (or `feature/<slug>`) first—see **`.cursor/rules/gitflow-guard.mdc`** → *Mandatory order*.
+- Same as backend/frontend: **do not commit** changes on **`main` or `develop`**; create **`feature/*`** from **`develop`** (or **`hotfix/*`** from **`main`**) before editing tracked files, unless the user explicitly overrides.
+- **Before the first file edit in this repo:** if `git branch --show-current` is `develop` or `main`, run **`git checkout -b feature/<slug>`** first—see **`.cursor/rules/gitflow-guard.mdc`** → *Mandatory order*.
 
 ## Further reading
 
