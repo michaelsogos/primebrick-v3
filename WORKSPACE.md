@@ -128,7 +128,8 @@ When the user asks only to **commit** or **push** feature work (without “rilas
 
 ## GitFlow (team rule)
 
-- Do not work directly on `main` or `develop`.
+- **Do not commit** changes on `main` or `develop`—use **`feature/*` or `fix/*`** from **`develop`** (see **`.cursor/rules/gitflow-guard.mdc`**). Checkout `develop` only to branch off it, not to land commits.
+- **Agents:** run **`git checkout -b fix/...` or `feature/...`** *before* editing any tracked file if `HEAD` is `develop` or `main`—see **Mandatory order** in **`gitflow-guard.mdc`**.
 - If you are already on `feature/*`, `release/*`, or `hotfix/*`, the agent must **ask** whether to stay on that branch or open a new one for the task. If you stay on the current branch, **do not** debate whether the branch name “fits” the work.
 - If you choose a **new** branch: the agent must **ask** whether to **close the previous branch first** (merge + delete) or leave it open; new `feature/*` / `release/*` branches always start from an **up-to-date `develop`**, and `hotfix/*` from an **up-to-date `main`** (`checkout` → `pull` → `checkout -b …`), unless you explicitly request otherwise.
 - After a merge, delete the local and remote branch when you close out the flow.

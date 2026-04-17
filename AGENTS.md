@@ -20,11 +20,12 @@ When the user says **rilascia tutto** or **release everything**, execute the **f
 
 Use the **same SemVer** for a coordinated release unless they say otherwise. Exact steps, version math, and hotfix vs release: **`.cursor/rules/gitflow-guard.mdc`**. Human-readable summary: **`WORKSPACE.md`** → section *“Release everything / rilascia tutto”*.
 
-If **GitHub/GitLab branch protection** blocks direct pushes to `main`, stop and tell the user to complete merges/tags via PRs or CI.
+If **GitHub/GitLab branch protection** blocks direct pushes to `main`, stop and tell the user to complete merges/tags using whatever access they have (bypass, CI, etc.). **Pull requests are not the default workflow** here: integrate with **local `git merge` and `git push`** unless the user specifies otherwise.
 
 ## GitFlow (team rule)
 
-- Do not work directly on `main` or `develop` on **this** repo without team agreement; same GitFlow conventions as backend/frontend unless the team defines otherwise for the meta repo.
+- Same as backend/frontend: **do not commit** changes on **`main` or `develop`**; create **`feature/*` or `fix/*`** from **`develop`** (or **`hotfix/*`** from **`main`**) before editing tracked files, unless the user explicitly overrides.
+- **Before the first file edit in this repo:** if `git branch --show-current` is `develop` or `main`, run **`git checkout -b fix/<slug>`** (or `feature/<slug>`) first—see **`.cursor/rules/gitflow-guard.mdc`** → *Mandatory order*.
 
 ## Further reading
 
