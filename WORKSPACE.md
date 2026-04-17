@@ -1,11 +1,16 @@
-# Primebrick workspace (backend + frontend)
+# Primebrick workspace (three separate Git repositories)
 
-This workspace is only a **container** for two separate Git repositories:
+Primebrick uses **three independent Git repositories**. Treat them as **peers**, not one monorepo:
 
-- `backend/` — Primebrick API (Express + TypeScript)
-- `frontend/` — Primebrick UI (SvelteKit + Svelte 5 + TypeScript)
+| Repository | Typical folder in this workspace | Role |
+|------------|----------------------------------|------|
+| **Workspace / meta** | This directory (root `package.json`, `WORKSPACE.md`, `scripts/`) | Convenience scripts, docs, optional pnpm workspace glue |
+| **Backend** | `backend/` | Primebrick API (Express + TypeScript) |
+| **Frontend** | `frontend/` | Primebrick UI (SvelteKit + Svelte 5 + TypeScript) |
 
-Each repo is **self-contained**: you can clone and use them without this workspace.
+Each repo has **its own** `.git`, **its own** remotes, and **its own** GitFlow lifecycle. The root `.gitignore` ignores `backend/` and `frontend/` so the meta checkout does not track nested clones—those folders are **separate repos** checked out next to each other for local development.
+
+You can clone and run **backend** or **frontend** alone without this workspace folder.
 
 ## Recreating the workspace
 
@@ -94,6 +99,15 @@ Detailed scripts live in `backend/package.json` and `frontend/package.json`.
 
 - For a **full-stack view**, open this workspace folder:
   - The agent will see both subfolders and can combine context, still following the rules in each repo.
+
+## Git, commit, push, and release (three repositories)
+
+- **Run `git` in the repository that contains the files you changed.** Example: commits for `frontend/src/...` belong to the **frontend** repo (`cd frontend` first).
+- **Do not assume** a single `git push` updates everything. Pushing the workspace root does **not** publish backend or frontend code.
+- When the user asks to **release** / **ship** / **rilascia** work that touched multiple areas:
+  - **Release (commit + push + follow team GitFlow: PR, merge, tag on `release/*` or `hotfix/*` as applicable) in every repo that has changes**—typically **backend**, **frontend**, and **workspace root** if root scripts or `WORKSPACE.md` changed.
+  - If only one repo changed, scope git operations to that repo unless the user explicitly asks for all three.
+- Agents should **state clearly** which repo each command targets when operating from a multi-folder workspace.
 
 ## GitFlow (team rule)
 
