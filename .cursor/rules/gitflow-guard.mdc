@@ -92,5 +92,5 @@ When the user says **rilascia tutto**, **release everything**, or equivalent, th
 
 **Hotfix** (`hotfix/*` from `main`, PATCH bump) is a **different** flow; **rilascia tutto** refers to the normal **release** path unless the user specifies hotfix.
 
-If **branch protection** blocks direct pushes to `main`, stop and tell the user to open/merge PRs for the release merges and tag creation in the Git host UI—or use the team’s CI release job.
+If **branch protection** blocks direct pushes to `main`, stop and tell the user to finish the release using whatever path they have (e.g. temporary bypass, maintainer push, or a CI release job). **The team does not use pull requests for integration at present**—the normal flow is **`git merge` locally, then `git push`**—so do not tell the user to open a PR unless they say they use that workflow.
 

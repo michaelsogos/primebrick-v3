@@ -19,6 +19,7 @@ Each repo is **self-contained**, has its own `.git` and remotes, and has its own
 - **Never commit** implementation work on **`develop` or `main`** without a **`feature/*` / `fix/*` / `release/*` / `hotfix/*`** branch—see **`gitflow-guard.mdc`** (this applies per repo).
 - **Before editing files:** follow **Mandatory order (agents): branch before any tracked-file edit** in **`gitflow-guard.mdc`** (shell `git` first, then patches).
 - **rilascia tutto** / **release everything** means the **full GitFlow release completion** in **all three** repos (versioned `release/*` → `main` → tag → `develop` → delete branch)—see **`gitflow-guard.mdc`**, not “push `develop` only”.
+- **Integration:** merge feature/fix branches into `develop` (and releases into `main`) with **local `git merge` and `git push`**. The team **does not** use pull requests on the Git host at present.
 
 ## How agents should use docs and rules
 
