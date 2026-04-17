@@ -54,4 +54,25 @@ When the user chooses to **close** a branch:
 - Release branches bump **MINOR**: `v0.x.y` → `release/0.(x+1).0`, tag `v0.(x+1).0`.
 - Hotfix branches bump **PATCH**: `v0.x.y` → `hotfix/0.x.(y+1)`, tag `v0.x.(y+1)`.
 - Tag name must be derived from the branch name (`release/0.2.0` → tag `v0.2.0`).
+- In each app repo, `scripts/version-sync.mjs` (via `pnpm run version:auto` or `prebuild`) enforces that **branch name** and **`package.json` `version`** match the next tag derived from existing `v0.*.*` tags.
+
+## “Release everything” / **rilascia tutto** (full GitFlow close, all three repos)
+
+When the user says **rilascia tutto**, **release everything**, or equivalent, they mean **not** “push `develop` only”. They mean: run the **full release-completion chain** for **each** of the **three** Git repositories (workspace meta, backend, frontend)—including **versioning**, **merge**, **tag**, and **deleting the `release/*` branch**—unless they explicitly scope to one repo.
+
+**Per repository** (repeat in **backend**, **frontend**, then **workspace root**; typically use the **same** SemVer for a coordinated drop):
+
+1. **Verify** the product (tests/build) on the code that will ship (e.g. `pnpm check` / `pnpm build` as applicable).
+2. `git fetch origin` and ensure **`develop`** contains the work to ship (`git checkout develop && git pull`).
+3. **Compute the next release version** from tags: list `v0.*.*`, pick the next **minor** for a normal release (see “Versioning rules” above). Branch name **must** be `release/<version>` with **no** `v` prefix (e.g. `release/0.3.0`).
+4. `git checkout -b release/<version>` (from up-to-date `develop`).
+5. Run **`pnpm run version:auto`** at that repo root so `package.json` matches `<version>` (script only runs on `release/*` or `hotfix/*` branches).
+6. Commit the version bump if the script changed files; push `release/<version>` to `origin`.
+7. **Finish the release** (GitFlow): merge `release/<version>` into **`main`** with `--no-ff`, **tag** `v<version>` on the resulting merge commit, push **`main`** and **tags**.
+8. Merge the release into **`develop`** (or merge `main` back—follow team convention) so `develop` stays aligned; push **`develop`**.
+9. **Delete** the `release/<version>` branch locally and on **`origin`**.
+
+**Hotfix** (`hotfix/*` from `main`, PATCH bump) is a **different** flow; **rilascia tutto** refers to the normal **release** path unless the user specifies hotfix.
+
+If **branch protection** blocks direct pushes to `main`, stop and tell the user to open/merge PRs for the release merges and tag creation in the Git host UI—or use the team’s CI release job.
 

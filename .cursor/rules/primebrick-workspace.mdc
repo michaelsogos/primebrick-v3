@@ -5,12 +5,18 @@ alwaysApply: true
 
 # Primebrick workspace
 
-This folder is a **workspace container** that holds two independent git repositories:
+This folder is a **workspace container** around **three separate Git repositories**:
 
-- `backend/` — Primebrick API (Express + TypeScript)
-- `frontend/` — Primebrick UI (SvelteKit + Svelte 5 + TypeScript)
+- **This directory (workspace / meta)** — own Git repo: root `package.json`, `WORKSPACE.md`, shared scripts (optional convenience; not the app source).
+- `backend/` — Primebrick API (Express + TypeScript), **its own clone**.
+- `frontend/` — Primebrick UI (SvelteKit + Svelte 5 + TypeScript), **its own clone**.
 
-Each repo is **self-contained** and has its own agent docs and rules.
+Each repo is **self-contained**, has its own `.git` and remotes, and has its own agent docs and rules. The root `.gitignore` ignores `backend/` and `frontend/` because nested folders are **not** part of the meta repo’s tree—they are **peer** repositories placed here for local work.
+
+## Git: commit, push, release
+
+- Run **`git` in the repo that contains the changed files.** A push from the workspace root does **not** publish backend or frontend code.
+- **rilascia tutto** / **release everything** means the **full GitFlow release completion** in **all three** repos (versioned `release/*` → `main` → tag → `develop` → delete branch)—see **`gitflow-guard.mdc`**, not “push `develop` only”.
 
 ## How agents should use docs and rules
 
