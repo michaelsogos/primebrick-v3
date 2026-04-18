@@ -1,5 +1,7 @@
 # Prossima sessione — backlog (memo)
 
+**Git stash (da recuperare):** su repo **backend** c’è uno stash (`AGENTS.md`, messo da `feature/agent-docs-modular` prima del branch onboarding). Elenca con `git stash list`, recupera quando serve con `git stash pop` sul branch giusto.
+
 Da trasferire in **GitHub Projects / Kanban** (repo **Primebrick-v3**): creare issue per voce o raggruppare, poi collegarle al board.
 
 1. Passare in rassegna i componenti in `lib` / UI (registry shadcn, coerenza).
