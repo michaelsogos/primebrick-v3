@@ -1,43 +1,35 @@
 ---
-description: Primebrick workspace — meta routing for backend and frontend repos
+description: Primebrick workspace — three repos; where agent rules live (no GitFlow duplication)
 alwaysApply: true
 ---
 
-# Primebrick workspace
+# Primebrick workspace (meta)
 
 This folder is a **workspace container** around **three separate Git repositories**:
 
-- **This directory (workspace / meta)** — own Git repo: root `package.json`, `WORKSPACE.md`, shared scripts (optional convenience; not the app source).
-- `backend/` — Primebrick API (Express + TypeScript), **its own clone**.
-- `frontend/` — Primebrick UI (SvelteKit + Svelte 5 + TypeScript), **its own clone**.
+| Location | Contents |
+|----------|----------|
+| **This directory** | Meta repo: root `package.json`, `WORKSPACE.md`, scripts — **not** app source. |
+| `backend/` | Primebrick API — **its own** `.git`. |
+| `frontend/` | Primebrick UI — **its own** `.git`. |
 
-Each repo is **self-contained**, has its own `.git` and remotes, and has its own agent docs and rules. The root `.gitignore` ignores `backend/` and `frontend/` because nested folders are **not** part of the meta repo’s tree—they are **peer** repositories placed here for local work.
+Nested folders are **peer clones** (often ignored in meta `.gitignore`); each repo has its own branches and remotes.
 
-## Git: commit, push, release
+## Git
 
-- Run **`git` in the repo that contains the changed files.** A push from the workspace root does **not** publish backend or frontend code.
-- **Zero tolerance:** agents must **not** stay on **`develop` or `main`** while editing or committing; **not** push commits that were made on `develop`/`main`. Create **`feature/*`** (or **`release/*` / `hotfix/*`** per GitFlow), commit there, **merge** into `develop` when appropriate, then push. *"Push and close"* means merge the task branch—**not** commit on `develop`. See **`gitflow-guard.mdc`** → *Zero tolerance*.
-- **Never commit** implementation work on **`develop` or `main`** without a **`feature/*` / `release/*` / `hotfix/*`** branch—see **`gitflow-guard.mdc`** (this applies per repo).
-- **Before editing files:** follow **Mandatory order (agents): branch before any tracked-file edit** in **`gitflow-guard.mdc`** (shell `git` first, then patches).
-- **rilascia tutto** / **release everything** means the **full GitFlow release completion** in **all three** repos (versioned `release/*` → `main` → tag → `develop` → delete branch)—see **`gitflow-guard.mdc`**, not “push `develop` only”.
-- **Integration:** merge feature/fix branches into `develop` (and releases into `main`) with **local `git merge` and `git push`**. The team **does not** use pull requests on the Git host at present.
+- Run **`git` in the repo that contains the changed files.** Pushing from the meta root does **not** publish `backend/` or `frontend/` code.
+- **GitFlow (full detail):** **`.cursor/rules/gitflow-guard.mdc`** only — do not rely on duplicated prose here.
 
-## How agents should use docs and rules
+## Where to read next
 
-- When working under `backend/`:
-  - Prefer `backend/AGENTS.md` and `backend/CLAUDE.md` for instructions.
-  - Use rules and skills from `backend/.cursor/*`.
-  - Use backend-specific docs under `backend/docs/ai/*`.
+| You are editing… | Open first |
+|------------------|------------|
+| `backend/**` | `backend/AGENTS.md`, `backend/.cursor/rules/*`, `backend/docs/ai/*` |
+| `frontend/**` | `frontend/AGENTS.md`, `frontend/.cursor/rules/*` (especially `frontend-src.mdc` for `src/**`), `frontend/docs/agent/*` |
+| Meta only (`package.json`, `WORKSPACE.md`, `scripts/`) | Root `AGENTS.md`, this rule |
 
-- When working under `frontend/`:
-  - Prefer `frontend/AGENTS.md` and `frontend/CLAUDE.md` for instructions.
-  - Use rules and skills from `frontend/.cursor/*`.
-  - Use frontend-specific docs under `frontend/docs/ai/*`.
+**Nested `.cursor` rules:** If the editor does not attach rules from `frontend/.cursor` or `backend/.cursor` when this folder is the workspace root, **@-mention** the relevant `.mdc` file for the repo you are changing (see table above).
 
-## Workspace-level guidance
-
-- Use this workspace when you need a **full‑stack view** (both repos at once) or shared tooling (e.g. `pnpm -C backend dev` / `pnpm -C frontend dev`).
-- Avoid duplicating technical rules here: keep backend/frontend behavior defined in their respective repos.
-- For human developers, see `WORKSPACE.md` in this folder for cloning and workflow instructions.
-- **Language**: team-facing `*.md` documentation (workspace, backend, frontend) must be **English**. Do not add or extend Italian prose in Markdown files; keep Italian for direct chat with the user only.
-
+- Full-stack context: use meta workspace; still apply **per-repo** Git and rules for each path you touch.
+- **Team-facing `*.md` prose:** English only (see root `AGENTS.md`).
+- Humans: cloning and layout → `WORKSPACE.md`.
