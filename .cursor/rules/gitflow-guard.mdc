@@ -61,6 +61,7 @@ If the user **explicitly** orders a direct commit to `develop`/`main` (see **Zer
 
 - Do **not** push to remote automatically. Only push when the user explicitly asks.
 - Do **not** commit changes until they have been verified to work (checks and/or visual verification).
+- **Ask before closing a `feature/*` branch (agents — mandatory):** Before merging into `develop`/`main`, deleting the branch locally, or `git push origin --delete` for that branch, **ask the user to confirm** that they want this feature closed — **even if you created the branch yourself** (e.g. automatic *new task* / `feature/<slug>`). Do not merge-and-delete as the default end of a turn unless the user has already instructed you to close.
 
 ## Closing branches (GitFlow hygiene)
 
