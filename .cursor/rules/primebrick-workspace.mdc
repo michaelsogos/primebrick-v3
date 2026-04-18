@@ -19,6 +19,7 @@ Nested folders are **peer clones** (often ignored in meta `.gitignore`); each re
 
 - Run **`git` in the repo that contains the changed files.** Pushing from the meta root does **not** publish `backend/` or `frontend/` code.
 - **GitFlow (full detail):** **`.cursor/rules/gitflow-guard.mdc`** only — do not rely on duplicated prose here.
+- **New task (*nuovo task*):** Infer `feature/<slug>` from conversation/backlog and branch from `develop` before edits — **root `AGENTS.md` → New task workflow**.
 
 ## Where to read next
 
