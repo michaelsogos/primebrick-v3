@@ -11,7 +11,7 @@ Convenience tooling: root `package.json` (e.g. `pnpm run dev` via `concurrently`
 ## Git and GitFlow
 
 - **Three independent Git repositories** (meta, `backend/`, `frontend/`). Commit and push **in the repo that owns the files**.
-- **All GitFlow rules:** **`.cursor/rules/gitflow-guard.mdc`** (branch before edit; never commit on `develop`/`main`; merge `feature/*` before push; coordinated release / *rilascia tutto*).
+- **All GitFlow rules:** **`.cursor/rules/gitflow-guard.mdc`** (branch before edit; never commit on `develop`/`main`; merge `feature/*` before push; coordinated release / *rilascia tutto*). **Before closing a feature** (merge, delete branch), **ask the user** — including when the agent created the branch automatically.
 
 ## New task workflow (automatic feature slug)
 
