@@ -69,8 +69,10 @@ When the user chooses to **close** a branch:
 - Merge to the appropriate base branch (GitFlow), using `--no-ff`.
 - For `release/*` and `hotfix/*`, create the tag derived from the branch name.
 - After the merge, **delete the feature/release/hotfix branch**:
-  - delete it locally
-  - delete it on the remote
+  - delete it locally (`git branch -d <branch>` once merged)
+  - delete it on the remote (`git push origin --delete <branch>`)
+
+**`release/*` and `hotfix/*` — non-negotiable:** Finishing a release or hotfix is **not** complete until the **originating branch** (`release/<semver>` or `hotfix/<semver>`) is removed **both** locally **and** on **`origin`**. Do not treat deletion as optional cleanup or leave those branches around for history—the history lives in `main`/`develop`, tags, and merge commits. Apply the same **local + origin** deletion when closing **`feature/*`** after merge.
 
 ## Communication style for git operations
 
