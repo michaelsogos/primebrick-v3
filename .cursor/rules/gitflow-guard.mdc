@@ -61,6 +61,7 @@ If the user **explicitly** orders a direct commit to `develop`/`main` (see **Zer
 
 - Do **not** push to remote automatically. Only push when the user explicitly asks.
 - Do **not** commit changes until they have been verified to work (checks and/or visual verification).
+- **Ask before closing a `feature/*` branch (agents — mandatory):** Before merging into `develop`/`main`, deleting the branch locally, or `git push origin --delete` for that branch, **ask the user to confirm** that they want this feature closed — **even if you created the branch yourself** (e.g. automatic *new task* / `feature/<slug>`). Do not merge-and-delete as the default end of a turn unless the user has already instructed you to close.
 
 ## Closing branches (GitFlow hygiene)
 
@@ -69,8 +70,10 @@ When the user chooses to **close** a branch:
 - Merge to the appropriate base branch (GitFlow), using `--no-ff`.
 - For `release/*` and `hotfix/*`, create the tag derived from the branch name.
 - After the merge, **delete the feature/release/hotfix branch**:
-  - delete it locally
-  - delete it on the remote
+  - delete it locally (`git branch -d <branch>` once merged)
+  - delete it on the remote (`git push origin --delete <branch>`)
+
+**`release/*` and `hotfix/*` — non-negotiable:** Finishing a release or hotfix is **not** complete until the **originating branch** (`release/<semver>` or `hotfix/<semver>`) is removed **both** locally **and** on **`origin`**. Do not treat deletion as optional cleanup or leave those branches around for history—the history lives in `main`/`develop`, tags, and merge commits. Apply the same **local + origin** deletion when closing **`feature/*`** after merge.
 
 ## Communication style for git operations
 
