@@ -86,15 +86,22 @@ When the user chooses to **close** a branch:
 - Tag name must be derived from the branch name (`release/0.2.0` → tag `v0.2.0`).
 - In each app repo, `scripts/version-sync.mjs` (via `pnpm run version:auto` or `prebuild`) enforces that **branch name** and **`package.json` `version`** match the next tag derived from existing `v0.*.*` tags.
 
-## “Release everything” / **rilascia tutto** (full GitFlow close, all three repos)
+## “Release everything” / **rilascia tutto** (ship all releasable repos)
 
-When the user says **rilascia tutto**, **release everything**, or equivalent, they mean **not** “push `develop` only”. They mean: run the **full release-completion chain** for **each** of the **three** Git repositories (workspace meta, backend, frontend)—including **versioning**, **merge**, **tag**, and **deleting the `release/*` branch**—unless they explicitly scope to one repo.
+When the user says **rilascia tutto**, **release everything**, or equivalent, they mean **not** “push `develop` only”. They mean: for **each** of the **three** Git repositories (workspace meta, backend, frontend), **run the full release-completion chain only where there is something to ship**—unless they explicitly scope to one repo.
 
-**Per repository** (repeat in **backend**, **frontend**, then **workspace root**; typically use the **same** SemVer for a coordinated drop):
+**Meaning of “tutto”:** release **everything that is releasable** (repos that actually have new work on `develop` relative to what is already merged/tagged on `main`). It is **not** a mandate to bump every repo for symmetry, and **cross-repo version numbers must never be forced to match** (frontend, backend, and meta each carry their own `v0.*.*` tags and `package.json` version per “Versioning rules” in that repo alone).
 
-1. **Verify** the product (tests/build) on the code that will ship (e.g. `pnpm check` / `pnpm build` as applicable).
+### No “fake” releases (version-only bumps with nothing to ship)
+
+- **Do not** open a `release/*` branch, run `version:auto`, merge to `main`, or push a tag **solely** to keep tags or version strings in sync across repos when **`develop` has no meaningful delta vs `main`** for that repository (no product/config/docs commits to ship—only a cosmetic version bump is **not** a release).
+- Before starting a release in a repo, **confirm there is releasable delta** (e.g. `git fetch origin && git checkout develop && git pull` then compare to `main`: commits or content worth shipping). If there is **nothing to release**, **skip** that repo and say so briefly—**do not** create a release just to mint a git tag.
+
+**Per repository** (evaluate **backend**, **frontend**, then **workspace root** in that order or as convenient; **skip** any repo with nothing to ship):
+
+1. **Verify** the product (tests/build) on the code that will ship (e.g. `pnpm check` / `pnpm build` as applicable) when that repo **is** being released.
 2. `git fetch origin` and ensure **`develop`** contains the work to ship (`git checkout develop && git pull`).
-3. **Compute the next release version** from tags: list `v0.*.*`, pick the next **minor** for a normal release (see “Versioning rules” above). Branch name **must** be `release/<version>` with **no** `v` prefix (e.g. `release/0.3.0`).
+3. **Compute the next release version** from **that repo’s** tags: list `v0.*.*`, pick the next **minor** for a normal release (see “Versioning rules” above). Branch name **must** be `release/<version>` with **no** `v` prefix (e.g. `release/0.3.0`). **Do not** align this number with the other two repos.
 4. `git checkout -b release/<version>` (from up-to-date `develop`).
 5. Run **`pnpm run version:auto`** at that repo root so `package.json` matches `<version>` (script only runs on `release/*` or `hotfix/*` branches).
 6. Commit the version bump if the script changed files; push `release/<version>` to `origin`.
