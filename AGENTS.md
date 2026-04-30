@@ -30,6 +30,7 @@ Convenience tooling: root `package.json` (e.g. `pnpm run dev` via `concurrently`
 
 - **Three independent Git repositories** (meta, `backend/`, `frontend/`). Commit and push **in the repo that owns the files**.
 - **All GitFlow rules:** **`.cursor/rules/gitflow-guard.mdc`** (branch before edit; never commit on `develop`/`main`; merge `feature/*` before push; coordinated release / *rilascia tutto*). **Before closing a feature** (merge, delete branch), **ask the user** — including when the agent created the branch automatically.
+- **Version tagging:** **NO 'v' prefix** for release tags in **FE and BE repositories only** (use `0.13.2` not `v0.13.2`). Follow semantic versioning based on latest tag: increment patch for hotfixes, minor for releases.
 
 ## New task workflow (automatic feature slug)
 
