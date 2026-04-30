@@ -8,6 +8,24 @@ Use this file when the **Cursor project root is this workspace folder**, not `ba
 
 Convenience tooling: root `package.json` (e.g. `pnpm run dev` via `concurrently`), `WORKSPACE.md`, `scripts/`. **No** application source — that lives in separate repos under `backend/` and `frontend/`.
 
+## Repository Structure and Git Paths
+
+### Critical: Repository Boundaries
+- **Meta (Root)**: `d:\git\primebrick/` - Tooling only, NO application source
+- **Frontend**: `d:\git\primebrick/frontend/` - SvelteKit app, i18n, components  
+- **Backend**: `d:\git\primebrick/backend/` - API, database, endpoints
+
+### Git Operations Rules
+- **NEVER commit from root** for application code (files are gitignored)
+- **Frontend Git ops**: Use `cd frontend && git <command>`
+- **Backend Git ops**: Use `cd backend && git <command>`
+- **Each repo has independent GitFlow** and branches
+
+### File Locations Reference
+- **i18n translations**: `frontend/src/lib/i18n/messages/*.json`
+- **Frontend source**: `frontend/src/`
+- **Backend source**: `backend/src/`
+
 ## Git and GitFlow
 
 - **Three independent Git repositories** (meta, `backend/`, `frontend/`). Commit and push **in the repo that owns the files**.
