@@ -29,8 +29,44 @@ Convenience tooling: root `package.json` (e.g. `pnpm run dev` via `concurrently`
 ## Git and GitFlow
 
 - **Three independent Git repositories** (meta, `backend/`, `frontend/`). Commit and push **in the repo that owns the files**.
-- **All GitFlow rules:** **`.cursor/rules/gitflow-guard.mdc`** (branch before edit; never commit on `develop`/`main`; merge `feature/*` before push; coordinated release / *rilascia tutto*). **Before closing a feature** (merge, delete branch), **ask the user** — including when the agent created the branch automatically.
-- **Version tagging:** **NO 'v' prefix** for release tags in **FE and BE repositories only** (use `0.13.2` not `v0.13.2`). Follow semantic versioning based on latest tag: increment patch for hotfixes, minor for releases.
+- **All GitFlow rules:** **`.cursor/rules/gitflow-guard.mdc`** (branch before edit; never commit on `develop`/`main`; merge `feature/*` before push; coordinated release / *rilascia tutto*).
+
+### GitFlow Branch Management Rules
+
+#### **CRITICAL: Never work directly on `develop` or `main`**
+- Always create feature branches first: `git checkout -b feature/<slug>` from updated `develop`
+- Feature branches for all normal work (bugs, features, fixes)
+- Release branches from `develop` for version bumps only
+- Hotfix branches from `main` for production fixes only
+
+#### **When to Ask User Permission**
+- **ASK before creating NEW feature branch** if another feature branch is already open
+- **DO NOT ask permission** to commit changes on existing feature branch
+- **DO NOT ask permission** to close a feature branch (follow proper closing procedure)
+
+#### **Branch Closing Procedure (MANDATORY)**
+When closing ANY branch (`feature/*`, `release/*`, `hotfix/*`):
+1. **Merge to appropriate base branch** with `--no-ff`
+   - Feature: merge into `develop`
+   - Release/Hotfix: merge into `main`
+2. **Push the merged base branch**
+3. **Delete branch LOCALLY**: `git branch -d <branch-name>`
+4. **Delete branch on ORIGIN**: `git push origin --delete <branch-name>`
+5. **For Release/Hotfix**: Also merge `main` back to `develop`
+
+#### **Version Tagging Rules**
+- **NO 'v' prefix** for release tags in **FE and BE repositories only** (use `0.13.2` not `v0.13.2`)
+- **Tag derived from branch name**: `release/0.13.2` → tag `0.13.2`
+- **Hotfix increments PATCH**: `0.13.1` → `hotfix/0.13.2` → tag `0.13.2`
+- **Release increments MINOR**: `0.13.2` → `release/0.14.0` → tag `0.14.0`
+
+#### **Common Mistakes to Avoid**
+- ❌ Committing directly on `develop` or `main`
+- ❌ Creating commits before creating feature branch
+- ❌ Forgetting to delete branches (both local and origin)
+- ❌ Using 'v' prefix in tags for FE/BE repositories
+- ❌ Not pushing merged base branch
+- ❌ Leaving feature branches open after merge
 
 ## New task workflow (automatic feature slug)
 
