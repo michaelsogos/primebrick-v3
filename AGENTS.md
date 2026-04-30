@@ -68,6 +68,13 @@ When closing ANY branch (`feature/*`, `release/*`, `hotfix/*`):
 - ❌ Not pushing merged base branch
 - ❌ Leaving feature branches open after merge
 
+#### **Git Commit Preferences**
+- **DO NOT** open editor for commit approval
+- **DO NOT** ask user to approve commit messages
+- **DO** write appropriate commit messages directly
+- **DO** proceed with commits automatically
+- User trusts agent to handle commits without approval
+
 ## New task workflow (automatic feature slug)
 
 When the user starts a fresh piece of work with phrases such as **“Let’s start a new task”**, **“Iniziamo un nuovo task”**, or equivalent (*new feature*, *nuova feature*, *start a task*), treat it as a **new GitFlow feature** in every repo that will receive edits:
