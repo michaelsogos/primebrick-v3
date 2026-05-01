@@ -69,11 +69,12 @@ When closing ANY branch (`feature/*`, `release/*`, `hotfix/*`):
 - ❌ Leaving feature branches open after merge
 
 #### **Git Commit Preferences**
+- **NEVER commit automatically** - wait for explicit user instruction
 - **DO NOT** open editor for commit approval
 - **DO NOT** ask user to approve commit messages
-- **DO** write appropriate commit messages directly
-- **DO** proceed with commits automatically
-- User trusts agent to handle commits without approval
+- **DO** write appropriate commit messages directly when instructed
+- **DO** proceed with commits automatically when user explicitly requests it
+- User trusts agent to handle commits without approval when instructed
 
 ## New task workflow (automatic feature slug)
 
