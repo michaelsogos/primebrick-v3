@@ -1,4 +1,4 @@
-# Primebrick workspace - AI agent guide
+# AI AGENT INSTRUCTIONS - Primebrick Workspace
 
 This is a **meta-workspace** for convenience tooling only. **No application code** lives here.
 
