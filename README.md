@@ -2,6 +2,14 @@
 
 **IMPORTANT:** This is a meta-workspace. Read [AGENTS.md](./AGENTS.md) for complete AI agent instructions.
 
+## ⚠️ CRITICAL: NEVER COMMIT AUTOMATICALLY
+
+**AI agents MUST NEVER commit changes without explicit user instruction.**
+
+- **WAIT for the user to explicitly tell you to commit** before running any `git commit` command
+- This applies to ALL situations - no exceptions
+- See backend/AGENTS.md or frontend/AGENTS.md for GitFlow rules
+
 ## Quick Start for AI Agents
 
 - **Backend work:** Set working directory to `backend/` and read `backend/AGENTS.md`
