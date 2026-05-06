@@ -1,1 +1,0 @@
-When performing Git operations (commit, push, branch closure), try to group them into a single terminal execution script if possible. I will manually approve Git write operations, so make them concise to minimize the number of approvals needed.

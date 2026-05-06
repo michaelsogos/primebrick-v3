@@ -1,8 +1,0 @@
-# Permetti a Continue di indicizzare i sub-repo esclusi da Git
-!frontend/
-!backend/
-
-# Mantieni invece le esclusioni pesanti per evitare crash
-**/node_modules/**
-**/dist/**
-**/.next/**
