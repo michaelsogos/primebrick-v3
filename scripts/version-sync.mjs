@@ -14,8 +14,8 @@ function getBranchName() {
 }
 
 function parseTag(tag) {
-  // v0.1.2
-  const m = /^v(0)\.(\d+)\.(\d+)$/.exec(tag);
+  // v0.1.2 or 0.1.2
+  const m = /^v?(0)\.(\d+)\.(\d+)$/.exec(tag);
   if (!m) return null;
   return { major: Number(m[1]), minor: Number(m[2]), patch: Number(m[3]) };
 }
@@ -33,7 +33,7 @@ function format(v) {
 function latestTagVersion() {
   let tags = [];
   try {
-    const out = sh('git tag --list "v0.*.*"');
+    const out = sh('git tag --list "0.*.*"');
     tags = out ? out.split(/\r?\n/).filter(Boolean) : [];
   } catch {
     tags = [];
