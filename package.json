@@ -7,7 +7,8 @@
     "version:auto": "node scripts/version-sync.mjs",
     "be:dev": "pnpm -C backend dev",
     "fe:dev": "pnpm -C frontend dev",
-    "dev": "concurrently -n BE,FE -c green,cyan \"pnpm run be:dev\" \"pnpm run fe:dev\""
+    "dev": "concurrently -n BE,FE -c green,cyan \"pnpm run be:dev\" \"pnpm run fe:dev\"",
+    "be:dev:kill": "node scripts/kill-port-3001.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
