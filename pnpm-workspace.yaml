@@ -1,3 +1,4 @@
 packages:
-  - "frontend"
-  - "backend"
+  - "../primebrick-fe-v3"
+  - "../primebrick-be-v3"
+  - "../primebrick-us-v3"

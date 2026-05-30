@@ -1,5 +1,0 @@
-# Include backend and frontend directories in agent context
-# These are in root .gitignore but should be visible to AI agents
-
-backend/
-frontend/
