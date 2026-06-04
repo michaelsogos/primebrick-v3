@@ -1,17 +1,20 @@
 {
 	"folders": [
-		
 		{
-			"name": "⚙️ [BE] Backend",
+			"name": "Backend",
 			"path": "../primebrick-be-v3"
 		},
 		{
-			"name": "⚡ [uS] Microservices",
+			"name": "Microservices",
 			"path": "../primebrick-us-v3"
 		},
-{
-			"name": "🎨 [FE] Frontend",
+		{
+			"name": "Frontend",
 			"path": "../primebrick-fe-v3"
+		},
+		{
+			"name": "AI Plans",
+			"path": "ai-plans"
 		}
 	],
 	"settings": {
