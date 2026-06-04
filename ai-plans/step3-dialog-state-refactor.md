@@ -25,6 +25,110 @@ Extract dialog state management from EntityListTable.svelte into the useDialogs 
 - Template onclick handlers use composable methods (dialogs.closeDeleteDialog(), etc.)
 - Row tracking will be added in Step 4 when functions are refactored
 
+## Line Number Reference Summary
+
+**File**: `primebrick-fe-v3/src/lib/components/entity-list-table/EntityListTable.svelte`
+
+### State Variables to Remove (Lines 791-832)
+
+**Lines 791-793** - Delete dialog state:
+```typescript
+/** Delete confirmation dialog state */
+let deleteConfirmDialogOpen = $state(false);
+let rowToDelete: TRow | null = null;
+let isDeleting = $state(false);
+```
+
+**Lines 796-798** - Restore dialog state:
+```typescript
+/** Restore confirmation dialog state */
+let restoreConfirmDialogOpen = $state(false);
+let rowToRestore: TRow | null = null;
+let isRestoring = $state(false);
+```
+
+**Lines 801-802** - Bulk delete dialog state (dead code from Step 2):
+```typescript
+/** Bulk delete confirmation dialog state */
+let bulkDeleteConfirmDialogOpen = $state(false);
+let isBulkDeleting = $state(false);
+```
+
+**Lines 805-806** - Bulk restore dialog state (dead code from Step 2):
+```typescript
+/** Bulk restore confirmation dialog state */
+let bulkRestoreConfirmDialogOpen = $state(false);
+let isBulkRestoring = $state(false);
+```
+
+**Lines 829-832** - Duplicate dialog state:
+```typescript
+/** Duplicate confirmation dialog state */
+let duplicateConfirmDialogOpen = $state(false);
+let isDuplicating = $state(false);
+let duplicateScope = $state<'selected' | 'single'>('selected');
+let singleRowToDuplicate: TRow | null = null;
+```
+
+### Template References to Replace (Lines 4048-4305)
+
+**Line 4048** - Delete dialog bind:open:
+```svelte
+<DialogBordered bind:open={deleteConfirmDialogOpen} color="destructive" class="sm:max-w-md" showCloseButton={false}>
+```
+
+**Lines 4057-4060** - Delete dialog cancel button onclick:
+```svelte
+onclick={() => {
+  deleteConfirmDialogOpen = false;
+  rowToDelete = null;
+}}
+```
+
+**Line 4074** - Restore dialog bind:open:
+```svelte
+<DialogBordered bind:open={restoreConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+```
+
+**Lines 4083-4086** - Restore dialog cancel button onclick:
+```svelte
+onclick={() => {
+  restoreConfirmDialogOpen = false;
+  rowToRestore = null;
+}}
+```
+
+**Lines 4093-4096** - Restore dialog loading state:
+```svelte
+disabled={isRestoring}
+>
+  {#if isRestoring}
+    {$t('common.restoring')}
+```
+
+**Line 4280** - Duplicate dialog bind:open:
+```svelte
+<DialogBordered bind:open={duplicateConfirmDialogOpen} color="warning" class="sm:max-w-md" showCloseButton={false}>
+```
+
+**Lines 4302-4305** - Duplicate dialog loading state:
+```svelte
+disabled={isDuplicating}
+>
+  {#if isDuplicating}
+    {$t('common.duplicating')}
+```
+
+### State Variables to Add (After Line 798)
+
+**After line 798** - Add row tracking variables:
+```typescript
+/** Row tracking for dialog actions */
+let rowToDelete: TRow | null = $state(null);
+let rowToRestore: TRow | null = $state(null);
+let singleRowToDuplicate: TRow | null = $state(null);
+```
+
 ## Actions
 
 ### Step 3.1: Remove Delete Dialog State Variables
