@@ -1,445 +1,692 @@
 # EntityListTable Size Reduction Plan
 
+## Objectives
+Reduce the size of `EntityListTable.svelte` (currently 2827 lines) by extracting reusable components, utilities, and composables while maintaining functionality and following Svelte 5 best practices.
+
 ## Current State Analysis
 
-**Component Size**: 4162 lines (down from 4383)
+### Component Size
+- **Current**: 2827 lines
+- **Target**: ~1500 lines (47% reduction)
 
-**Existing Composables**:
-- ✅ useRowActions.svelte.ts - Row action logic exists but not fully integrated
-- ✅ useBulkActions.svelte.ts - Bulk action logic exists but not fully integrated  
-- ✅ useDialogs.svelte.ts - Dialog state management exists and partially integrated
-- ✅ useExport.svelte.ts - Export logic exists but not fully integrated
-- ✅ useSelection, useSorting, useFilters, etc. - State management composables exist
+### Already Extracted (Good Foundation)
+- ✅ Panels: FiltersPanel, VersionHistoryPanel, SearchInPanel, ColumnSelectorPanel, PreviewPanel
+- ✅ Toolbar: EntityListToolbar, FilterBar, SelectionCounter, SearchBar, ViewModeToggle, BulkActions, DeletionFilterToggle
+- ✅ Table: TableHeader, TableCell
+- ✅ Cards: CardField, CardGrid, CardList
+- ✅ Dialogs: DeleteDialog, RestoreDialog, BulkDeleteDialog, BulkRestoreDialog, ExportDialog, HtmlExportDialog, DuplicateDialog, ExportPreviewDialog
+- ✅ Pagination: Pagination
+- ✅ Composables: useStickyColumns, useScrollPreservation, useRowRangeSelection, useFilterPersistence, useToolbarMode, useExport, useBulkActions, useRowActions, useDialogs, usePreviewPanel, and many more
 
-**Current Inline Code** (still in EntityListTable.svelte):
-- Bulk action functions (handleBulkDelete, confirmBulkDelete, handleBulkRestore, confirmBulkRestore) - ~80 lines
-- Row action functions (handleEditRow, handlePreviewRow, handleDeleteRow, handleRestoreRow, handleDuplicateRow, confirmDeleteRow, confirmRestoreRow, confirmDuplicate) - ~150 lines
-- Export state variables and functions (isExporting, exportScope, htmlExportScope, handleHtmlExport) - ~200 lines
-- Preview panel logic (previewRow, previewEditMode, previewPanelOpen, etc.) - ~300 lines
-- Search and filter logic - ~400 lines
-- Toolbar logic - ~200 lines
-- View mode logic - ~150 lines
-- Large template sections (toolbar, panels, dialogs) - ~2000 lines
+### ⚠️ CRITICAL FINDING: Existing Composables NOT Being Used
+The following composables **already exist** but are **NOT imported/used** in EntityListTable.svelte:
+- ❌ `useViewMode.svelte.ts` - exists but not used (lines 280-299 duplicate this logic)
+- ❌ `useColumnOrder.svelte.ts` - exists but not used (lines 272-436 duplicate this logic)
+- ❌ `useKeyboardNavigation.svelte.ts` - exists but not used (lines 800-855 duplicate this logic)
 
-**Previous Plans Status**:
-- Step 1 (Import composables): ✅ Completed
-- Step 2 (Bulk actions refactor): ⚠️ Partially completed - composables exist but inline functions remain
-- Step 3 (Dialog state refactor): ✅ Completed - dialog state variables removed
-- Step 4 (Row actions refactor): ❌ Not completed - inline functions remain
+**This is a major opportunity**: Replace duplicate inline logic with existing composables instead of creating new ones.
 
-## Reduction Strategy
+### Remaining Large Sections
+1. **Keyboard Navigation Logic** (~55 lines, lines 800-855) - **EXISTING COMPOSABLE NOT USED**
+2. **Row Action Handlers** (~40 lines, lines 858-898)
+3. **View Mode Management** (~20 lines, lines 280-299) - **EXISTING COMPOSABLE NOT USED**
+4. **Column Ordering Logic** (~165 lines, lines 272-436) - **EXISTING COMPOSABLE NOT USED**
+5. **Complex Template Sections** (~800+ lines of table rendering)
+6. **Inline Cell Rendering Logic** (scattered throughout template)
+7. **Sticky Cell Styling** (~17 lines, lines 1251-1267)
+8. **Footer/Pagination Logic** (~100 lines, lines 2600-2700)
 
-**Target**: Reduce from 4162 lines to ~2000 lines (52% reduction)
+## Proposed Extractions
 
-**Approach**: Multi-phase extraction focusing on:
-1. Complete integration of existing composables (quick wins)
-2. Extract remaining business logic to new composables
-3. Extract sub-components for UI sections
-4. Extract utility functions
+### Phase 1: Replace Keyboard Navigation with Existing Composable
+**Target**: Use existing `useKeyboardNavigation.svelte.ts` composable
 
-## Phase 1: Complete Existing Composable Integration
+**Current Location**: Lines 800-855 in EntityListTable.svelte (duplicate logic)
 
-**Expected Reduction**: ~430 lines (10%)
+**Existing Composable**: `composables/useKeyboardNavigation.svelte.ts` (already exists, 123 lines)
 
-### 1.1 Complete Bulk Actions Integration
-**File**: `src/lib/components/entity-list-table/EntityListTable.svelte`
+**Action Required**:
+- Import and use the existing `useKeyboardNavigation` composable
+- Remove duplicate keyboard navigation logic from EntityListTable.svelte
+- Adapt the existing composable interface if needed to match current usage
 
-**Current State**:
-- useBulkActions composable exists with full implementation
-- Inline bulk action functions still exist (lines ~1081-1115)
-- Template references use inline functions
+**Expected Reduction**: ~55 lines (removing duplicate logic)
 
-**Actions**:
-1. Replace inline `handleBulkDelete()` with `bulkActions.handleBulkDelete()`
-2. Replace inline `confirmBulkDelete()` with `bulkActions.confirmBulkDelete()`
-3. Replace inline `handleBulkRestore()` with `bulkActions.handleBulkRestore()`
-4. Replace inline `confirmBulkRestore()` with `bulkActions.confirmBulkRestore()`
-5. Update template references to use composable state
-6. Remove inline bulk action functions (~80 lines)
+### Phase 2: Extract Row Action Handlers
+**Target**: Enhance existing `useRowActions.svelte.ts` composable
 
-**Lines to modify**: ~1081-1115, template references
+**Current Location**: Lines 858-898 in EntityListTable.svelte
 
-### 1.2 Complete Row Actions Integration
-**File**: `src/lib/components/entity-list-table/EntityListTable.svelte`
+**Functionality to Extract**:
+- `handleDeleteRow` - Open delete confirmation dialog
+- `handleRestoreRow` - Open restore confirmation dialog
+- `confirmDeleteRow` - Execute delete after confirmation
+- `confirmRestoreRow` - Execute restore after confirmation
 
-**Current State**:
-- useRowActions composable exists with full implementation
-- Inline row action functions still exist (lines ~924-943, 1049-1057, 1065-1080, 1273-1320)
-- Template references use inline functions
+**Integration**: Move these into the existing `useRowActions` composable
 
-**Actions**:
-1. Replace inline `handleEditRow()` with `rowActionsComposable.handleEditRow()`
-2. Replace inline `handlePreviewRow()` with `rowActionsComposable.handlePreviewRow()`
-3. Update inline `handleDeleteRow()` to set row context then call composable
-4. Update inline `handleRestoreRow()` to set row context then call composable
-5. Update inline `handleDuplicateRow()` to set row context then call composable
-6. Replace inline `confirmDeleteRow()` with `rowActionsComposable.confirmDeleteRow(rowToDelete)`
-7. Replace inline `confirmRestoreRow()` with `rowActionsComposable.confirmRestoreRow(rowToRestore)`
-8. Replace inline `confirmDuplicate()` with `rowActionsComposable.confirmDuplicateRow(singleRowToDuplicate)`
-9. Remove inline row action API logic (~150 lines)
+**Expected Reduction**: ~40 lines
 
-**Lines to modify**: ~924-943, 1049-1057, 1065-1080, 1273-1320, template references
+### Phase 3: Replace View Mode Management with Existing Composable
+**Target**: Use existing `useViewMode.svelte.ts` composable
 
-### 1.3 Complete Export Integration
-**File**: `src/lib/components/entity-list-table/EntityListTable.svelte`
+**Current Location**: Lines 280-299 in EntityListTable.svelte (duplicate logic)
 
-**Current State**:
-- useExport composable exists with full implementation
-- Inline export state variables still exist (lines ~799-805)
-- Inline export functions still exist (handleHtmlExport at line ~1304)
-- Template references use inline state
+**Existing Composable**: `composables/useViewMode.svelte.ts` (already exists, 37 lines)
 
-**Actions**:
-1. Remove inline export state variables (isExporting, exportScope, htmlExportScope)
-2. Replace inline `handleHtmlExport()` with `exportComposable.handleHtmlExport()`
-3. Update template references to use composable state (exportComposable.isExporting, etc.)
-4. Remove inline export logic (~200 lines)
+**Action Required**:
+- Import and use the existing `useViewMode` composable
+- Remove duplicate view mode logic from EntityListTable.svelte
+- The existing composable has a simpler interface - may need to extend it for session storage persistence
 
-**Lines to modify**: ~799-805, ~1304, template references
+**Expected Reduction**: ~20 lines (removing duplicate logic)
 
-**Acceptance Criteria**:
-- All bulk actions use composable
-- All row actions use composable
-- All export logic uses composable
-- No compilation errors
-- All functionality works correctly
-- Line count reduced by ~430 lines
+### Phase 4: Replace Column Ordering Logic with Existing Composable
+**Target**: Use existing `useColumnOrder.svelte.ts` composable
 
----
+**Current Location**: Lines 272-436 in EntityListTable.svelte (duplicate logic)
 
-## Phase 2: Extract Preview Panel Logic
+**Existing Composable**: `composables/useColumnOrder.svelte.ts` (already exists, 117 lines)
 
-**Expected Reduction**: ~300 lines (7%)
+**Action Required**:
+- Import and use the existing `useColumnOrder` composable
+- Remove duplicate column ordering logic from EntityListTable.svelte
+- The existing composable already has all the needed functions (readOrderState, writeOrderState, applyKeyOrder, moveKeyWithin, reorderGroup)
 
-### 2.1 Create usePreviewPanel Composable
-**File**: `src/lib/components/entity-list-table/composables/usePreviewPanel.svelte.ts`
+**Expected Reduction**: ~165 lines (removing duplicate logic)
 
-**Extract from EntityListTable.svelte**:
-- Preview panel state (previewRow, previewRowIndex, previewEditMode, previewPanelOpen, focusedRowIndex)
-- Preview panel functions (closePreviewPanel, togglePreviewEditMode, handlePreviewFieldChange)
-- Preview panel navigation logic
+### Phase 5: Extract Table Rendering Components
+**Target**: Create specialized table sub-components
 
-**Interface**:
-```typescript
-export interface PreviewPanelOptions<TRow extends Record<string, unknown>> {
-  viewRows: () => TRow[];
-  rowKey: (row: TRow) => string;
-  onFieldChange?: (row: TRow, field: string, value: any) => void;
-}
+#### 5a: Extract `EntityTableHeader.svelte`
+**Current Location**: Lines ~2200-2277 (header rendering)
 
-export interface PreviewPanelReturn<TRow extends Record<string, unknown>> {
-  previewRow: TRow | null;
-  previewRowIndex: number;
-  previewEditMode: boolean;
-  previewPanelOpen: boolean;
-  focusedRowIndex: number;
-  openPreview: (row: TRow) => void;
-  closePreview: () => void;
-  toggleEditMode: () => void;
-  handleFieldChange: (field: string, value: any) => void;
-  navigatePreview: (direction: 'next' | 'prev') => void;
-}
-```
-
-### 2.2 Integrate usePreviewPanel
-**File**: `src/lib/components/entity-list-table/EntityListTable.svelte`
-
-**Actions**:
-1. Import and initialize usePreviewPanel composable
-2. Replace inline preview state with composable state
-3. Replace inline preview functions with composable functions
-4. Update template references
-5. Remove inline preview logic (~300 lines)
-
-**Lines to modify**: State variables section, preview functions section, template
-
-**Acceptance Criteria**:
-- Preview panel logic extracted to composable
-- All preview functionality works correctly
-- Line count reduced by ~300 lines
-
----
-
-## Phase 3: Extract Search and Filter Logic
-
-**Expected Reduction**: ~400 lines (10%)
-
-### 3.1 Create useSearchFilter Composable
-**File**: `src/lib/components/entity-list-table/composables/useSearchFilter.svelte.ts`
-
-**Extract from EntityListTable.svelte**:
-- Search input handling logic
-- Search-in-columns logic
-- Filter value handling
-- Advanced filter handling
-- Filter reset logic
-
-**Interface**:
-```typescript
-export interface SearchFilterOptions {
-  search: string;
-  onSearchInput: (value: string) => void;
-  searchInKeys: string[] | null;
-  onSearchInKeysChange: (keys: string[] | null) => void;
-  filterValues: Record<string, any>;
-  onFilterValuesChange: (values: Record<string, any>) => void;
-  onResetFilters: () => void;
-  advancedFilters: AdvancedFilter[];
-  onAdvancedFiltersChange: (filters: AdvancedFilter[]) => void;
-  columns: MetaColumn[];
-}
-
-export interface SearchFilterReturn {
-  handleSearchInput: (value: string) => void;
-  handleSearchInKeyToggle: (key: string) => void;
-  handleFilterValueChange: (field: string, value: any) => void;
-  handleAdvancedFilterAdd: () => void;
-  handleAdvancedFilterRemove: (index: number) => void;
-  handleAdvancedFilterChange: (index: number, filter: AdvancedFilter) => void;
-  hasActiveFilters: boolean;
-  resetAllFilters: () => void;
-}
-```
-
-### 3.2 Integrate useSearchFilter
-**File**: `src/lib/components/entity-list-table/EntityListTable.svelte`
-
-**Actions**:
-1. Import and initialize useSearchFilter composable
-2. Replace inline search/filter handlers with composable functions
-3. Update template references
-4. Remove inline search/filter logic (~400 lines)
-
-**Lines to modify**: Search/filter handler functions, template
-
-**Acceptance Criteria**:
-- Search and filter logic extracted to composable
-- All search/filter functionality works correctly
-- Line count reduced by ~400 lines
-
----
-
-## Phase 4: Extract Toolbar Component
-
-**Expected Reduction**: ~200 lines (5%)
-
-### 4.1 Create Toolbar Component
-**File**: `src/lib/components/entity-list-table/toolbar/EntityListToolbar.svelte`
-
-**Extract from EntityListTable.svelte**:
-- Toolbar template section (~200 lines)
-- Toolbar-related handlers
-- Toolbar state management
+**Functionality**:
+- Render table header with sort indicators
+- Handle datetime IANA toggle buttons
+- Sticky column styling
+- Action column header
 
 **Props**:
 ```typescript
-interface ToolbarProps {
-  search: string;
-  onSearchInput: (value: string) => void;
-  selectedKeys: string[];
-  onSelectedKeysChange: (keys: string[]) => void;
-  filtersOpen: boolean;
-  onFiltersOpenChange: (open: boolean) => void;
-  // ... other toolbar props
+let {
+  columns,
+  sortKey,
+  sortDir,
+  onSortChange,
+  datetimeIanaModeByKey,
+  toggleDatetimeIana,
+  rowsLoading,
+  actionsEnabled,
+  previewPanel
+}: TableHeaderProps = $props();
+```
+
+**Expected Reduction**: ~80 lines
+
+#### 5b: Extract `EntityTableRow.svelte`
+**Current Location**: Lines ~2300-2500 (row rendering)
+
+**Functionality**:
+- Render single table row
+- Handle cell rendering
+- Row selection checkbox
+- Row styling (deleted, selected, etc.)
+- Action dropdown trigger
+
+**Props**:
+```typescript
+let {
+  row,
+  columns,
+  visibleKeys,
+  rowKey,
+  selectedKeys,
+  rowSelectionEnabled,
+  isRowDeleted,
+  cell,
+  datetimeIanaModeByKey,
+  datetimeIanaRenderTick,
+  actionsEnabled,
+  rowActions,
+  openRowDropdown
+}: TableRowProps = $props();
+```
+
+**Expected Reduction**: ~150 lines
+
+#### 5c: Extract `EntityTableBody.svelte`
+**Current Location**: Lines ~2279-2600 (body rendering)
+
+**Functionality**:
+- Render table body with loading/error/empty states
+- Row iteration
+- Keyboard event handling
+
+**Props**:
+```typescript
+let {
+  viewRows,
+  columns,
+  visibleKeys,
+  rowKey,
+  selectedKeys,
+  rowSelectionEnabled,
+  isRowDeleted,
+  cell,
+  datetimeIanaModeByKey,
+  datetimeIanaRenderTick,
+  actionsEnabled,
+  rowActions,
+  error,
+  rowsLoading,
+  emptyView,
+  errorView,
+  rowsLoadingView,
+  openRowDropdown,
+  handleKeydown
+}: TableBodyProps = $props();
+```
+
+**Expected Reduction**: ~200 lines
+
+### Phase 6: Extract Cell Rendering Logic
+**Target**: Create `EntityCellRenderer.svelte` component
+
+**Current Location**: Scattered cell rendering logic throughout template
+
+**Functionality**:
+- Render individual cell content
+- Handle different cell types (text, datetime, badge, etc.)
+- Apply cell styling
+- Handle search syntax highlighting
+- Handle datetime IANA formatting
+
+**Props**:
+```typescript
+let {
+  row,
+  column,
+  cell,
+  datetimeIanaModeByKey,
+  datetimeIanaRenderTick,
+  search,
+  searchInKeys
+}: CellRendererProps = $props();
+```
+
+**Expected Reduction**: ~100 lines
+
+### Phase 7: Extract Footer/Pagination Component
+**Target**: Create `EntityTableFooter.svelte` component
+
+**Current Location**: Lines ~2600-2700
+
+**Functionality**:
+- Render pagination controls
+- Display row range information
+- Page size selector
+- Selection counter display
+
+**Props**:
+```typescript
+let {
+  footerRangeStart,
+  footerRangeEnd,
+  footerRangeTotal,
+  footerPage,
+  footerTotalPages,
+  pageSize,
+  pageSizeOptions,
+  onPageSizeChange,
+  onPageChange,
+  rowSelectionEnabled,
+  selectionCount,
+  selectionLabelKey,
+  selectionLabelSingularKey,
+  selectionLabelText,
+  selectionLabelSingularText,
+  selectionPastParticipleKey,
+  showSelectedOnly,
+  onShowSelectedOnlyChange,
+  footerUsesClientPaging,
+  clientSelectedPage
+}: TableFooterProps = $props();
+```
+
+**Expected Reduction**: ~100 lines
+
+### Phase 8: Extract Sticky Cell Styling
+**Target**: Move to existing `utils/cell-styling.ts`
+
+**Current Location**: Lines 1251-1267
+
+**Functionality**:
+- `stickyCellClass` function
+
+**Integration**: Add to existing cell-styling utilities
+
+**Expected Reduction**: ~17 lines
+
+### Phase 9: Extract Loading/Error/Empty State Components
+**Target**: Create `EntityListState.svelte` component
+
+**Current Location**: Lines ~1636-1700 (repeated in multiple places)
+
+**Functionality**:
+- Consolidate loading, error, and empty state rendering
+- Reusable across table and card views
+
+**Props**:
+```typescript
+let {
+  type,
+  message,
+  customView
+}: StateProps = $props();
+```
+
+**Expected Reduction**: ~50 lines
+
+## Implementation Order
+
+### Priority 1 (High Impact, Low Risk - Use Existing Composables)
+1. **Phase 1**: Replace keyboard navigation with existing `useKeyboardNavigation` composable
+2. **Phase 3**: Replace view mode management with existing `useViewMode` composable
+3. **Phase 4**: Replace column ordering logic with existing `useColumnOrder` composable
+4. **Phase 8**: Extract sticky cell styling to utils (trivial utility move)
+5. **Phase 2**: Extract row action handlers to existing `useRowActions` composable
+
+### Priority 2 (Medium Impact, Medium Risk)
+6. **Phase 9**: Extract state rendering component
+
+### Priority 3 (High Impact, Higher Risk)
+7. **Phase 5a**: Extract table header component
+8. **Phase 5b**: Extract table row component
+9. **Phase 5c**: Extract table body component
+10. **Phase 6**: Extract cell renderer component
+11. **Phase 7**: Extract footer component
+
+## Impacted Files
+
+### New Files to Create
+- `table/EntityTableHeader.svelte`
+- `table/EntityTableRow.svelte`
+- `table/EntityTableBody.svelte`
+- `table/EntityCellRenderer.svelte`
+- `table/EntityTableFooter.svelte`
+- `table/EntityListState.svelte`
+
+### Files to Modify
+- `EntityListTable.svelte` (main reduction target - replace duplicate logic with existing composables)
+- `composables/useRowActions.svelte.ts` (enhance with row action handlers)
+- `composables/useViewMode.svelte.ts` (may need to extend for session storage)
+- `composables/useColumnOrder.svelte.ts` (already complete, just need to use it)
+- `composables/useKeyboardNavigation.svelte.ts` (already complete, just need to use it)
+- `utils/cell-styling.ts` (add sticky cell styling)
+- `table/index.ts` (export new components)
+
+### Files to Modify
+- `EntityListTable.svelte` (main reduction target)
+- `composables/useRowActions.svelte.ts` (enhance)
+- `composables/useViewMode.svelte.ts` (verify/enhance)
+- `composables/useColumnOrder.svelte.ts` (verify/enhance)
+- `utils/cell-styling.ts` (add sticky cell styling)
+- `table/index.ts` (export new components)
+
+## Architectural Changes
+
+### Component Hierarchy
+```
+EntityListTable (main orchestrator)
+├── EntityListToolbar (existing)
+├── EntityTableBody (new)
+│   ├── EntityTableRow (new)
+│   │   └── EntityCellRenderer (new)
+│   └── EntityListState (new)
+├── EntityTableHeader (new)
+├── EntityTableFooter (new)
+└── PreviewPanel (existing)
+```
+
+### Composable Usage
+EntityListTable will use these composables:
+- `useKeyboardNavigation` (new)
+- `useRowActions` (enhanced)
+- `useViewMode` (verified)
+- `useColumnOrder` (verified)
+- `useBulkActions` (existing)
+- `useDialogs` (existing)
+- `usePreviewPanel` (existing)
+- `useFilterPersistence` (existing)
+- `useStickyColumns` (existing)
+- `useScrollPreservation` (existing)
+- `useRowRangeSelection` (existing)
+
+## Acceptance Criteria
+
+### Functional Requirements
+- ✅ All existing functionality must be preserved
+- ✅ No breaking changes to public API
+- ✅ All props and events must remain compatible
+- ✅ Keyboard navigation must work identically
+- ✅ Row actions must work identically
+- ✅ View mode switching must work identically
+- ✅ Column ordering must work identically
+- ✅ Cell rendering must work identically
+- ✅ Pagination must work identically
+
+### Code Quality Requirements
+- ✅ Follow Svelte 5 runes syntax ($state, $derived, $props)
+- ✅ Maintain TypeScript type safety
+- ✅ Use existing patterns and conventions
+- ✅ Add proper JSDoc comments
+- ✅ Follow existing file naming conventions
+
+### Performance Requirements
+- ✅ No performance degradation
+- ✅ Maintain reactivity efficiency
+- ✅ Avoid unnecessary re-renders
+
+### Testing Requirements
+- ✅ Manual testing of all features
+- ✅ Verify keyboard navigation
+- ✅ Verify row actions (delete, restore, edit, duplicate)
+- ✅ Verify view mode switching
+- ✅ Verify column ordering
+- ✅ Verify pagination
+- ✅ Verify cell rendering with different data types
+- ✅ Verify sticky columns
+- ✅ Verify selection functionality
+
+## Code Examples
+
+### Example: useKeyboardNavigation Composable
+```typescript
+// composables/useKeyboardNavigation.svelte.ts
+import type { Snippet } from 'svelte';
+
+interface KeyboardNavigationArgs<T> {
+  viewRows: T[];
+  rowKey: (row: T) => string;
+  previewPanel: {
+    focusedRowIndex: number | null;
+    previewPanelOpen: boolean;
+    previewRow: T | null;
+    openPreview: (row: T) => void;
+    closePreview: () => void;
+  };
+  toggleRowSelect: (key: string) => void;
+  openRowDropdown: (row: T) => void;
+  closeRowDropdown: () => void;
+  onPageChange: (page: number) => void;
+  clientSelectedPage: number;
+  footerUsesClientPaging: boolean;
+  footerPage: number;
+  footerTotalPages: number;
+}
+
+export function useKeyboardNavigation<T>(args: KeyboardNavigationArgs<T>) {
+  const {
+    viewRows,
+    rowKey,
+    previewPanel,
+    toggleRowSelect,
+    openRowDropdown,
+    closeRowDropdown,
+    onPageChange,
+    clientSelectedPage,
+    footerUsesClientPaging,
+    footerPage,
+    footerTotalPages
+  } = args;
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (previewPanel.focusedRowIndex === null) {
+        previewPanel.focusedRowIndex = 0;
+      } else if (previewPanel.focusedRowIndex < viewRows.length - 1) {
+        previewPanel.focusedRowIndex++;
+      } else if (previewPanel.focusedRowIndex === viewRows.length - 1 && footerPage < footerTotalPages) {
+        if (footerUsesClientPaging) {
+          clientSelectedPage++;
+        } else {
+          onPageChange(page + 1);
+        }
+      }
+      if (previewPanel.previewPanelOpen && previewPanel.focusedRowIndex !== null) {
+        previewPanel.openPreview(viewRows[previewPanel.focusedRowIndex]);
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (previewPanel.focusedRowIndex === null) {
+        previewPanel.focusedRowIndex = 0;
+      } else if (previewPanel.focusedRowIndex > 0) {
+        previewPanel.focusedRowIndex--;
+      } else if (previewPanel.focusedRowIndex === 0 && footerPage > 1) {
+        if (footerUsesClientPaging) {
+          clientSelectedPage--;
+        } else {
+          onPageChange(page - 1);
+        }
+      }
+      if (previewPanel.previewPanelOpen && previewPanel.focusedRowIndex !== null) {
+        previewPanel.openPreview(viewRows[previewPanel.focusedRowIndex]);
+      }
+    } else if (e.key === ' ' && previewPanel.focusedRowIndex !== null) {
+      e.preventDefault();
+      const row = viewRows[previewPanel.focusedRowIndex];
+      if (row) toggleRowSelect(rowKey(row));
+    } else if (e.key === 'Enter' && previewPanel.focusedRowIndex !== null) {
+      e.preventDefault();
+      const row = viewRows[previewPanel.focusedRowIndex];
+      if (row) openRowDropdown(row);
+    } else if (e.key === 'Escape') {
+      closeRowDropdown();
+      setTimeout(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }, 0);
+    }
+  }
+
+  return { handleKeydown };
 }
 ```
 
-### 4.2 Integrate Toolbar Component
-**File**: `src/lib/components/entity-list-table/EntityListTable.svelte`
+### Example: EntityTableRow Component
+```svelte
+<!-- table/EntityTableRow.svelte -->
+<script lang="ts" generics="TRow extends Record<string, unknown>>
+  import type { Snippet } from 'svelte';
+  import { Checkbox } from '$lib/components/ui/checkbox';
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import { MoreVertical } from 'lucide-svelte';
+  import { cn } from '$lib/utils.js';
+  import type { MetaColumn } from '$lib/entity-list/types';
+  import { EntityCellRenderer } from './EntityCellRenderer.svelte';
+  import {
+    entityListGrayChromeCellClass,
+    entityListDestructiveChromeCellClass,
+    entityListGrayBandStickyInteractionClass,
+    entityListDestructiveBandStickyInteractionClass
+  } from '../utils/cell-styling';
 
-**Actions**:
-1. Create EntityListToolbar.svelte component
-2. Move toolbar template to new component
-3. Replace toolbar section in EntityListTable with component
-4. Pass required props
-5. Remove inline toolbar template (~200 lines)
+  let {
+    row,
+    columns,
+    visibleKeys,
+    rowKey,
+    selectedKeys,
+    rowSelectionEnabled,
+    isRowDeleted,
+    cell,
+    datetimeIanaModeByKey,
+    datetimeIanaRenderTick,
+    actionsEnabled,
+    rowActions,
+    openRowDropdown
+  }: {
+    row: TRow;
+    columns: MetaColumn[];
+    visibleKeys: string[];
+    rowKey: (row: TRow) => string;
+    selectedKeys: string[];
+    rowSelectionEnabled: boolean;
+    isRowDeleted: (row: TRow) => boolean;
+    cell?: Snippet<[ { row: TRow; column: MetaColumn } ]>;
+    datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
+    datetimeIanaRenderTick: number;
+    actionsEnabled: boolean;
+    rowActions?: Snippet<[ { row: TRow } ]>;
+    openRowDropdown: (row: TRow) => void;
+  } = $props();
 
-**Lines to modify**: Toolbar template section
+  const key = $derived(rowKey(row));
+  const selected = $derived(selectedKeys.includes(key));
+  const deleted = $derived(isRowDeleted(row));
+  
+  const rowChromeClass = $derived(
+    deleted
+      ? entityListDestructiveChromeCellClass
+      : entityListGrayChromeCellClass
+  );
+  
+  const rowInteractionClass = $derived(
+    deleted
+      ? entityListDestructiveBandStickyInteractionClass
+      : entityListGrayBandStickyInteractionClass
+  );
+</script>
 
-**Acceptance Criteria**:
-- Toolbar extracted to separate component
-- All toolbar functionality works correctly
-- Line count reduced by ~200 lines
+<tr
+  class={cn(
+    'group/row transition-colors',
+    rowChromeClass,
+    selected && 'bg-accent/50',
+    rowInteractionClass
+  )}
+>
+  {#if rowSelectionEnabled}
+    <td class="w-10 p-2">
+      <Checkbox
+        checked={selected}
+        onCheckedChange={(checked) => {
+          // Handle selection
+        }}
+      />
+    </td>
+  {/if}
+  
+  {#each columns as col}
+    {#if visibleKeys.includes(col.key)}
+      <td>
+        <EntityCellRenderer
+          {row}
+          column={col}
+          {cell}
+          datetimeIanaModeByKey={datetimeIanaModeByKey}
+          datetimeIanaRenderTick={datetimeIanaRenderTick}
+        />
+      </td>
+    {/if}
+  {/each}
+  
+  {#if actionsEnabled}
+    <td class="w-10 p-2">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          <button
+            onclick={() => openRowDropdown(row)}
+            class="p-1 rounded hover:bg-accent"
+          >
+            <MoreVertical class="size-4" />
+          </button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content>
+          {#if rowActions}
+            {@render rowActions({ row })}
+          {/if}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </td>
+  {/if}
+</tr>
+```
 
----
+## Risk Assessment
 
-## Phase 5: Extract Panel Components
+### Low Risk
+- Phase 8: Utility function move (no behavior change)
+- Phase 2: Enhancing existing composable (well-contained)
+- Phase 9: State component extraction (presentational only)
 
-**Expected Reduction**: ~300 lines (7%)
+### Medium Risk
+- Phase 1: Keyboard navigation extraction (complex logic, but well-contained)
+- Phase 3-4: Verifying composables (may reveal missing functionality)
 
-### 5.1 Create FiltersPanel Component
-**File**: `src/lib/components/entity-list-table/panels/FiltersPanel.svelte`
+### High Risk
+- Phase 5-7: Table component extraction (complex template refactoring)
+- Phase 6: Cell renderer extraction (critical rendering logic)
 
-**Extract from EntityListTable.svelte**:
-- Filters panel template section
-- Filter-related UI logic
+### Mitigation Strategies
+1. Implement phases in priority order
+2. Test thoroughly after each phase
+3. Keep git commits small and focused
+4. Run typecheck after each change
+5. Manual testing of affected features
+6. Maintain backward compatibility
 
-### 5.2 Create ColumnSelectorPanel Component
-**File**: `src/lib/components/entity-list-table/panels/ColumnSelectorPanel.svelte`
+## Success Metrics
 
-**Extract from EntityListTable.svelte**:
-- Column selector panel template section
-- Column selection logic
+### Quantitative
+- Reduce EntityListTable.svelte from 2827 to ~1500 lines (47% reduction)
+- Maintain 100% feature parity
+- Zero TypeScript errors
+- Zero runtime errors
 
-### 5.3 Create SearchInPanel Component
-**File**: `src/lib/components/entity-list-table/panels/SearchInPanel.svelte`
+### Qualitative
+- Improved code maintainability
+- Better separation of concerns
+- Easier to test individual components
+- Clearer component responsibilities
 
-**Extract from EntityListTable.svelte**:
-- Search-in panel template section
-- Search-in selection logic
+## Notes
 
-### 5.4 Integrate Panel Components
-**File**: `src/lib/components/entity-list-table/EntityListTable.svelte`
+### Existing Composables to Verify
+The following composables already exist and should be verified for completeness:
+- `useViewMode.svelte.ts` - verify if all view mode logic is extracted
+- `useColumnOrder.svelte.ts` - verify if all column ordering logic is extracted
+- `useKeyboardNavigation.svelte.ts` - check if this already exists
 
-**Actions**:
-1. Create panel components
-2. Move panel templates to new components
-3. Replace panel sections in EntityListTable with components
-4. Pass required props
-5. Remove inline panel templates (~300 lines)
+### Dependencies
+- Ensure all new components have proper imports
+- Update index.ts files for exports
+- Maintain proper TypeScript types
 
-**Lines to modify**: Panel template sections
+### Translation Keys
+- All existing translation keys must remain unchanged
+- No new i18n keys should be needed
 
-**Acceptance Criteria**:
-- Panels extracted to separate components
-- All panel functionality works correctly
-- Line count reduced by ~300 lines
+## Timeline Estimate
 
----
+- Phase 1: 1-2 hours
+- Phase 2: 1 hour
+- Phase 3-4: 1-2 hours (verification)
+- Phase 5: 4-6 hours (complex template refactoring)
+- Phase 6: 2-3 hours
+- Phase 7: 2 hours
+- Phase 8-9: 1-2 hours
+- Testing: 2-3 hours
 
-## Phase 6: Extract Dialog Components
+**Total**: 14-21 hours
 
-**Expected Reduction**: ~200 lines (5%)
+## Next Steps
 
-### 6.1 Create Dialog Components
-**Files**:
-- `src/lib/components/entity-list-table/dialogs/BulkDeleteDialog.svelte`
-- `src/lib/components/entity-list-table/dialogs/BulkRestoreDialog.svelte`
-- `src/lib/components/entity-list-table/dialogs/DeleteDialog.svelte`
-- `src/lib/components/entity-list-table/dialogs/RestoreDialog.svelte`
-- `src/lib/components/entity-list-table/dialogs/DuplicateDialog.svelte`
-- `src/lib/components/entity-list-table/dialogs/ExportDialog.svelte`
-
-**Extract from EntityListTable.svelte**:
-- Dialog template sections
-- Dialog-specific UI logic
-
-### 6.2 Integrate Dialog Components
-**File**: `src/lib/components/entity-list-table/EntityListTable.svelte`
-
-**Actions**:
-1. Create dialog components
-2. Move dialog templates to new components
-3. Replace dialog sections in EntityListTable with components
-4. Pass required props
-5. Remove inline dialog templates (~200 lines)
-
-**Lines to modify**: Dialog template sections
-
-**Acceptance Criteria**:
-- Dialogs extracted to separate components
-- All dialog functionality works correctly
-- Line count reduced by ~200 lines
-
----
-
-## Phase 7: Extract Utility Functions
-
-**Expected Reduction**: ~100 lines (2%)
-
-### 7.1 Create Utility File
-**File**: `src/lib/components/entity-list-table/utils.ts`
-
-**Extract from EntityListTable.svelte**:
-- Helper functions (rowKey, isRowDeleted, formatCellValue, etc.)
-- Type utilities
-- Constants
-
-### 7.2 Integrate Utilities
-**File**: `src/lib/components/entity-list-table/EntityListTable.svelte`
-
-**Actions**:
-1. Create utils.ts file
-2. Move utility functions
-3. Import utilities in EntityListTable
-4. Remove inline utility functions (~100 lines)
-
-**Lines to modify**: Utility function sections
-
-**Acceptance Criteria**:
-- Utilities extracted to separate file
-- All functionality works correctly
-- Line count reduced by ~100 lines
-
----
-
-## Phase 8: Final Cleanup and Optimization
-
-**Expected Reduction**: ~200 lines (5%)
-
-### 8.1 Remove Dead Code
-**Actions**:
-1. Identify and remove unused imports
-2. Remove unused variables
-3. Remove commented-out code
-4. Remove redundant code
-
-### 8.2 Optimize Template
-**Actions**:
-1. Extract repeated template patterns
-2. Simplify conditional logic
-3. Reduce template nesting where possible
-
-### 8.3 Consolidate State
-**Actions**:
-1. Review state variables for consolidation opportunities
-2. Merge related state where appropriate
-3. Remove redundant derived state
-
-**Acceptance Criteria**:
-- No dead code remains
-- Template is optimized
-- State is consolidated
-- Line count reduced by ~200 lines
-
----
-
-## Summary
-
-**Total Expected Reduction**: ~1630 lines (39%)
-- Phase 1: ~430 lines (10%)
-- Phase 2: ~300 lines (7%)
-- Phase 3: ~400 lines (10%)
-- Phase 4: ~200 lines (5%)
-- Phase 5: ~300 lines (7%)
-- Phase 6: ~200 lines (5%)
-- Phase 7: ~100 lines (2%)
-- Phase 8: ~200 lines (5%)
-
-**Target Final Size**: ~2532 lines (from 4162 lines)
-
-**Implementation Order**:
-1. Phase 1 (Complete existing composable integration) - Quick wins, low risk
-2. Phase 2 (Extract preview panel logic) - Medium complexity, medium risk
-3. Phase 3 (Extract search/filter logic) - Medium complexity, medium risk
-4. Phase 4 (Extract toolbar component) - Low complexity, low risk
-5. Phase 5 (Extract panel components) - Low complexity, low risk
-6. Phase 6 (Extract dialog components) - Low complexity, low risk
-7. Phase 7 (Extract utility functions) - Low complexity, low risk
-8. Phase 8 (Final cleanup) - Low complexity, low risk
-
-**Risk Assessment**:
-- **Overall Risk**: Medium
-- **Highest Risk Phase**: Phase 3 (Search/filter logic extraction)
-- **Mitigation**: Comprehensive testing after each phase, incremental implementation
-
-**Testing Strategy**:
-1. Run `pnpm run check` after each phase
-2. Run `pnpm run build` after each phase
-3. Manual testing of affected functionality after each phase
-4. Integration testing after all phases complete
-
-**Rollback Strategy**:
-- Each phase is independently revertable
-- Git commits after each completed phase
-- Clear documentation of changes per phase
+1. Verify existing composables (useViewMode, useColumnOrder, useKeyboardNavigation)
+2. Start with Phase 8 (lowest risk)
+3. Proceed through phases in priority order
+4. Test thoroughly after each phase
+5. Update documentation if needed
