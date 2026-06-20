@@ -20,10 +20,8 @@
 	"settings": {
 		// Forza Windsurf/VSCode a rilevare i 3 archivi Git indipendenti (Sotto-Repo)
 		"git.autoRepositoryDetection": "subFolders",
-
 		// TRUCCO CRUCIALE: Impedisce a Cascade di farsi bloccare dai .gitignore superiori
 		"search.useIgnoreFiles": false,
-
 		// Impedisce a Cascade di cercare e indicizzare file di build pesanti o immondizia
 		"search.exclude": {
 			"**/node_modules": true,
@@ -32,13 +30,15 @@
 			"**/.git": true,
 			"**/build": true
 		},
-
 		// Pulisce l'albero visivo laterale nascondendo le cartelle generate automaticamente
 		"files.exclude": {
 			"**/node_modules": true,
 			"**/dist": true,
 			"**/.svelte-kit": true,
 			"**/build": true
+		},
+		"workbench.editorAssociations": {
+			"*.md": "markdown-preview-enhanced"
 		}
 	}
 }
