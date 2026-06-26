@@ -674,7 +674,7 @@ The previous plan proposed adding "(sync IDP)" suffixes to all IDP-related label
 | Key | en-GB | it-IT | fr-FR | es-ES | de-DE | pt-PT |
 |---|---|---|---|---|---|---|
 | `shell.settings.users.create.idpActive` | Enable | Abilitato | Activé | Habilitado | Aktiviert | Ativado |
-| `shell.settings.users.create.idpAdmin` | System Administrator | Amministratore di Sistema | Administrateur système | Administrador del sistema | Systemadministrator | Administrador do sistema |
+| `shell.settings.users.create.idpAdmin` | Identity Administrator | Amministratore dell'Identità | Administrateur de l'identité | Administrador de la identidad | Identitäts-Administrator | Administrador da identidade |
 | `shell.settings.users.create.idpVerified` | Identity Verified | Identità Verificata | Identité vérifiée | Identidad verificada | Identität verifiziert | Identidade verificada |
 | `shell.settings.users.create.idpEmailVerified` | Email Verified | Email Verificata | E-mail vérifiée | Email verificado | E-Mail verifiziert | E-mail verificada |
 | `shell.settings.users.create.idpOrg` | Organization | Organizzazione | Organisation | Organización | Organisation | Organização |
@@ -689,7 +689,7 @@ The previous plan proposed adding "(sync IDP)" suffixes to all IDP-related label
 | `shell.settings.profile.idpCode` | Identity ID | ID Identità | ID d'identité | ID de identidad | Identitäts-ID | ID de identidade |
 | `shell.settings.profile.idpOwner` | Identity Owner | Proprietario Identità | Propriétaire de l'identité | Propietario de la identidad | Identitäts-Eigentümer | Proprietário da identidade |
 | `shell.settings.profile.idpName` | Identity Name | Nome Identità | Nom de l'identité | Nombre de la identidad | Identitäts-Name | Nome da identidade |
-| `shell.settings.profile.idpAdmin` | System Administrator | Amministratore di Sistema | Administrateur système | Administrador del sistema | Systemadministrator | Administrador do sistema |
+| `shell.settings.profile.idpAdmin` | Identity Administrator | Amministratore dell'Identità | Administrateur de l'identité | Administrador de la identidad | Identitäts-Administrator | Administrador da identidade |
 | `shell.settings.profile.idpVerified` | Identity Verified | Identità Verificata | Identité vérifiée | Identidad verificada | Identität verifiziert | Identidade verificada |
 | `shell.settings.profile.idpEmailVerified` | Email Verified | Email Verificata | E-mail vérifiée | Email verificado | E-Mail verifiziert | E-mail verificada |
 | `shell.settings.profile.idpIssuer` | Identity Issuer | Emittente dell'Identità | Émetteur de l'identité | Emisor de la identidad | Identitäts-Aussteller | Emissor da identidade |
@@ -705,7 +705,7 @@ The previous plan proposed adding "(sync IDP)" suffixes to all IDP-related label
 | `shell.settings.users.update.idpUsername` | Username | Nome Utente | Nom d'utilisateur | Nombre de usuario | Benutzername | Nome de utilizador |
 | `shell.settings.users.update.issuer` | Identity Issuer | Emittente dell'Identità | Émetteur de l'identité | Emisor de la identidad | Identitäts-Aussteller | Emissor da identidade |
 | `shell.settings.users.update.isActive` | Enable | Abilitato | Activé | Habilitado | Aktiviert | Ativado |
-| `shell.settings.users.update.isAdmin` | System Administrator | Amministratore di Sistema | Administrateur système | Administrador del sistema | Systemadministrator | Administrador do sistema |
+| `shell.settings.users.update.isAdmin` | Identity Administrator | Amministratore dell'Identità | Administrateur de l'identité | Administrador de la identidad | Identitäts-Administrator | Administrador da identidade |
 | `shell.settings.users.update.isVerified` | Identity Verified | Identità Verificata | Identité vérifiée | Identidad verificada | Identität verifiziert | Identidade verificada |
 | `shell.settings.users.update.emailVerified` | Email Verified | Email Verificata | E-mail vérifiée | Email verificado | E-Mail verifiziert | E-mail verificada |
 | `shell.settings.users.update.roles` | Application Roles | Ruoli Applicativi | Rôles applicatifs | Roles de aplicación | Anwendungsrollen | Papéis da aplicação |
@@ -729,12 +729,12 @@ These keys provide a help tooltip (rendered via `FormLabelWithHelp.svelte`, see 
 
 | File | Value |
 |---|---|
-| `en-GB.json` | `"TIPS: We suggest using Application Roles to determine user access. The Administrator flag is not a role and is subject to associated permissions, but a master key to access any entity in the system."` |
-| `it-IT.json` | `"SUGGERIMENTO: Si consiglia di utilizzare i Ruoli Applicativi per determinare gli accessi di un utente. Il flag Amministratore non è un ruolo e quindi soggetto ai permessi associati, ma un passpartout per accedere indiscriminatamente a qualunque entità del sistema."` |
-| `fr-FR.json` | `"SUGGESTION : Nous conseillons d'utiliser les Rôles applicatifs pour déterminer les accès d'un utilisateur. L'indicateur Administrateur n'est pas un rôle et donc soumis aux permissions associées, mais un passe-partout pour accéder indifféremment à toute entité du système."` |
-| `es-ES.json` | `"SUGERENCIA: Sugerimos utilizar los Roles de aplicación para determinar los accesos de un usuario. El indicador Administrador no es un rol y por lo tanto está sujeto a los permisos asociados, sino un pase universal para acceder indiscriminadamente a cualquier entidad del sistema."` |
-| `de-DE.json` | `"HINWEIS: Wir empfehlen, Anwendungsrollen zu verwenden, um die Zugriffsrechte eines Benutzers zu bestimmen. Das Administrator-Kennzeichen ist keine Rolle und unterliegt den zugehörigen Berechtigungen, sondern ein Universalschlüssel für den uneingeschränkten Zugriff auf jede Entität des Systems."` |
-| `pt-PT.json` | `"SUGESTÃO: Aconselhamos utilizar os Papéis da aplicação para determinar os acessos de um utilizador. O indicador Administrador não é um papel e portanto sujeito às permissões associadas, mas um passe universal para aceder indiscriminadamente a qualquer entidade do sistema."` |
+| `en-GB.json` | `"WARNING: The Identity Administrator flag allows the user to access the IDP system to make administrative-level changes, but does not grant administration rights to this application. To grant application administration access, set the application roles."` |
+| `it-IT.json` | `"ATTENZIONE: L'amministratore dell'identità consente all'utente di accedere al sistema IDP per poter fare modifiche a livello amministrativo, ma non concede i diritti di amministrazione a questa applicazione; per dare accessi di amministrazione all'applicazione impostare i ruoli applicativi."` |
+| `fr-FR.json` | `"ATTENTION : Le statut d'Administrateur de l'identité permet à l'utilisateur d'accéder au système IDP pour effectuer des modifications au niveau administratif, mais n'accorde pas de droits d'administration sur cette application. Pour accorder des droits d'administration sur l'application, définissez les rôles applicatifs."` |
+| `es-ES.json` | `"ATENCIÓN: El Administrador de la identidad permite al usuario acceder al sistema IDP para realizar cambios a nivel administrativo, pero no concede derechos de administración sobre esta aplicación. Para conceder accesos de administración a la aplicación, establezca los roles de aplicación."` |
+| `de-DE.json` | `"ACHTUNG: Der Identitäts-Administrator ermöglicht dem Benutzer den Zugriff auf das IDP-System, um administrative Änderungen vorzunehmen, gewährt jedoch keine Verwaltungsrechte für diese Anwendung. Um Anwendungsverwaltungsrechte zu gewähren, legen Sie die Anwendungsrollen fest."` |
+| `pt-PT.json` | `"ATENÇÃO: O Administrador da identidade permite ao utilizador aceder ao sistema IDP para fazer alterações a nível administrativo, mas não concede direitos de administração sobre esta aplicação. Para conceder acessos de administração à aplicação, defina os papéis da aplicação."` |
 
 #### `shell.settings.users.create.idpVerifiedHint` (NEW)
 
@@ -761,44 +761,272 @@ These keys provide a help tooltip (rendered via `FormLabelWithHelp.svelte`, see 
 ### Verification
 - Visit each form (Profile, Users Create, User Edit, Organization Create, Organization Edit).
 - No label should contain "IDP" prefix or "(sync IDP)" suffix.
-- Labels should show plain meaning: "Abilitato", "Amministratore di Sistema", "Identità Verificata", "Email Verificata", "Organizzazione", "Nome Utente", "Password", "Ruoli Applicativi".
-- Hover the help icon next to "Amministratore di Sistema", "Identità Verificata", "Email Verificata" — tooltip shows the form description text.
+- Labels should show plain meaning: "Abilitato", "Amministratore dell'Identità", "Identità Verificata", "Email Verificata", "Organizzazione", "Nome Utente", "Password", "Ruoli Applicativi".
+- Hover the help icon next to "Amministratore dell'Identità", "Identità Verificata", "Email Verificata" — tooltip shows the form description text.
 - Switch UI to each of the 6 locales and confirm all labels are translated.
 
 ---
 
-## 6. `is_admin` checkbox first + help icon
+## 6. Checkbox reorder + help icons on CREATE, EDIT, PROFILE pages
 
-### Evidence
-`primebrick-fe-v3/src/routes/(app)/system/settings/users/create/+page.svelte` lines 453–477 order is `is_active`, `is_admin`, `is_verified`, `email_verified`.
-`primebrick-fe-v3/src/routes/(app)/system/settings/profile/+page.svelte` lines 618–664 order is `is_verified`, `email_verified`, `is_admin`.
+### Evidence — current order in each page
 
-### Change
-Create `FormLabelWithHelp.svelte` and reorder. In user create, `is_admin` becomes the first checkbox, with help tooltips on `is_admin`, `is_verified`, and `email_verified`:
+| Page | Current checkbox order | Lines |
+|---|---|---|
+| `users/create/+page.svelte` | `is_active`, `is_admin`, `is_verified`, `email_verified` | 453–503 |
+| `users/[uuid]/+page.svelte` | `is_active`, `is_admin`, `is_verified`, `email_verified` | 485–504 |
+| `profile/+page.svelte` | `is_verified`, `email_verified`, `is_admin` (no `is_active`) | 618–664 |
 
+### Target order (all pages)
+
+```
+1. is_admin       (with help tooltip — idpAdminHint)
+2. is_active      (NOT shown on profile page — see below)
+3. is_verified    (with help tooltip — idpVerifiedHint)
+4. email_verified (with help tooltip — idpEmailVerifiedHint)
+```
+
+### Profile page — `is_active` excluded
+
+The profile page shows the **currently logged-in user's own data**. Showing an "Abilitato / Enable" checkbox on your own profile makes no sense — you are obviously active because you are logged in. Therefore:
+
+- **CREATE users**: show all 4 checkboxes (`is_admin`, `is_active`, `is_verified`, `email_verified`) — editable
+- **EDIT users**: show all 4 checkboxes (`is_admin`, `is_active`, `is_verified`, `email_verified`) — readonly
+- **PROFILE**: show 3 checkboxes only (`is_admin`, `is_verified`, `email_verified`) — readonly, **no `is_active`**
+
+### Changes per page
+
+#### 6a. CREATE users (`users/create/+page.svelte` lines 453–503)
+
+Reorder from `is_active, is_admin, is_verified, email_verified` to `is_admin, is_active, is_verified, email_verified`. Add `FormLabelWithHelp` to `is_admin`, `is_verified`, `email_verified`.
+
+**BEFORE:**
 ```svelte
-<FormField name="is_admin">
+<!-- line 453 -->
+<FormField form={superFormObj} name="is_active">
+  <Checkbox {...props} bind:checked={$form.is_active} id="is_active" />
+  <label for="is_active" class="text-sm font-medium leading-none ...">
+    {$t('shell.settings.users.create.idpActive')}
+  </label>
+</FormField>
+<!-- line 466 -->
+<FormField form={superFormObj} name="is_admin">
   <Checkbox {...props} bind:checked={$form.is_admin} id="is_admin" />
-  <label for="is_admin" class="inline-flex items-center gap-1">
+  <label for="is_admin" class="text-sm font-medium leading-none ...">
+    {$t('shell.settings.users.create.idpAdmin')}
+  </label>
+</FormField>
+<!-- line 479 -->
+<FormField form={superFormObj} name="is_verified">
+  <Checkbox {...props} bind:checked={$form.is_verified} id="is_verified" />
+  <label for="is_verified" class="text-sm font-medium leading-none ...">
+    {$t('shell.settings.users.create.idpVerified')}
+  </label>
+</FormField>
+<!-- line 492 -->
+<FormField form={superFormObj} name="email_verified">
+  <Checkbox {...props} bind:checked={$form.email_verified} id="email_verified" />
+  <label for="email_verified" class="text-sm font-medium leading-none ...">
+    {$t('shell.settings.users.create.idpEmailVerified')}
+  </label>
+</FormField>
+```
+
+**AFTER:**
+```svelte
+<!-- 1. is_admin (first, with help tooltip) -->
+<FormField form={superFormObj} name="is_admin">
+  <Checkbox {...props} bind:checked={$form.is_admin} id="is_admin" />
+  <label for="is_admin" class="inline-flex items-center gap-1 text-sm font-medium leading-none ...">
     {$t('shell.settings.users.create.idpAdmin')}
     <FormLabelWithHelp text={$t('shell.settings.users.create.idpAdminHint')} />
   </label>
 </FormField>
-<FormField name="is_active">...</FormField>
-<FormField name="is_verified">
+<!-- 2. is_active -->
+<FormField form={superFormObj} name="is_active">
+  <Checkbox {...props} bind:checked={$form.is_active} id="is_active" />
+  <label for="is_active" class="text-sm font-medium leading-none ...">
+    {$t('shell.settings.users.create.idpActive')}
+  </label>
+</FormField>
+<!-- 3. is_verified (with help tooltip) -->
+<FormField form={superFormObj} name="is_verified">
   <Checkbox {...props} bind:checked={$form.is_verified} id="is_verified" />
-  <label for="is_verified" class="inline-flex items-center gap-1">
+  <label for="is_verified" class="inline-flex items-center gap-1 text-sm font-medium leading-none ...">
     {$t('shell.settings.users.create.idpVerified')}
     <FormLabelWithHelp text={$t('shell.settings.users.create.idpVerifiedHint')} />
   </label>
 </FormField>
-<FormField name="email_verified">
+<!-- 4. email_verified (with help tooltip) -->
+<FormField form={superFormObj} name="email_verified">
   <Checkbox {...props} bind:checked={$form.email_verified} id="email_verified" />
-  <label for="email_verified" class="inline-flex items-center gap-1">
+  <label for="email_verified" class="inline-flex items-center gap-1 text-sm font-medium leading-none ...">
     {$t('shell.settings.users.create.idpEmailVerified')}
     <FormLabelWithHelp text={$t('shell.settings.users.create.idpEmailVerifiedHint')} />
   </label>
 </FormField>
+```
+
+#### 6b. EDIT users (`users/[uuid]/+page.svelte` lines 485–504)
+
+Reorder from `is_active, is_admin, is_verified, email_verified` to `is_admin, is_active, is_verified, email_verified`. All readonly. Add `FormLabelWithHelp` to `is_admin`, `is_verified`, `email_verified`. Also replace hardcoded labels with `$t()` (per phase 3d).
+
+**BEFORE:**
+```svelte
+<!-- line 485 -->
+<div class="flex items-center space-x-2">
+  <Checkbox checked={user?.is_active === true} disabled id="is-active" />
+  <label for="is-active" class="text-sm font-medium">Is Active</label>
+</div>
+<div class="flex items-center space-x-2">
+  <Checkbox checked={user?.is_admin === true} disabled id="is-admin" />
+  <label for="is-admin" class="text-sm font-medium">Is Admin</label>
+</div>
+<div class="flex items-center space-x-2">
+  <Checkbox checked={user?.is_verified === true} disabled id="is-verified" />
+  <label for="is-verified" class="text-sm font-medium">Is Verified</label>
+</div>
+<div class="flex items-center space-x-2">
+  <Checkbox checked={user?.email_verified === true} disabled id="email-verified" />
+  <label for="email-verified" class="text-sm font-medium">Email Verified</label>
+</div>
+```
+
+**AFTER:**
+```svelte
+<!-- 1. is_admin (first, with help tooltip) -->
+<div class="flex items-center space-x-2">
+  <Checkbox checked={user?.is_admin === true} disabled id="is-admin" />
+  <label for="is-admin" class="inline-flex items-center gap-1 text-sm font-medium">
+    {$t('shell.settings.users.update.isAdmin')}
+    <FormLabelWithHelp text={$t('shell.settings.users.create.idpAdminHint')} />
+  </label>
+</div>
+<!-- 2. is_active -->
+<div class="flex items-center space-x-2">
+  <Checkbox checked={user?.is_active === true} disabled id="is-active" />
+  <label for="is-active" class="text-sm font-medium">
+    {$t('shell.settings.users.update.isActive')}
+  </label>
+</div>
+<!-- 3. is_verified (with help tooltip) -->
+<div class="flex items-center space-x-2">
+  <Checkbox checked={user?.is_verified === true} disabled id="is-verified" />
+  <label for="is-verified" class="inline-flex items-center gap-1 text-sm font-medium">
+    {$t('shell.settings.users.update.isVerified')}
+    <FormLabelWithHelp text={$t('shell.settings.users.create.idpVerifiedHint')} />
+  </label>
+</div>
+<!-- 4. email_verified (with help tooltip) -->
+<div class="flex items-center space-x-2">
+  <Checkbox checked={user?.email_verified === true} disabled id="email-verified" />
+  <label for="email-verified" class="inline-flex items-center gap-1 text-sm font-medium">
+    {$t('shell.settings.users.update.emailVerified')}
+    <FormLabelWithHelp text={$t('shell.settings.users.create.idpEmailVerifiedHint')} />
+  </label>
+</div>
+```
+
+#### 6c. PROFILE (`profile/+page.svelte` lines 618–664)
+
+Reorder from `is_verified, email_verified, is_admin` to `is_admin, is_verified, email_verified`. **Remove `is_active` entirely** (not present in current code, and should not be added). All readonly. Add `FormLabelWithHelp` to `is_admin`, `is_verified`, `email_verified`.
+
+**BEFORE:**
+```svelte
+<!-- line 618 -->
+<FormField form={superFormObj} name="is_verified">
+  <FormLabel for={props.id}>{$t("shell.settings.profile.idpVerified")}</FormLabel>
+  <Checkbox checked={$form.is_verified === true} disabled />
+</FormField>
+<!-- line 634 -->
+<FormField form={superFormObj} name="email_verified">
+  <FormLabel for={props.id}>{$t("shell.settings.profile.idpEmailVerified")}</FormLabel>
+  <Checkbox checked={$form.email_verified === true} disabled />
+</FormField>
+<!-- line 650 -->
+<FormField form={superFormObj} name="is_admin">
+  <FormLabel for={props.id}>{$t("shell.settings.profile.idpAdmin")}</FormLabel>
+  <Checkbox checked={$form.is_admin === true} disabled />
+</FormField>
+```
+
+**AFTER:**
+```svelte
+<!-- 1. is_admin (first, with help tooltip) -->
+<FormField form={superFormObj} name="is_admin">
+  <FormControl>
+    {#snippet children({ props })}
+      <div class="space-y-2">
+        <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium">
+          {$t("shell.settings.profile.idpAdmin")}
+          <FormLabelWithHelp text={$t('shell.settings.users.create.idpAdminHint')} />
+        </label>
+        <div class="mt-2 flex items-center gap-2">
+          <Checkbox checked={$form.is_admin === true} disabled />
+        </div>
+      </div>
+    {/snippet}
+  </FormControl>
+</FormField>
+<!-- 2. is_verified (with help tooltip) -->
+<FormField form={superFormObj} name="is_verified">
+  <FormControl>
+    {#snippet children({ props })}
+      <div class="space-y-2">
+        <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium">
+          {$t("shell.settings.profile.idpVerified")}
+          <FormLabelWithHelp text={$t('shell.settings.users.create.idpVerifiedHint')} />
+        </label>
+        <div class="mt-2 flex items-center gap-2">
+          <Checkbox checked={$form.is_verified === true} disabled />
+        </div>
+      </div>
+    {/snippet}
+  </FormControl>
+</FormField>
+<!-- 3. email_verified (with help tooltip) -->
+<FormField form={superFormObj} name="email_verified">
+  <FormControl>
+    {#snippet children({ props })}
+      <div class="space-y-2">
+        <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium">
+          {$t("shell.settings.profile.idpEmailVerified")}
+          <FormLabelWithHelp text={$t('shell.settings.users.create.idpEmailVerifiedHint')} />
+        </label>
+        <div class="mt-2 flex items-center gap-2">
+          <Checkbox checked={$form.email_verified === true} disabled />
+        </div>
+      </div>
+    {/snippet}
+  </FormControl>
+</FormField>
+<!-- NO is_active — not shown on profile page -->
+```
+
+### New component: `FormLabelWithHelp.svelte`
+
+Create `primebrick-fe-v3/src/lib/components/forms/FormLabelWithHelp.svelte`:
+
+```svelte
+<script lang="ts">
+  import { Tooltip } from '$lib/components/ui/tooltip';
+  import HelpCircle from '@lucide/svelte/icons/help-circle';
+
+  let { text }: { text: string } = $props();
+</script>
+
+<Tooltip.Root>
+  <Tooltip.Trigger>
+    {#snippet child({ props })}
+      <button type="button" class="inline-flex" {...props} aria-label="Help">
+        <HelpCircle class="size-3.5 text-muted-foreground" />
+      </button>
+    {/snippet}
+  </Tooltip.Trigger>
+  <Tooltip.Content class="max-w-xs text-xs">
+    {text}
+  </Tooltip.Content>
+</Tooltip.Root>
 ```
 
 ### New i18n keys — ALL 6 language files
@@ -809,20 +1037,22 @@ The `idpAdminHint` key is defined here. The `idpVerifiedHint` and `idpEmailVerif
 
 | File | Value |
 |---|---|
-| `en-GB.json` | `"TIPS: We suggest using Application Roles to determine user access. The Administrator flag is not a role and is subject to associated permissions, but a master key to access any entity in the system."` |
-| `it-IT.json` | `"SUGGERIMENTO: Si consiglia di utilizzare i Ruoli Applicativi per determinare gli accessi di un utente. Il flag Amministratore non è un ruolo e quindi soggetto ai permessi associati, ma un passpartout per accedere indiscriminatamente a qualunque entità del sistema."` |
-| `fr-FR.json` | `"SUGGESTION : Nous conseillons d'utiliser les Rôles applicatifs pour déterminer les accès d'un utilisateur. L'indicateur Administrateur n'est pas un rôle et donc soumis aux permissions associées, mais un passe-partout pour accéder indifféremment à toute entité du système."` |
-| `es-ES.json` | `"SUGERENCIA: Sugerimos utilizar los Roles de aplicación para determinar los accesos de un usuario. El indicador Administrador no es un rol y por lo tanto está sujeto a los permisos asociados, sino un pase universal para acceder indiscriminadamente a cualquier entidad del sistema."` |
-| `de-DE.json` | `"HINWEIS: Wir empfehlen, Anwendungsrollen zu verwenden, um die Zugriffsrechte eines Benutzers zu bestimmen. Das Administrator-Kennzeichen ist keine Rolle und unterliegt den zugehörigen Berechtigungen, sondern ein Universalschlüssel für den uneingeschränkten Zugriff auf jede Entität des Systems."` |
-| `pt-PT.json` | `"SUGESTÃO: Aconselhamos utilizar os Papéis da aplicação para determinar os acessos de um utilizador. O indicador Administrador não é um papel e portanto sujeito às permissões associadas, mas um passe universal para aceder indiscriminadamente a qualquer entidade do sistema."` |
+| `en-GB.json` | `"WARNING: The Identity Administrator flag allows the user to access the IDP system to make administrative-level changes, but does not grant administration rights to this application. To grant application administration access, set the application roles."` |
+| `it-IT.json` | `"ATTENZIONE: L'amministratore dell'identità consente all'utente di accedere al sistema IDP per poter fare modifiche a livello amministrativo, ma non concede i diritti di amministrazione a questa applicazione; per dare accessi di amministrazione all'applicazione impostare i ruoli applicativi."` |
+| `fr-FR.json` | `"ATTENTION : Le statut d'Administrateur de l'identité permet à l'utilisateur d'accéder au système IDP pour effectuer des modifications au niveau administratif, mais n'accorde pas de droits d'administration sur cette application. Pour accorder des droits d'administration sur l'application, définissez les rôles applicatifs."` |
+| `es-ES.json` | `"ATENCIÓN: El Administrador de la identidad permite al usuario acceder al sistema IDP para realizar cambios a nivel administrativo, pero no concede derechos de administración sobre esta aplicación. Para conceder accesos de administración a la aplicación, establezca los roles de aplicación."` |
+| `de-DE.json` | `"ACHTUNG: Der Identitäts-Administrator ermöglicht dem Benutzer den Zugriff auf das IDP-System, um administrative Änderungen vorzunehmen, gewährt jedoch keine Verwaltungsrechte für diese Anwendung. Um Anwendungsverwaltungsrechte zu gewähren, legen Sie die Anwendungsrollen fest."` |
+| `pt-PT.json` | `"ATENÇÃO: O Administrador da identidade permite ao utilizador aceder ao sistema IDP para fazer alterações a nível administrativo, mas não concede direitos de administração sobre esta aplicação. Para conceder acessos de administração à aplicação, defina os papéis da aplicação."` |
 
 **Key:** `shell.settings.users.create.idpVerifiedHint` — see phase 5 table.
 
 **Key:** `shell.settings.users.create.idpEmailVerifiedHint` — see phase 5 table.
 
 ### Verification
-- `is_admin` is the first checkbox in the IDP column.
-- Clicking the question icon shows the tooltip.
+- **CREATE users**: checkbox order is `is_admin` → `is_active` → `is_verified` → `email_verified`; help icons appear on 1st, 3rd, 4th.
+- **EDIT users**: checkbox order is `is_admin` → `is_active` → `is_verified` → `email_verified`; help icons appear on 1st, 3rd, 4th; all readonly.
+- **PROFILE**: checkbox order is `is_admin` → `is_verified` → `email_verified`; **no `is_active` checkbox**; help icons appear on all 3; all readonly.
+- Clicking the help icon shows the tooltip with the hint text.
 
 ---
 
@@ -873,67 +1103,213 @@ Example:
 
 ---
 
-## 8. (MERGED into phase 5) IDP Verificato → "Identità Verificata"
-
-This was previously a separate phase. It is now part of phase 5 — see the `idpVerified` rows in the phase 5 tables.
-
-**Keys affected:** `shell.settings.profile.idpVerified`, `shell.settings.users.create.idpVerified`, `shell.settings.users.update.isVerified`
-
-**New values:** "Identity Verified" (EN) / "Identità Verificata" (IT) / etc. — no "IDP" prefix, no "(sync IDP)" suffix.
-
-**New form description key:** `shell.settings.users.create.idpVerifiedHint` — see phase 5.
-
----
-
-## 9. (MERGED into phase 5) IDP Email Verificata → "Email Verificata"
-
-This was previously a separate phase. It is now part of phase 5 — see the `idpEmailVerified` rows in the phase 5 tables.
-
-**Keys affected:** `shell.settings.profile.idpEmailVerified`, `shell.settings.users.create.idpEmailVerified`, `shell.settings.users.update.emailVerified`
-
-**New values:** "Email Verified" (EN) / "Email Verificata" (IT) / etc. — no "IDP" prefix, no "(sync IDP)" suffix.
-
-**New form description key:** `shell.settings.users.create.idpEmailVerifiedHint` — see phase 5.
-
----
-
-## 10. (MERGED into phase 5) IDP Organizzazione → "Organizzazione"
-
-This was previously a separate phase. It is now part of phase 5 — see the `idpOrg` rows in the phase 5 tables.
-
-**Key affected:** `shell.settings.users.create.idpOrg`, `shell.settings.users.update.idpOrg`
-
-**New values:** "Organization" (EN) / "Organizzazione" (IT) / etc. — no "IDP" prefix, no "(sync IDP)" suffix.
-
----
-
-## 11. Organization switcher from active DB organizations with avatar
+## 11. New `/api/v1/system/*` router — organizations/active + roles/active
 
 ### Evidence
-`AppSidebar.svelte` lines 45–50 uses a hard-coded demo switcher:
 
+**Sidebar:** `AppSidebar.svelte` lines 45–50 uses a hard-coded demo organization switcher:
 ```ts
 type DemoOrgId = 'acme' | 'johnDoe';
 let selectedOrgId = $state<DemoOrgId>('acme');
-const selectedOrgLabel = $derived(
-  selectedOrgId === 'acme' ? $t('shell.org.acme') : $t('shell.org.johnDoe')
-);
 ```
 
-`primebrick-be-v3/src/modules/auth/organization_entity.ts` currently has no `is_active` or `avatar` fields.
+**Role MultiSelect:** Both `users/create/+page.svelte:392` and `users/[uuid]/+page.svelte:425` hardcode role options:
+```svelte
+<MultiSelect options={['Administrators', 'Sales', 'CustomerService', 'HR', 'Ops']} />
+```
 
-### Required changes
+**Existing `/auth/roles` endpoint:** `auth/router.ts:999-1013` has `GET /api/v1/auth/roles` (permission: `USERS_READ_ALL`) that returns `role_mappings` data. The FE never calls it — roles are hardcoded instead.
 
-**Backend:**
-- Add `is_active?: boolean` and `avatar?: string` (base64) to `OrganizationEntity`.
-- Add `listActiveOrganizations()` to `OrganizationsDal`.
-- Expose `GET /api/v1/entities/organization/active` (or filtered `/list`).
-- Sync `defaultAvatar` from Casdoor during create/update in `casdoor-api-client.ts`.
+### New `systemRouter` — shell-level reference data for the app UI
 
-**Frontend `AppSidebar.svelte`:**
-- Replace demo switcher with an API call.
+The project currently has these top-level route patterns:
+| Pattern | Router | Purpose |
+|---|---|---|
+| `/api/v1/health` | Direct in `index.ts` | PUBLIC infrastructure status |
+| `/api/v1/modules` | `apiRouter` in `index.ts` | Module registry |
+| `/api/v1/auth/*` | `authRouter` | Authentication + user management |
+| `/api/v1/entities/*` | Entity routers | Entity CRUD |
+
+None of these are the right home for shell-level reference data (active organizations for the sidebar switcher, available roles for form dropdowns). These are **system reference data** — data that the app shell needs to render the UI, not authentication or entity CRUD.
+
+**New router: `systemRouter()`** — mounted in `index.ts` alongside the other routers:
+
+```typescript
+// index.ts — add after apiRouter, before authRouter
+app.use(systemRouter());
+```
+
+**New file:** `primebrick-be-v3/src/modules/system/system-router.ts`
+
+**Endpoints:**
+| Endpoint | Permission | Purpose | Reuses |
+|---|---|---|---|
+| `GET /api/v1/system/organizations/active` | AUTHENTICATED_USER | Active orgs for sidebar switcher | `OrganizationsDal.listOrganizations()` |
+| `GET /api/v1/system/roles/active` | AUTHENTICATED_USER | Available roles for form dropdowns | Existing `role_mappings` query (moved from `/auth/roles`) |
+
+Both endpoints use `AUTHENTICATED_USER` — any logged-in user can access them, regardless of roles. The RBAC sentinel must be the only element in the permission array (enforced by `rbac.middleware.ts:103-109`).
+
+### 11a. `GET /api/v1/system/organizations/active`
+
+**Reuses existing DAL — no new DAL method:**
+
+The existing `OrganizationsDal.listOrganizations()` method (`organizations_dal.ts:106-196`) already supports `deleted_records=EXCLUDED` (default) and `page_size`. The new endpoint calls it and maps to a minimal DTO.
+
+**Endpoint implementation** (`system-router.ts`):
+```typescript
+import { makeProtectedRouter } from "../../http/protected-router.js";
+import { rbacHandler } from "../auth/rbac.middleware.js";
+import { Permission } from "../auth/permissions.js";
+import { asyncHandler } from "../../http/async-handler.js";
+import { getPool } from "../../db/pool.js";
+import { OrganizationsDal } from "../auth/organizations_dal.js";
+
+export function systemRouter() {
+  const router = makeProtectedRouter();
+
+  // GET /api/v1/system/organizations/active - Active organizations for sidebar switcher
+  router.get(
+    "/api/v1/system/organizations/active",
+    rbacHandler([Permission.AUTHENTICATED_USER]),
+    asyncHandler(async (_req, res) => {
+      const dal = new OrganizationsDal(getPool());
+      const result = await dal.listOrganizations({
+        page: 1,
+        page_size: 100,
+        deleted_records: "EXCLUDED",
+      });
+      // Map to minimal DTO for the sidebar
+      const orgs = result.rows.map((org) => ({
+        uuid: org.uuid,
+        idp_code: org.idp_code,
+        display_name: org.display_name,
+        avatar: org.avatar ?? null,
+      }));
+      res.json({ organizations: orgs });
+    })
+  );
+
+  // GET /api/v1/system/roles/active - Available roles for form dropdowns
+  router.get(
+    "/api/v1/system/roles/active",
+    rbacHandler([Permission.AUTHENTICATED_USER]),
+    asyncHandler(async (_req, res) => {
+      const pool = getPool();
+      const result = await pool.query(
+        `SELECT idp_role, label_key FROM role_mappings ORDER BY idp_role`
+      );
+      const roles = result.rows.map((row: any) => ({
+        idp_role: row.idp_role,
+        label_key: row.label_key,
+      }));
+      res.json({ roles });
+    })
+  );
+
+  return router;
+}
+```
+
+**Minimal DTO returned by `/system/organizations/active`:**
+```json
+{
+  "organizations": [
+    { "uuid": "...", "idp_code": "admin/acme", "display_name": "ACME", "avatar": null },
+    { "uuid": "...", "idp_code": "admin/johndoe", "display_name": "John Doe Inc", "avatar": "data:image/svg+xml;base64,..." }
+  ]
+}
+```
+
+**DTO returned by `/system/roles/active`:**
+```json
+{
+  "roles": [
+    { "idp_role": "administrators", "label_key": "entities.role.administrators" },
+    { "idp_role": "sales", "label_key": "entities.role.sales" },
+    { "idp_role": "customerservice", "label_key": "entities.role.customerservice" },
+    { "idp_role": "hr", "label_key": "entities.role.hr" },
+    { "idp_role": "ops", "label_key": "entities.role.ops" }
+  ]
+}
+```
+
+### 11b. Remove `/auth/roles` from auth router
+
+**File:** `primebrick-be-v3/src/modules/auth/router.ts` — delete lines 999-1014 (the `GET /api/v1/auth/roles` endpoint). The logic is moved to `/api/v1/system/roles/active` in the new `systemRouter`.
+
+### 11c. BE — add `avatar` field to organizations
+
+1. **Add `avatar` field to `OrganizationEntity`** (`organization_entity.ts`):
+   ```typescript
+   @Column({ pgType: "text", nullable: true })
+   avatar?: string;  // base64 data URI
+   ```
+
+2. **Update the initial SQL seed patch** (`db-meta/patches/00000000000000_init_database.sql`) — add `avatar` column to the `CREATE TABLE` for `organizations` (line 228-245):
+   ```sql
+   -- BEFORE (line 228-245):
+   CREATE TABLE IF NOT EXISTS "public"."organizations" (
+     "id" bigint generated always as identity NOT NULL,
+     "uuid" uuid DEFAULT gen_random_uuid() NOT NULL,
+     "idp_code" varchar(255) NOT NULL,
+     "idp_owner" varchar(255),
+     "idp_name" varchar(255),
+     "display_name" varchar(255),
+     "website_url" varchar(2048),
+     "last_synced_at" timestamp with time zone,
+     "created_at" timestamptz DEFAULT now(),
+     "created_by" text,
+     "updated_at" timestamptz DEFAULT now(),
+     "updated_by" text,
+     "version" integer DEFAULT 1,
+     "deleted_at" timestamptz,
+     "deleted_by" text,
+     PRIMARY KEY ("id")
+   );
+
+   -- AFTER:
+   CREATE TABLE IF NOT EXISTS "public"."organizations" (
+     "id" bigint generated always as identity NOT NULL,
+     "uuid" uuid DEFAULT gen_random_uuid() NOT NULL,
+     "idp_code" varchar(255) NOT NULL,
+     "idp_owner" varchar(255),
+     "idp_name" varchar(255),
+     "display_name" varchar(255),
+     "website_url" varchar(2048),
+     "avatar" text,
+     "last_synced_at" timestamp with time zone,
+     "created_at" timestamptz DEFAULT now(),
+     "created_by" text,
+     "updated_at" timestamptz DEFAULT now(),
+     "updated_by" text,
+     "version" integer DEFAULT 1,
+     "deleted_at" timestamptz,
+     "deleted_by" text,
+     PRIMARY KEY ("id")
+   );
+   ```
+   The `avatar` column is placed after `website_url` (the last business field before audit columns).
+
+3. **Una tantum fire-and-forget SQL script** for existing databases — run once via `psql` to add the column to databases that were created before this change:
+   ```sql
+   -- Add avatar column to existing organizations table
+   ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS avatar text;
+   ```
+   This is NOT a migration in `db-meta/patches/` — it's a one-time data fix script. Run it manually against the existing database. The `IF NOT EXISTS` clause makes it safe to run multiple times.
+
+4. **Include `avatar` in `OrganizationDetailRow` and `OrganizationDetailDto`** (`organizations_dal.ts`):
+   ```typescript
+   avatar?: string;
+   ```
+
+5. **Sync `avatar` from Casdoor** in `casdoor-api-client.ts` — Casdoor organizations have an `avatar` field. Include it in the create/update sync logic.
+
+### 11d. FE — sidebar switcher (`AppSidebar.svelte`)
+
+- Replace demo switcher with an API call to `GET /api/v1/system/organizations/active`.
 - Replace `Building2` with an `Avatar` rendering `organization.avatar`.
 - For each `DropdownMenu.Item`, show the org avatar on the left.
+- Generate initials fallback from `display_name` if no avatar.
 
 **BEFORE:**
 ```svelte
@@ -955,10 +1331,56 @@ const selectedOrgLabel = $derived(
 </div>
 ```
 
+### 11e. FE — role MultiSelect dropdowns (Create + Edit user pages)
+
+Replace hardcoded role options with a fetch to `GET /api/v1/system/roles/active` on page load.
+
+**File:** `users/create/+page.svelte`
+
+**BEFORE (line 390-394):**
+```svelte
+<MultiSelect
+  bind:value={$form.roles}
+  options={['Administrators', 'Sales', 'CustomerService', 'HR', 'Ops']}
+  placeholder="Select roles..."
+/>
+```
+
+**AFTER:**
+```svelte
+<script>
+  // Add at top of script:
+  let availableRoles: string[] = $state([]);
+  onMount(async () => {
+    const res = await apiFetch('/api/v1/system/roles/active');
+    if (res.ok) {
+      const data = await res.json();
+      availableRoles = data.roles.map((r: any) => r.idp_role);
+    }
+  });
+</script>
+
+<!-- In template: -->
+<MultiSelect
+  bind:value={$form.roles}
+  options={availableRoles}
+  placeholder={$t('shell.settings.users.create.rolesPlaceholder')}
+/>
+```
+
+**File:** `users/[uuid]/+page.svelte` — same change at line 423-427.
+
+This also fixes the hardcoded placeholder ("Select roles...") by using the already-planned i18n key `shell.settings.users.create.rolesPlaceholder` (see phase 3c).
+
 ### Verification
-- Sidebar top switcher shows real organizations.
-- Each menu item shows the org avatar.
-- Only active organizations appear.
+- Sidebar top switcher shows real organizations from the DB (not hard-coded).
+- Each menu item shows the org avatar (or initials fallback).
+- Only non-deleted organizations appear.
+- Any authenticated user can call both `/system/organizations/active` and `/system/roles/active` (no 403).
+- The existing `GET /api/v1/entities/organization/list` endpoint is unchanged (still requires `ORGANIZATIONS_READ_ALL`).
+- `GET /api/v1/auth/roles` no longer exists (removed).
+- Role MultiSelect in Create User and Edit User pages shows roles from the API (not hardcoded).
+- Role options are lowercase (e.g., `administrators`, `sales`) — consistent with phase 13.
 
 ---
 
@@ -991,6 +1413,146 @@ If the user prefers a border instead, use `border-b border-sidebar-border` and r
 
 ---
 
+## 13. Roles lowercase normalization + admin user profile fix
+
+### Rationale
+
+All role names must be **lowercase** everywhere — in Casdoor (`name` field), in the JWT roles claim, in `role_mappings.idp_role` (used for case-sensitive `Map.get()` lookup), and in `user_profiles.roles`. The `display_name` in Casdoor and `label_key` in PG are for translated display only and can use any casing.
+
+The SQL seed patch (`00000000000000_init_database.sql`) uses `'Administrators'` (capital A) for `role_mappings.idp_role` and `auth_configurations.casdoor_admin_role`, but the Casdoor setup script (`setup-casdoor.ts`) creates the role with `name: "administrators"` (lowercase). The DB already has both entries (the correct lowercase one was added at some point), so no una tantum fix is needed for `role_mappings`. However, the **seed patch itself** must be fixed so that fresh installations don't reintroduce the case mismatch.
+
+Additionally, the admin user's `user_profiles.roles` column is `NULL` in some databases (the token refresh sync may not populate it if the Casdoor API response format differs). An una tantum SQL patch is needed to fix existing admin user profiles.
+
+### Analysis: `is_admin` on `user_profiles` is an IDP flag, not an app flag
+
+`user_profiles.is_admin` mirrors Casdoor's `isAdmin` flag. In Casdoor, `isAdmin=true` means the user can **administer Casdoor itself** (the IDP) — manage users, roles, organizations, applications at the IDP level. It does NOT grant any Primebrick application permissions.
+
+Primebrick's RBAC only looks at `role_mappings.is_admin` (via `expandPermissions`), which is tied to IDP roles present in the JWT. The `user_profiles.is_admin` column is synced from Casdoor for display purposes only.
+
+The admin user gets Primebrick admin access because:
+1. Casdoor assigns them the `administrators` role
+2. The `administrators` role has `is_admin=true` in `role_mappings`
+3. `expandPermissions` sets `AuthUser.isAdmin=true`
+4. RBAC middleware bypasses all permission checks
+
+### Changes
+
+#### 13a. Fix SQL seed patch — lowercase role names
+
+**File:** `primebrick-be-v3/db-meta/patches/00000000000000_init_database.sql`
+
+**Line 305** — change `'Administrators'` to `'administrators'`:
+```sql
+-- BEFORE
+VALUES ('Administrators', '[]'::jsonb, true, '2026-05-18T14:27:00Z', 'system', '2026-05-18T14:27:00Z', 'system', 1)
+
+-- AFTER
+VALUES ('administrators', '[]'::jsonb, true, '2026-05-18T14:27:00Z', 'system', '2026-05-18T14:27:00Z', 'system', 1)
+```
+
+**Line 362** — change `'Administrators'` to `'administrators'`:
+```sql
+-- BEFORE
+('casdoor_admin_role', 'Administrators', 'Nome del ruolo amministrativo', 'system'),
+
+-- AFTER
+('casdoor_admin_role', 'administrators', 'Nome del ruolo amministrativo', 'system'),
+```
+
+**Lines 308-354** — lowercase and snake_case the other seeded role names to maintain consistency with the lowercase + snake_case policy:
+
+| Before | After | Notes |
+|---|---|---|
+| `'Sales'` | `'sales'` | lowercase |
+| `'CustomerService'` | `'customer_service'` | lowercase + snake_case |
+| `'HR'` | `'hr'` | lowercase |
+| `'Ops'` | `'ops'` | lowercase |
+
+**Note:** The Casdoor setup script (`setup-casdoor.ts`) creates roles `administrators`, `collaborator`, `guest` — these are already lowercase. The SQL seed roles (`sales`, `customer_service`, `hr`, `ops`) are additional Primebrick-specific role mappings that may or may not exist in Casdoor. The `idp_role` value in `role_mappings` must match exactly what the IDP emits in the JWT roles claim, so these names must be lowercase + snake_case to match the convention.
+
+#### 13b. Fix BE config fallback — lowercase
+
+**File:** `primebrick-be-v3/src/modules/auth/config-repo.ts:38`
+
+```typescript
+// BEFORE
+casdoorAdminRole: settings.casdoor_admin_role || "Administrators",
+
+// AFTER
+casdoorAdminRole: settings.casdoor_admin_role || "administrators",
+```
+
+#### 13c. Fix FE hardcoded role options — lowercase + snake_case
+
+**File:** `primebrick-fe-v3/src/routes/(app)/system/settings/users/create/+page.svelte:392`
+
+```svelte
+<!-- BEFORE -->
+options={['Administrators', 'Sales', 'CustomerService', 'HR', 'Ops']}
+
+<!-- AFTER -->
+options={['administrators', 'sales', 'customer_service', 'hr', 'ops']}
+```
+
+**File:** `primebrick-fe-v3/src/routes/(app)/system/settings/users/[uuid]/+page.svelte:425`
+
+```svelte
+<!-- BEFORE -->
+options={['Administrators', 'Sales', 'CustomerService', 'HR', 'Ops']}
+
+<!-- AFTER -->
+options={['administrators', 'sales', 'customer_service', 'hr', 'ops']}
+```
+
+**Note:** These hardcoded options will be replaced by a fetch to `GET /api/v1/system/roles/active` in phase 11e. The hardcoded values are kept here only as a fallback / interim fix in case the API call fails.
+
+#### 13d. Fix BE setup script — lowercase display_name for roles (cosmetic)
+
+**File:** `primebrick-be-v3/scripts/setup-casdoor.ts:204`
+
+The `name` is already lowercase (`ROLE_ADMINISTRATORS = "administrators"`). The `displayName: "Administrators"` is fine — it's the display name in Casdoor UI, not used for matching. No change needed here.
+
+#### 13e. Una tantum SQL patch — fix admin user profile roles column
+
+Run this once against the existing database to fix admin users with `NULL` or empty `roles`:
+
+```sql
+-- Fix admin user profile: populate roles column
+UPDATE public.user_profiles
+SET roles = '["administrators"]'::jsonb,
+    is_admin = true,
+    is_active = true,
+    is_verified = true,
+    email_verified = true,
+    last_synced_at = NOW(),
+    updated_at = NOW(),
+    updated_by = 'system',
+    version = version + 1
+WHERE is_admin = true AND (roles IS NULL OR roles = '[]'::jsonb);
+```
+
+This is a fire-and-forget patch — run it once via `psql` or a migration. It does NOT need to be added to the `db-meta/patches/` directory (which is for schema patches, not data fixes).
+
+### Remaining concerns (evaluated — no fix needed now)
+
+| Concern | Status | Reason |
+|---|---|---|
+| Case-insensitive role lookup | **Not needed** | All roles will be lowercase by convention; `Map.get()` case-sensitive match is correct behavior |
+| Token refresh roles sync robustness (`(r: any) => r.name`) | **Low risk** | Casdoor API types roles as `Array<{ name: string }>`; if the API ever returns strings, the sync would produce empty roles but auth still works via JWT claims |
+| `casdoor_admin_role` config unused | **Dead code** | Loaded but never referenced; can be cleaned up in a future refactor — not blocking |
+| `is_active` not enforced in BE auth | **Known gap** | Casdoor enforces `isForbidden` at IDP level; Primebrick doesn't double-check — acceptable for now |
+| `is_verified` not enforced anywhere | **By design** | Display-only field for future KYC tracking |
+| `email_verified` checked via JWT not DB | **By design** | JWT is the source of truth at login time; DB is synced on refresh |
+
+### Verification
+- Fresh DB installation: `role_mappings` table contains `administrators` (lowercase) with `is_admin=true`.
+- `auth_configurations` table contains `casdoor_admin_role = 'administrators'` (lowercase).
+- FE role MultiSelect shows lowercase options.
+- Admin user's `user_profiles.roles` is `["administrators"]` after running the una tantum patch.
+- Admin user can access user management endpoints (no 403 RBAC_PERMISSION_DENIED).
+
+---
+
 ## Files to modify
 
 ### Frontend
@@ -1013,12 +1575,16 @@ If the user prefers a border instead, use `border-b border-sidebar-border` and r
 - `primebrick-fe-v3/src/routes/(app)/system/settings/organizations/[uuid]/+page.svelte`
 
 ### Backend
-- `primebrick-be-v3/src/modules/auth/organization_entity.ts`
-- `primebrick-be-v3/src/modules/auth/organizations_dal.ts`
+- `primebrick-be-v3/db-meta/patches/00000000000000_init_database.sql` (lowercase role names in seed + add `avatar` column to `organizations` table)
+- `primebrick-be-v3/src/index.ts` (mount `systemRouter`)
+- `primebrick-be-v3/src/modules/auth/config-repo.ts` (lowercase fallback)
+- `primebrick-be-v3/src/modules/auth/organization_entity.ts` (add `avatar` field)
+- `primebrick-be-v3/src/modules/auth/organizations_dal.ts` (add `avatar` to DTO)
 - `primebrick-be-v3/src/modules/auth/organizations_router.ts`
-- `primebrick-be-v3/src/modules/auth/router.ts`
+- `primebrick-be-v3/src/modules/auth/router.ts` (remove `/auth/roles` endpoint)
+- `primebrick-be-v3/src/modules/system/system-router.ts` (NEW — `/system/organizations/active` + `/system/roles/active`)
 - `primebrick-be-v3/src/openapi/openapi.ts`
-- `primebrick-be-v3/src/modules/auth/casdoor-api-client.ts`
+- `primebrick-be-v3/src/modules/auth/casdoor-api-client.ts` (sync `avatar`)
 
 ---
 
@@ -1032,12 +1598,21 @@ If the user prefers a border instead, use `border-b border-sidebar-border` and r
 - [ ] Create User placeholders are translated
 - [ ] Validation errors show translated text (not raw `validation.*` keys) on: Users Create, User Edit, Profile
 - [ ] No page shows "IDP Attivo", "IDP Active", or any "IDP" prefix or "(sync IDP)" suffix
-- [ ] Labels show simplified meanings: "Abilitato", "Amministratore di Sistema", "Identità Verificata", "Email Verificata", "Organizzazione", "Nome Utente", "Password", "Ruoli Applicativi"
-- [ ] Help tooltips appear next to "Amministratore di Sistema", "Identità Verificata", "Email Verificata" with form description text
+- [ ] Labels show simplified meanings: "Abilitato", "Amministratore dell'Identità", "Identità Verificata", "Email Verificata", "Organizzazione", "Nome Utente", "Password", "Ruoli Applicativi"
+- [ ] Help tooltips appear next to "Amministratore dell'Identità", "Identità Verificata", "Email Verificata" with form description text
+- [ ] `is_admin` tooltip shows WARNING text about IDP admin vs app admin
 - [ ] `is_admin` is first checkbox and shows help tooltip
 - [ ] Metadata-driven help icons appear in forms and list headers
 - [ ] Organization switcher shows real active organizations with avatars
+- [ ] `GET /api/v1/system/organizations/active` returns minimal DTO (uuid, idp_code, display_name, avatar) for any authenticated user
+- [ ] `GET /api/v1/system/roles/active` returns role list (idp_role, label_key) for any authenticated user
+- [ ] `GET /api/v1/auth/roles` no longer exists (removed, replaced by `/system/roles/active`)
+- [ ] Role MultiSelect in Create User and Edit User pages loads options from `/system/roles/active` (not hardcoded)
+- [ ] Existing `GET /api/v1/entities/organization/list` still requires `ORGANIZATIONS_READ_ALL` (unchanged)
 - [ ] App Top Bar has a clean single shadow without double border
+- [ ] Role names are lowercase + snake_case in SQL seed, BE config, and `/system/roles/active` response
+- [ ] Admin user `user_profiles.roles` is populated after una tantum SQL patch
+- [ ] Admin user can access user management endpoints without 403
 - [ ] **ALL 6 language files updated** — verify each key exists in `en-GB.json`, `it-IT.json`, `fr-FR.json`, `es-ES.json`, `de-DE.json`, `pt-PT.json`
 - [ ] **No missing translations** — switch UI language to each of the 6 supported locales and verify no raw key paths or English fallbacks appear on: Profile, Users Create, User Edit, Organization Create, Organization Edit, Users List, sidebar health badge tooltip, help tooltips
 
@@ -1048,6 +1623,7 @@ If the user prefers a border instead, use `border-b border-sidebar-border` and r
 1. **Point 7** changes the shared metadata contract. The new fields are optional, so it is backward compatible.
 2. **Point 11** requires DB schema changes for `organizations`. If migrations are not desired in this batch, we can first show non-deleted organizations with a generated avatar fallback and add the real Casdoor sync in a follow-up.
 3. **Points 4, 5, 8, 9, 10** change many translation values but keep the same keys, so no code references need updating. The i18n key names still contain "idp" (e.g., `shell.settings.users.create.idpActive`) but the **displayed values** no longer contain "IDP" — this is intentional, the key names are internal identifiers.
+4. **Point 13** changes the SQL seed patch (`00000000000000_init_database.sql`) to use lowercase role names. Existing databases that already have both entries (capital + lowercase) are unaffected — the `ON CONFLICT (idp_role) DO NOTHING` clause means the lowercase entry won't be duplicated. The una tantum SQL patch to fix admin user's `roles` column is a fire-and-forget data fix, not a schema migration.
 
 ---
 
