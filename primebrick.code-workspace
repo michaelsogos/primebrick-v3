@@ -13,6 +13,10 @@
 			"path": "../primebrick-fe-v3"
 		},
 		{
+			"name": "DAL Library",
+			"path": "../primebrick-dal-v3"
+		},
+		{
 			"name": "AI Plans",
 			"path": "ai-plans"
 		}
