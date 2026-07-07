@@ -958,7 +958,7 @@ Key facts:
 
 ### Step 3a: emailsender — rename `EmailConfigEntity` to `ProviderEntity`
 
-Rename the file `src/domain/entities/email_config_entity.ts` → `src/domain/entities/provider_entity.ts`, rename the class `EmailConfigEntity` → `ProviderEntity`, and change `@Entity("email_config")` to `@Entity("providers")`. The new file content:
+Rename the file `src/domain/entities/email_config_entity.ts` → `src/domain/entities/provider_entity.ts`, rename the class `EmailConfigEntity` → `ProviderEntity`, and change `@Entity("email_config")` to `@Entity("providers", "emailsender")`. The new file content:
 
 ```typescript
 // primebrick-us-v3/emailsender/src/domain/entities/provider_entity.ts
@@ -972,7 +972,7 @@ import {
   type IAuditableEntity,
 } from "@primebrick/dal-pg";
 
-@Entity("providers")
+@Entity("providers", "emailsender")
 export class ProviderEntity implements IAuditableEntity {
   @Key()
   id: number;
@@ -1014,7 +1014,7 @@ export class ProviderEntity implements IAuditableEntity {
 Key facts:
 - File renamed: `email_config_entity.ts` → `provider_entity.ts`.
 - Class renamed: `EmailConfigEntity` → `ProviderEntity`.
-- `@Entity("email_config")` → `@Entity("providers")` — table name is now `providers` (resolves to the default schema, same as before since the original had no schema param).
+- `@Entity("email_config")` → `@Entity("providers", "emailsender")` — table name is now `providers` with explicit schema `emailsender` (safer than relying on search_path).
 - All columns unchanged: `provider`, `api_key`, `api_endpoint`, `from_email`, `from_name`, `reply_to` + audit columns.
 
 ### Step 4: emailsender — update `registry.ts`
@@ -1099,26 +1099,29 @@ Check and update any `EmailConfigEntity` usage in filter construction or type ca
 
 ## 6. Acceptance criteria
 
-1. `@primebrick/dal-pg` exports `IConfigEntity` and `ConfigService` from `src/index.ts` (Step 3).
-2. `ConfigService` unit tests pass: `get` returns null for missing keys, `require` throws, `getTyped` converts, `getAll` reduces to a record, `set` calls `dal.upsert` with `conflictTarget: "key"`, `delete` calls `dal.delete` with `matchBy: "key"` (Step 4).
-3. `emailsender/db-meta/patches/00000000000000_init_database.sql` exists and creates `emailsender.config` (empty) + `emailsender.providers` (renamed from `email_config`, if not exists) with the exact columns from Step 5 (Step 5).
-4. `pnpm run db:migrate` in emailsender applies the patch idempotently (second run skips with "already applied, same SHA") (Step 6).
-5. `ConfigEntryEntity` implements `IConfigEntity`, is decorated `@Entity("config", "emailsender")`, and has `key`/`value`/`label_key`/`description_key` + audit + soft-delete fields (Step 7).
-6. `ProviderEntity` (renamed from `EmailConfigEntity`) exists in `provider_entity.ts`, decorated `@Entity("providers")`, with all original columns preserved (Step 7a).
-7. `ENTITY_REGISTRY` in `registry.ts` contains `ProviderEntity` (replacing `EmailConfigEntity`) **and** `ConfigEntryEntity` (Step 8).
-8. `email-service.ts` references `ProviderEntity` (not `EmailConfigEntity`) — the import, `dal.find` call, and `as` cast all use `ProviderEntity` (Step 9a).
-9. `email-service.test.ts` references `ProviderEntity` (not `EmailConfigEntity`) where applicable (Step 9b).
-10. `pnpm run build` passes in emailsender with no type errors (Step 10).
-11. Existing `email-service.test.ts` tests pass after the `EmailConfigEntity` → `ProviderEntity` rename (Step 10).
-12. The `emailsender.config` table is empty after migration (zero rows — no seed data) (Step 10).
+> **Note:** Criteria #1 and #2 were updated after the plan split — `IConfigEntity` and `ConfigLoader` (read-only) now live in `@primebrick/sdk`, not `@primebrick/dal-pg`. The original `ConfigService` with write methods (`set`/`delete`) was replaced by the SDK's read-only `ConfigLoader`. Write operations are done via the consumer's DAL directly (see SDK plan §9 "Out of scope").
+
+1. `@primebrick/sdk` exports `IConfigEntity` and `ConfigLoader` from `src/index.ts`. `IConfigEntity` is self-contained (no `IAuditableEntity`), `ConfigLoader` takes a `ConfigRepositoryPort` (dependency inversion).
+2. `ConfigLoader` unit tests pass: `get` returns null for missing keys, `require` throws, `getTyped` converts, `getAll` returns the full cache, `invalidate` clears cache (see SDK plan Step 15).
+3. `emailsender/db-meta/patches/20260707120000_add_config_table_rename_email_config_to_providers.sql` exists and creates `emailsender.config` (empty) + renames `email_config` → `providers` (with fallback `CREATE TABLE IF NOT EXISTS`) with the exact columns from Step 5.
+4. `pnpm run db:migrate` in emailsender applies the patch idempotently (second run skips with "already applied, same SHA").
+5. `ConfigEntryEntity` is decorated `@Entity("config", "emailsender")`, and has `key`/`value`/`label_key`/`description_key` + audit + soft-delete fields.
+6. `ProviderEntity` (renamed from `EmailConfigEntity`) exists in `provider_entity.ts`, decorated `@Entity("providers", "emailsender")`, with all original columns preserved.
+7. `ENTITY_REGISTRY` in `registry.ts` contains `ProviderEntity` (replacing `EmailConfigEntity`) **and** `ConfigEntryEntity`.
+8. `email-service.ts` references `ProviderEntity` (not `EmailConfigEntity`) — the import, `dal.find` call, and `as` cast all use `ProviderEntity`.
+9. `email-service.test.ts` references `ProviderEntity` (not `EmailConfigEntity`) where applicable.
+10. `pnpm run build` passes in emailsender with no type errors.
+11. Existing `email-service.test.ts` tests pass after the `EmailConfigEntity` → `ProviderEntity` rename.
+12. The `emailsender.config` table is empty after migration (zero rows — no seed data).
 
 ---
 
 ## 7. Out of scope
 
-- **Consuming `ConfigService` in emailsender** — the `config` table is created empty and `ConfigService` is available, but no emailsender code uses it yet. A future plan will wire it in when a concrete config need arises.
-- **Seed data for `emailsender.config`** — the table is empty. The user populates it via SQL or `ConfigService.set(...)` when needed.
-- **Migrating BE's `auth_configurations` to use `ConfigService`** — BE keeps its existing `AuthConfigurationsDal` (`auth_configurations_dal.ts:1-94`) and `loadAuthConfigFromDb` (`config-repo.ts:58-140`). Future adoption only.
+- **Consuming `ConfigLoader` in emailsender** — the `config` table is created empty and `ConfigLoader` is wired in `index.ts` (loads at startup, cache is empty until rows are inserted), but no emailsender business logic reads from it yet. A future plan will wire it in when a concrete config need arises.
+- **Seed data for `emailsender.config`** — the table is empty. The user populates it via SQL when needed.
+- **Config write methods (`set`/`delete`)** — the SDK's `ConfigLoader` is read-only (load + cache + get). Writing config rows is done via the consumer's DAL directly. This matches BE's pattern where `loadAuthConfigFromDb` is read-only and `updateAuthConfig` is a separate function.
+- **Migrating BE's `auth_configurations` to use `ConfigLoader`** — BE keeps its existing `AuthConfigurationsDal` (`auth_configurations_dal.ts:1-94`) and `loadAuthConfigFromDb` (`config-repo.ts:58-140`). Future adoption only.
 - **Other microservices** (none exist yet beyond emailsender in `primebrick-us-v3`).
 - **Encryption of config values at rest** — the `value` column is plain `text`. A future plan can add column-level encryption or a secrets wrapper; this plan stores values as plaintext, same as BE's `auth_configurations.value` (`db-meta/patches/00000000000000_init_database.sql:211`).
-- **Hot-reload of config without `invalidate()`** — cache invalidation is manual via `ConfigService.invalidate()` (mirrors BE's `invalidateAuthConfig()`, `config.ts:178-180`). A future plan can add NATS-based cache busting.
+- **Hot-reload of config without `invalidate()`** — cache invalidation is manual via `ConfigLoader.invalidate()`. A future plan can add NATS-based cache busting.
