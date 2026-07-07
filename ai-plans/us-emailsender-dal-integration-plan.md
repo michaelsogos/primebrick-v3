@@ -1,11 +1,11 @@
 # Plan: Refactor US `emailsender` to consume `@primebrick/dal-pg` via the `Dal` gateway
 
-> Status: APPROVED — user sent PROCEED (2026-07-06). Implementation in progress.
-> Created: 2026-07-06 (revised — now uses the `Dal` gateway from `dal-gateway-pool-ownership-plan.md` instead of `new Repository(pool)`; updated after verifying the real `email_templates_communication_log` columns + adding unit-test scope for `EmailService.sendEmail`).
+> Status: DRAFT — awaiting user approval (PROCEED keyword).
+> Created: 2026-07-06 (revised — now uses the `Dal` gateway from `dal-gateway-pool-ownership-plan.md` instead of `new Repository(pool)`).
 > Scope: `primebrick-us-v3/emailsender` only. BE migration is explicitly deferred to a later plan (feasibility verdict included in §10 for context).
-> Prerequisite: `dal-gateway-pool-ownership-plan.md` must be implemented first — this plan depends on the `Dal` class, `getDal()` factory, type-parser registration, and pool ownership being in the lib. ✅ Implemented on `primebrick-dal-v3` branch `feature/dal-gateway-pool-ownership` (commits `eb8e5be` + `34d45dd`).
+> Prerequisite: `dal-gateway-pool-ownership-plan.md` must be implemented first — this plan depends on the `Dal` class, `getDal()` factory, type-parser registration, and pool ownership being in the lib.
 > Repositories analyzed (empirically, zero assumptions):
-> - `primebrick-dal-v3` — the shared DAL library (`@primebrick/dal-pg` v0.1.7 + the new `Dal` gateway, on `feature/dal-gateway-pool-ownership`).
+> - `primebrick-dal-v3` — the shared DAL library (`@primebrick/dal-pg` v0.1.0 + the new `Dal` gateway).
 > - `primebrick-us-v3/emailsender` — the target microservice, currently uses raw `pool.query()` SQL.
 > - `primebrick-be-v3` — read-only feasibility analysis for the "one unique DAL for all" question.
 
@@ -42,7 +42,6 @@ Secondary objective: confirm whether `@primebrick/dal-pg` can become the **singl
 ### 2.2 `emailsender` — current state
 
 - **Dev port**: `3003`. HTTP endpoints: `POST /webhook`, `GET /health`. NATS subject: `emailsender.send` → `emailService.sendEmail`.
-- **Existing shutdown** (`src/index.ts`): minimal — `SIGTERM`/`SIGINT` only, clears heartbeat interval + closes NATS, then `process.exit(0)`. No DAL close (pool not owned yet), no `SIGHUP`, no `uncaughtException`/`unhandledRejection` handlers, no re-entrancy guard. **Replaced** in the refactor (§3.2, §4, step 11).
 - **DB pool** (`src/db/pool.ts`): singleton `pg.Pool`, `DATABASE_URL` required, `DB_SCHEMA` defaults to `"emailsender"`, `search_path` set on `onConnect`. `max: 10`. **This file is deleted in the refactor** — the `Dal` gateway owns the pool.
 - **Entities** (`src/domain/entities/`):
   - `EmailConfigEntity` → table `email_config`. Columns: `id` (@Key), `uuid` (@Unique, default `gen_random_uuid()`), `provider`, `api_key`, `api_endpoint?`, `from_email?`, `from_name?`, `reply_to?`, plus auditable `created_at/created_by/updated_at/updated_by/version`. Implements `IAuditableEntity` **but `deleted_at`/`deleted_by` are NOT decorated** — pre-existing inconsistency, not fixed here.
@@ -53,9 +52,9 @@ Secondary objective: confirm whether `@primebrick/dal-pg` can become the **singl
 - **DB access call sites (exhaustive)**:
   1. `src/services/email-service.ts` `sendEmail()`:
      - `SELECT * FROM emailsender.email_config WHERE provider = 'brevo' LIMIT 1` → `EmailConfigEntity` read.
-     - `SELECT * FROM emailsender.email_templates WHERE code = $1 AND language_iso = $2 LIMIT 1` → `EmailTemplateEntity` read. (NATS request fields `templateCode`/`languageIso` map to DB columns `code`/`language_iso` — the public NATS contract stays camelCase per §8 criterion #8.)
-     - `INSERT INTO emailsender.email_templates_communication_log (entity_id, entity_uuid, type, provider_message_id, provider, status, template_uuid, senders, recipients, interpolated_sent_message, sent_at, status_changed_at) VALUES ($1..$10, NOW(), NOW()) RETURNING id` — success log (no entity). **Columns verified from source.**
-     - `INSERT INTO emailsender.email_templates_communication_log (entity_id, entity_uuid, type, provider, status, template_uuid, senders, recipients, error_message, status_changed_at) VALUES ($1..$9, NOW())` — failure log in catch (no entity, no RETURNING, `template_uuid = null`, no `provider_message_id`/`interpolated_sent_message`/`sent_at`).
+     - `SELECT * FROM emailsender.email_templates WHERE code = $1 AND language_iso = $2 LIMIT 1` → `EmailTemplateEntity` read.
+     - `INSERT INTO emailsender.email_templates_communication_log (...) VALUES (...) RETURNING id` — success log (no entity).
+     - `INSERT INTO emailsender.email_templates_communication_log (...) VALUES (...)` — failure log in catch (no entity, no RETURNING).
   2. `src/services/webhook-service.ts` `handleWebhook()`:
      - `UPDATE emailsender.email_templates_communication_log SET status = $1, status_changed_at = NOW(), error_message = $2 WHERE provider_message_id = $3` (no entity).
   3. `src/services/service-registration.ts`:
@@ -160,8 +159,6 @@ process.on("unhandledRejection", (reason) => {
 3. **Event-loop drain myth**: closing only the pool leaves NATS/HTTP handles open → the process hangs until SIGKILL. The consumer must close ALL resources and exit explicitly.
 4. **SIGKILL is uncatchable** (kernel-level guarantee) — no handler can cover it. Mitigation is operational: orchestrators send SIGTERM with a grace period first, then SIGKILL only after N seconds (k8s/Docker default behavior).
 
-**Why the consumer `shuttingDown` guard AND the lib's `close()` re-entrancy guard coexist (no contradiction):** the lib's `close()` is re-entrant + timeout-bounded (commit `34d45dd` — `isClosing`/`isClosed` flags, `Promise.race` with a 10s deadline, error containment). That guard protects the *pool* specifically. The consumer's `shuttingDown` boolean protects the *whole shutdown sequence* (NATS close, HTTP close, `process.exit`) — a second signal must not re-enter `shutdown()` and race the `Promise.allSettled`. Both are needed: the lib guard makes `dal.close()` safe to call twice; the consumer guard makes the orchestrator's two-signal pattern (SIGTERM then SIGINT) safe at the process level.
-
 ### 3.3 Entity migration
 
 Each entity file changes only its imports — decorators come from `@primebrick/dal-pg`. Class bodies unchanged. Example:
@@ -194,36 +191,31 @@ The local `entity-decorators.ts`, `iauditable_entity.ts`, `ideletable_entity.ts`
 
 ### 3.4 New entity: `EmailCommunicationLogEntity`
 
-`email_templates_communication_log` is written by `email-service.ts` and updated by `webhook-service.ts`. To use the DAL it must become an entity. **Column set verified from the actual INSERT/UPDATE SQL in `email-service.ts` and `webhook-service.ts`** (step 1 of §6 — done):
+`email_templates_communication_log` is written by `email-service.ts` and updated by `webhook-service.ts`. To use the DAL it must become an entity:
 
 ```typescript
 // emailsender/src/domain/entities/email_communication_log_entity.ts
-import { Entity, Key, Column } from "@primebrick/dal-pg";
+import { Entity, Key, Column, AuditableField, AuditableFieldType } from "@primebrick/dal-pg";
 
 @Entity("email_templates_communication_log")
 export class EmailCommunicationLogEntity {
   @Key() id!: number;
-  @Column({ nullable: true }) entity_id?: number;
-  @Column({ nullable: true }) entity_uuid?: string;
-  @Column({ nullable: false }) type!: string;            // "email"
-  @Column({ nullable: true }) provider_message_id?: string; // present on success, absent on failure
-  @Column({ nullable: false }) provider!: string;        // "brevo"
-  @Column({ length: 50, nullable: false }) status!: string; // "sent" | "failed" | webhook statuses
-  @Column({ nullable: true }) template_uuid?: string;    // null on failure path
-  @Column({ nullable: false, pgType: "jsonb" }) senders!: object;
-  @Column({ nullable: false, pgType: "jsonb" }) recipients!: object;
-  @Column({ nullable: true }) interpolated_sent_message?: string; // success only
-  @Column({ nullable: true }) error_message?: string;    // failure only
-  @Column({ nullable: true }) sent_at?: Date;            // success only (NOW())
-  @Column({ nullable: true }) status_changed_at?: Date;  // both paths (NOW())
+  @Column({ nullable: false }) provider!: string;
+  @Column({ nullable: false }) provider_message_id!: string;
+  @Column({ length: 50, nullable: false }) status!: string;
+  @Column({ nullable: true }) error_message?: string;
+  @Column({ nullable: false }) template_code!: string;
+  @Column({ nullable: false }) language_iso!: string;
+  @Column({ nullable: false }) recipient_email!: string;
+  @Column({ nullable: true }) subject?: string;
+  @AuditableField(AuditableFieldType.CREATED_AT) created_at!: Date;
+  @Column({ nullable: true }) status_changed_at?: Date;
 }
 ```
 
-**Notes:**
-- This entity does NOT implement `IAuditableEntity` — the log table has no `created_at`/`updated_*`/`version`/`deleted_*` columns based on the SQL observed. (If the live table does have a `created_at` with a DB default, it is omitted from the entity and the DB default populates it — the DAL's `add()` only inserts columns the entity declares.)
-- `senders`/`recipients` are `jsonb`; the DAL serializes objects via the `pg` driver's jsonb handling. The caller passes JS objects (`JSON.stringify` is no longer needed — the DAL/pg handles it).
-- The success INSERT passes `provider_message_id`, `interpolated_sent_message`, `sent_at`; the failure INSERT omits them (they stay NULL via DB defaults). The DAL's `add()` only sets columns present in the payload object — omitted fields are not in the INSERT.
-- The webhook update is by `provider_message_id` (not uuid) — see §3.5.
+**The exact column set MUST be verified against the live DB / existing INSERT statements before writing this entity** (step 1 of the implementation phase). If the table has `uuid`/`updated_*`/`version` columns they must be added.
+
+This entity does NOT implement `IAuditableEntity` (the log table has no `updated_*`/`version`/`deleted_*` columns based on the SQL observed). Uses `add()` for inserts. The webhook update is by `provider_message_id` (not uuid) — see §3.5.
 
 ### 3.5 Service-layer refactor (behavior-preserving, 1:1)
 
@@ -232,9 +224,9 @@ export class EmailCommunicationLogEntity {
 | Today (raw SQL) | After (Dal gateway) |
 |---|---|
 | `SELECT * FROM email_config WHERE provider = 'brevo' LIMIT 1` | `dal.find(EmailConfigEntity, null, { filters: [Filter.fieldValue(field(EmailConfigEntity,"provider"), "=", "brevo")], throwIfNotFound: true })` — `NotFoundError` caught and re-thrown as the service's existing error shape. |
-| `SELECT * FROM email_templates WHERE code = $1 AND language_iso = $2 LIMIT 1` | `dal.find(EmailTemplateEntity, null, { filters: [Filter.fieldValue(field(EmailTemplateEntity,"code"),"=",request.templateCode), Filter.fieldValue(field(EmailTemplateEntity,"language_iso"),"=",request.languageIso)], throwIfNotFound: true })` — NATS request fields `templateCode`/`languageIso` map to entity columns `code`/`language_iso`. |
-| `INSERT INTO email_templates_communication_log (entity_id, entity_uuid, type, provider_message_id, provider, status, template_uuid, senders, recipients, interpolated_sent_message, sent_at, status_changed_at) VALUES (...) RETURNING id` (success) | `dal.add(EmailCommunicationLogEntity, { entity_id, entity_uuid, type: "email", provider_message_id, provider: "brevo", status: "sent", template_uuid, senders: { from: config.from_email }, recipients: { to, cc, bcc }, interpolated_sent_message, sent_at: new Date(), status_changed_at: new Date() }, { actor: "emailsender" })` — returns the full row; `id` read off the returned entity. `template_uuid` comes from the fetched `template.uuid`. |
-| `INSERT INTO email_templates_communication_log (entity_id, entity_uuid, type, provider, status, template_uuid, senders, recipients, error_message, status_changed_at) VALUES (...)` (failure, no RETURNING) | `dal.add(EmailCommunicationLogEntity, { entity_id, entity_uuid, type: "email", provider: "brevo", status: "failed", template_uuid: null, senders: {}, recipients: { to }, error_message, status_changed_at: new Date() }, { actor: "emailsender" })` — DAL always does `RETURNING *`; unused return ignored. `provider_message_id`/`interpolated_sent_message`/`sent_at` omitted → NULL via DB defaults. Behavior preserved. |
+| `SELECT * FROM email_templates WHERE code = $1 AND language_iso = $2 LIMIT 1` | `dal.find(EmailTemplateEntity, null, { filters: [Filter.fieldValue(field(EmailTemplateEntity,"code"),"=",request.code), Filter.fieldValue(field(EmailTemplateEntity,"language_iso"),"=",request.language_iso)], throwIfNotFound: true })` |
+| `INSERT INTO email_templates_communication_log (...) RETURNING id` (success) | `dal.add(EmailCommunicationLogEntity, { provider, provider_message_id, status: "sent", template_code, language_iso, recipient_email, subject }, { actor: "emailsender" })` — returns the full row; `id` read off the returned entity. |
+| `INSERT INTO email_templates_communication_log (...)` (failure, no RETURNING) | `dal.add(EmailCommunicationLogEntity, { ..., status: "failed", error_message }, { actor: "emailsender" })` — DAL always does `RETURNING *`; unused return ignored. Behavior preserved. |
 
 #### `webhook-service.ts` — `handleWebhook()`
 
@@ -284,9 +276,6 @@ export class EmailCommunicationLogEntity {
 | `emailsender/src/index.ts` | call `initDal()` at startup; add `SIGTERM`/`SIGINT`/`SIGHUP` handlers + `uncaughtException`/`unhandledRejection` handlers calling `shutdown()` which closes DAL + NATS; switch snapshot tooling imports from `getPool()` to `getDal().getPool()` | edit |
 | `emailsender/src/db/build-database-snapshot.ts` | import `getDal().getPool()` instead of `getPool()` from deleted `pool.ts` | edit (verify) |
 | `emailsender/src/db/build-entity-snapshot.ts` | same — switch pool import | edit (verify) |
-| `emailsender/package.json` (devDependencies + scripts) | add `vitest`, `@vitest/coverage-v8`; add `test`/`test:watch` scripts | edit |
-| `emailsender/vitest.config.ts` | NEW — vitest config (node environment, `src` globals) | new |
-| `emailsender/src/services/__tests__/email-service.test.ts` | NEW — unit tests for `EmailService.sendEmail()` (mocked DAL + mocked BrevoClient) | new |
 
 **Files NOT touched**: `db/schema-*.ts`, `db/database-patch-*.ts`, `db/entity-ts-to-pg.ts`, `db/schema-type-normalize.ts`, `db/schema-rename-heuristics.ts`, `db/database-patch-naming.ts`, `providers/brevo.ts`, `nats/*`, `server/http-server.ts`.
 
@@ -301,7 +290,6 @@ export class EmailCommunicationLogEntity {
 5. **Audit is NOT wired** — no consumer today. `WriteOptions.actor` is set to `"emailsender"` for forward-compatibility. ✅ recommended.
 6. **`pool.ts` is deleted** — the `Dal` gateway owns the pool. Snapshot tooling switches to `getDal().getPool()`. ✅ recommended.
 7. **`initDal()` called once at startup** from `index.ts`; services call `getDal()` (no args) per request — zero per-request allocation. ✅ recommended.
-8. **Unit tests for `EmailService.sendEmail()`** (user-requested scope addition) — pure unit tests with `vitest`, mocking `getDal()` and `BrevoClient`. No test DB, no NATS, no Brevo network calls. Covers: success path, config-not-found, template-not-found, Brevo-send-failure. ✅ recommended.
 
 ---
 
@@ -321,9 +309,7 @@ export class EmailCommunicationLogEntity {
 9. **Refactor `webhook-service.ts`**: route the update through `dal.rawSql`. Build.
 10. **Refactor `service-registration.ts`**: route the 4 statements through `dal.rawSql`. Build.
 11. **Update `index.ts`**: add `SIGTERM`/`SIGINT`/`SIGHUP` handlers + `uncaughtException`/`unhandledRejection` handlers calling `shutdown()` (closes DAL pool + NATS, then `process.exit`). Build.
-12. **Add the vitest harness**: add `vitest` (+ `@vitest/coverage-v8`) to `emailsender/package.json` devDependencies, add `test`/`test:watch` scripts, create `vitest.config.ts`. Run `pnpm install` from the workspace root.
-13. **Write unit tests for `EmailService.sendEmail()`** (`src/services/__tests__/email-service.test.ts`) — mock `getDal` (return a fake `Dal` with `find`/`add` spies) and mock `BrevoClient.sendEmail`. Cases: (a) success → returns `success: true` + `providerMessageId` + `logId`, asserts `add` called with `status: "sent"`; (b) config not found → `find(EmailConfigEntity)` throws `NotFoundError`, asserts failure-log `add` called with `status: "failed"`, returns `success: false`; (c) template not found → same failure-log assertion; (d) Brevo send throws → failure-log `add` called, returns `success: false`. Run `pnpm test`.
-14. **Full build + typecheck + test** of emailsender. Smoke-test: `GET /health` (no DB), and (with a live DB) trigger `emailsender.send` via NATS or a webhook to confirm end-to-end.
+12. **Full build + typecheck** of emailsender. Smoke-test: `GET /health` (no DB), and (with a live DB) trigger `emailsender.send` via NATS or a webhook to confirm end-to-end.
 
 ---
 
@@ -350,12 +336,11 @@ try {
   throw err;
 }
 
-// template — request fields are camelCase (NATS contract, unchanged per §8 #8);
-// entity/DB columns are snake_case. The FieldRef points at the entity property.
+// template
 const template = await dal.find(EmailTemplateEntity, null, {
   filters: [
-    Filter.fieldValue(field(EmailTemplateEntity, "code"), "=", request.templateCode),
-    Filter.fieldValue(field(EmailTemplateEntity, "language_iso"), "=", request.languageIso),
+    Filter.fieldValue(field(EmailTemplateEntity, "code"), "=", request.code),
+    Filter.fieldValue(field(EmailTemplateEntity, "language_iso"), "=", request.language_iso),
   ],
   throwIfNotFound: true,
 });
@@ -367,40 +352,13 @@ const template = await dal.find(EmailTemplateEntity, null, {
 const logRow = await dal.add(
   EmailCommunicationLogEntity,
   {
-    entity_id: request.entityId ?? null,
-    entity_uuid: request.entityUuid ?? null,
-    type: "email",
+    provider: "brevo",
     provider_message_id: brevoResponse.messageId,
-    provider: "brevo",
     status: "sent",
-    template_uuid: template.uuid,
-    senders: { from: config.from_email },
-    recipients: { to: request.to, cc: request.cc, bcc: request.bcc },
-    interpolated_sent_message: htmlContent || textContent,
-    sent_at: new Date(),
-    status_changed_at: new Date(),
-  },
-  { actor: "emailsender" },
-);
-// logRow.id replaces logResult.rows[0].id in the response
-```
-
-**Failure log insert** (in the `catch` block):
-
-```typescript
-await dal.add(
-  EmailCommunicationLogEntity,
-  {
-    entity_id: request.entityId ?? null,
-    entity_uuid: request.entityUuid ?? null,
-    type: "email",
-    provider: "brevo",
-    status: "failed",
-    template_uuid: null,
-    senders: {},
-    recipients: { to: request.to },
-    error_message: error instanceof Error ? error.message : "Unknown error",
-    status_changed_at: new Date(),
+    template_code: request.code,
+    language_iso: request.language_iso,
+    recipient_email: request.to,
+    subject: renderedSubject,
   },
   { actor: "emailsender" },
 );
@@ -471,118 +429,6 @@ process.on("unhandledRejection", (reason) => {
 });
 ```
 
-### 7.5 Unit tests for `EmailService.sendEmail()` (mocked DAL + mocked BrevoClient)
-
-```typescript
-// emailsender/src/services/__tests__/email-service.test.ts
-import { describe, it, expect, beforeEach, vi } from "vitest";
-
-// Mock the DAL gateway BEFORE importing EmailService (which calls getDal() at call time).
-const findMock = vi.fn();
-const addMock = vi.fn();
-vi.mock("../../db/dal.js", () => ({
-  getDal: () => ({ find: findMock, add: addMock }),
-}));
-
-// Mock BrevoClient so no network call is made.
-const sendEmailMock = vi.fn();
-vi.mock("../../providers/brevo.js", () => ({
-  BrevoClient: class {
-    sendEmail = sendEmailMock;
-    mapStatus = (e: string) => e;
-  },
-}));
-
-import { EmailService } from "../email-service.js";
-import { EmailConfigEntity, EmailTemplateEntity, EmailCommunicationLogEntity } from "../../domain/entities/registry.js";
-import { NotFoundError } from "@primebrick/dal-pg";
-
-const baseRequest = {
-  requestId: "req-1",
-  templateCode: "WELCOME",
-  languageIso: "en",
-  to: ["alice@example.com"],
-};
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  process.env.BREVO_API_KEY = "test-key";
-});
-
-describe("EmailService.sendEmail", () => {
-  it("success: returns success:true + providerMessageId + logId, logs status:sent", async () => {
-    findMock
-      .mockResolvedValueOnce({ provider: "brevo", from_email: "no-reply@x.com", from_name: "X", reply_to: null }) // config
-      .mockResolvedValueOnce({ uuid: "tpl-uuid", subject: "Hi {{name}}", body_html: "<b>{{name}}</b>", body_text: "{{name}}" }); // template
-    sendEmailMock.mockResolvedValue({ messageId: "brevo-123" });
-    addMock.mockResolvedValue({ id: 42 });
-
-    const svc = new EmailService();
-    const res = await svc.sendEmail({ ...baseRequest, variables: { name: "Alice" } });
-
-    expect(res.success).toBe(true);
-    expect(res.providerMessageId).toBe("brevo-123");
-    expect(res.logId).toBe(42);
-    expect(addMock).toHaveBeenCalledTimes(1);
-    const [entity, payload] = addMock.mock.calls[0];
-    expect(entity).toBe(EmailCommunicationLogEntity);
-    expect(payload.status).toBe("sent");
-    expect(payload.provider_message_id).toBe("brevo-123");
-    expect(payload.template_uuid).toBe("tpl-uuid");
-  });
-
-  it("config not found: logs status:failed, returns success:false", async () => {
-    findMock.mockRejectedValueOnce(new NotFoundError("EmailConfigEntity", "no brevo config"));
-    addMock.mockResolvedValue({ id: 1 });
-
-    const svc = new EmailService();
-    const res = await svc.sendEmail({ ...baseRequest });
-
-    expect(res.success).toBe(false);
-    expect(addMock).toHaveBeenCalledTimes(1);
-    const [, payload] = addMock.mock.calls[0];
-    expect(payload.status).toBe("failed");
-    expect(payload.provider_message_id).toBeUndefined(); // failure log omits it
-  });
-
-  it("template not found: logs status:failed, returns success:false", async () => {
-    findMock
-      .mockResolvedValueOnce({ provider: "brevo", from_email: "no-reply@x.com" }) // config ok
-      .mockRejectedValueOnce(new NotFoundError("EmailTemplateEntity", "no template")); // template missing
-    addMock.mockResolvedValue({ id: 2 });
-
-    const svc = new EmailService();
-    const res = await svc.sendEmail({ ...baseRequest });
-
-    expect(res.success).toBe(false);
-    const [, payload] = addMock.mock.calls[0];
-    expect(payload.status).toBe("failed");
-  });
-
-  it("brevo send fails: logs status:failed with error_message, returns success:false", async () => {
-    findMock
-      .mockResolvedValueOnce({ provider: "brevo", from_email: "no-reply@x.com" })
-      .mockResolvedValueOnce({ uuid: "tpl-uuid", subject: "S", body_html: "H", body_text: "T" });
-    sendEmailMock.mockRejectedValue(new Error("brevo down"));
-    addMock.mockResolvedValue({ id: 3 });
-
-    const svc = new EmailService();
-    const res = await svc.sendEmail({ ...baseRequest });
-
-    expect(res.success).toBe(false);
-    expect(res.error).toBe("brevo down");
-    const [, payload] = addMock.mock.calls[0];
-    expect(payload.status).toBe("failed");
-    expect(payload.error_message).toBe("brevo down");
-  });
-});
-```
-
-**Test isolation notes:**
-- `vi.mock` is hoisted by vitest above imports — the DAL singleton and `BrevoClient` are replaced before `EmailService` is constructed.
-- `EmailService` constructor reads `BREVO_API_KEY` from `process.env` — set in `beforeEach` (and the mock `BrevoClient` ignores it anyway).
-- No DB, no NATS, no HTTP, no Brevo network. Pure unit tests. Run with `pnpm test`.
-
 ---
 
 ## 8. Acceptance criteria
@@ -597,17 +443,16 @@ describe("EmailService.sendEmail", () => {
 8. No public contract change: HTTP endpoints, NATS subject, `SendEmailRequest`/`SendEmailResponse` shapes unchanged.
 9. snake_case preserved; no DTO renaming; no fake defaults on the read path.
 10. No `git commit` is made without explicit user instruction.
-11. **`pnpm test` exits 0** — the vitest harness runs, all 4 `EmailService.sendEmail` cases pass (success, config-not-found, template-not-found, brevo-failure). No test makes a real DB/NATS/Brevo call (mocked).
 
 ---
 
-## 9. Verification strategy
+## 9. Verification strategy (no existing test harness)
 
+emailsender has no tests. Verification is:
 - **Build + typecheck** after each atomic step (§6).
-- **Unit tests** (NEW — in scope): `pnpm test` runs the `EmailService.sendEmail` vitest suite (mocked DAL + BrevoClient). Fast, no external dependencies.
 - **Grep guards**: `grep -r "pool.query" emailsender/src/services` → 0; `grep -r "entity-decorators" emailsender/src` → 0; `grep -r "from.*pool" emailsender/src/services` → 0.
 - **Manual smoke** (user-driven, since starting a dev server requires user confirmation per the dev-server rule): `GET /health`, then trigger a NATS `emailsender.send` request and confirm a log row appears with `status = 'sent'`; then POST a webhook payload and confirm the row's `status` updates.
-- **Optional follow-up** (out of scope): integration tests with a real test DB for emailsender.
+- **Optional follow-up** (out of scope): add a vitest harness with a test DB for emailsender.
 
 ---
 
