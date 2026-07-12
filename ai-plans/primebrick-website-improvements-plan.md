@@ -227,12 +227,203 @@ Covered by section 3a — the `api/` docs section will have introduction, authen
 
 ---
 
-## 7. Open questions
+## 7. i18n — Multi-language from the start (NEW)
 
-1. **Language**: The reference site is in Italian. Should the website be English-only, or do we need i18n (IT + EN)?
-2. **Auth panel**: Should the auth panel call the BE's `/api/v1/auth/login` endpoint directly from the browser (requires CORS), or should we proxy through the Worker?
-3. **Endpoint descriptions**: Should we also update the BE OpenAPI spec to add descriptions to all endpoints? (This is a separate BE task.)
-4. **Language logos**: If Scalar doesn't support custom logos in the language selector, should we build a custom code generation panel, or accept the text-only dropdown?
+### Requirement
+The reference site supports 6 languages: IT, EN, DE, ES, PT, FR (with EN as `x-default`).
+The website must support all 6 languages from the beginning, not as an afterthought.
+
+### Languages
+| Code | Label | Path | Notes |
+|------|-------|------|-------|
+| `en` | English | `/en/` | Default language, `x-default` for SEO |
+| `it` | Italiano | `/it/` | First language on reference site |
+| `de` | Deutsch | `/de/` | |
+| `es` | Español | `/es/` | |
+| `pt` | Português | `/pt/` | |
+| `fr` | Français | `/fr/` | |
+
+### Starlight i18n config
+Starlight has built-in i18n support via `locales` and `defaultLocale`:
+
+```javascript
+starlight({
+  title: 'Primebrick',
+  defaultLocale: 'en',
+  locales: {
+    en: { label: 'English', lang: 'en' },
+    it: { label: 'Italiano', lang: 'it' },
+    de: { label: 'Deutsch', lang: 'de' },
+    es: { label: 'Español', lang: 'es' },
+    pt: { label: 'Português', lang: 'pt' },
+    fr: { label: 'Français', lang: 'fr' },
+  },
+  sidebar: [
+    {
+      label: 'Getting Started',
+      translations: {
+        it: 'Inizia qui', de: 'Beginne hier', es: 'Comienza aquí',
+        pt: 'Comece aqui', fr: 'Commencez ici',
+      },
+      items: [
+        { label: 'Introduction', link: '/en/getting-started/introduction/', translations: { it: 'Introduzione', de: 'Einführung', es: 'Introducción', pt: 'Introdução', fr: 'Introduction' } },
+        { label: 'Quick Start', link: '/en/getting-started/quick-start/', translations: { it: 'Avvio rapido', de: 'Schnellstart', es: 'Inicio rápido', pt: 'Início rápido', fr: 'Démarrage rapide' } },
+        { label: 'Architecture', link: '/en/getting-started/architecture/', translations: { it: 'Architettura', de: 'Architektur', es: 'Arquitectura', pt: 'Arquitetura', fr: 'Architecture' } },
+      ],
+    },
+    {
+      label: 'API Reference',
+      translations: {
+        it: 'Riferimento API', de: 'API-Referenz', es: 'Referencia API',
+        pt: 'Referência da API', fr: 'Référence API',
+      },
+      items: [
+        { label: 'Introduction', link: '/en/api/introduction/', translations: { it: 'Introduzione', de: 'Einführung', es: 'Introducción', pt: 'Introdução', fr: 'Introduction' } },
+        { label: 'Authentication', link: '/en/api/authentication/', translations: { it: 'Autenticazione', de: 'Authentifizierung', es: 'Autenticación', pt: 'Autenticação', fr: 'Authentification' } },
+        { label: 'RBAC', link: '/en/api/rbac/', translations: {} },
+        { label: 'Microservice Standard', link: '/en/api/microservice-standard/', translations: { it: 'Standard microservizi', de: 'Mikroservice-Standard', es: 'Estándar de microservicios', pt: 'Padrão de microsserviços', fr: 'Standard microservices' } },
+        { label: 'Error Handling', link: '/en/api/error-handling/', translations: { it: 'Gestione errori', de: 'Fehlerbehandlung', es: 'Manejo de errores', pt: 'Tratamento de erros', fr: 'Gestion des erreurs' } },
+      ],
+    },
+  ],
+})
+```
+
+### Content structure
+```
+src/content/docs/
+├── en/                    # English (default)
+│   ├── getting-started/
+│   │   ├── introduction.mdx
+│   │   ├── quick-start.mdx
+│   │   └── architecture.mdx
+│   └── api/
+│       ├── introduction.mdx
+│       ├── authentication.mdx
+│       ├── rbac.mdx
+│       ├── microservice-standard.mdx
+│       └── error-handling.mdx
+├── it/                    # Italian (same structure)
+├── de/                    # German (same structure)
+├── es/                    # Spanish (same structure)
+├── pt/                    # Portuguese (same structure)
+└── fr/                    # French (same structure)
+```
+
+### Landing page i18n
+The landing page (`src/pages/index.astro`) is NOT part of Starlight — it's a custom Astro page. For i18n on the landing page, we have two options:
+
+**Option A: Astro i18n routing (recommended)**
+- Use Astro's built-in i18n config in `astro.config.mjs`
+- Create `src/pages/en/index.astro`, `src/pages/it/index.astro`, etc.
+- Or use a single `[lang]/index.astro` dynamic route with a translations map
+- Redirect `/` to `/en/` (or detect browser language)
+
+**Option B: Client-side language switcher**
+- Single `index.astro` page with a JS-based language switcher
+- All translations loaded as a JSON object
+- No URL change (worse for SEO)
+
+**Decision: Option A** — proper URL-based i18n for SEO.
+
+### Landing page translations
+Create `src/i18n/translations.ts` with all text strings for each language:
+
+```typescript
+export const translations = {
+  en: { hero: { title: '...', subtitle: '...' }, ... },
+  it: { hero: { title: '...', subtitle: '...' }, ... },
+  de: { hero: { title: '...', subtitle: '...' }, ... },
+  es: { hero: { title: '...', subtitle: '...' }, ... },
+  pt: { hero: { title: '...', subtitle: '...' }, ... },
+  fr: { hero: { title: '...', subtitle: '...' }, ... },
+};
+```
+
+### Language switcher component
+A Svelte component in the nav bar that shows the current language and a dropdown with all 6 languages. Links to the same page in the selected language.
+
+### SEO
+- `<link rel="alternate" hrefLang="en" href="/en/" />` for each language
+- `<link rel="alternate" hrefLang="x-default" href="/en/" />`
+- `<html lang="en">` (or current language) on each page
+
+---
+
+## 8. MIT License link in nav (NEW)
+
+### Requirement
+Add a top-level "MIT License" link in the navigation bar, visible on all pages.
+
+### Implementation
+- Add `License` link to the nav in all pages (landing, docs, api-explorer)
+- Link to `/en/license/` (a Starlight page) or a standalone `/license` page
+- Create `src/content/docs/{lang}/license.mdx` with the full MIT License text
+- Or link directly to the GitHub repo's LICENSE file
+
+### Nav structure (updated)
+```
+Primebrick | Features | Docs | API Explorer | License | GitHub
+```
+
+Wait — Features page is being removed (section 2). Updated nav:
+```
+Primebrick | Docs | API Explorer | License | GitHub
+```
+
+With language switcher:
+```
+Primebrick | Docs | API Explorer | License | GitHub | [EN ▾]
+```
+
+---
+
+## 9. Updated files summary (final)
+
+### NEW files
+| File | Purpose |
+|------|---------|
+| `src/i18n/translations.ts` | All landing page translations (6 languages) |
+| `src/i18n/ui.ts` | UI string translations for nav, footer, etc. |
+| `src/components/svelte/LanguageSwitcher.svelte` | Language dropdown selector |
+| `src/components/svelte/AuthPanel.svelte` | Auth panel for API explorer |
+| `src/pages/[lang]/index.astro` | Dynamic landing page with i18n |
+| `src/pages/index.astro` | Redirect to `/en/` (or browser-detected language) |
+| `src/content/docs/en/getting-started/introduction.mdx` | EN: What is Primebrick |
+| `src/content/docs/en/getting-started/quick-start.mdx` | EN: Quick start |
+| `src/content/docs/en/getting-started/architecture.mdx` | EN: Architecture |
+| `src/content/docs/en/api/introduction.mdx` | EN: API intro |
+| `src/content/docs/en/api/authentication.mdx` | EN: Auth system |
+| `src/content/docs/en/api/rbac.mdx` | EN: RBAC |
+| `src/content/docs/en/api/microservice-standard.mdx` | EN: Microservice standard |
+| `src/content/docs/en/api/error-handling.mdx` | EN: Error handling |
+| `src/content/docs/en/license.mdx` | EN: MIT License |
+| `src/content/docs/it/**` | IT: Same structure (translated) |
+| `src/content/docs/de/**` | DE: Same structure (translated) |
+| `src/content/docs/es/**` | ES: Same structure (translated) |
+| `src/content/docs/pt/**` | PT: Same structure (translated) |
+| `src/content/docs/fr/**` | FR: Same structure (translated) |
+
+### MODIFIED files
+| File | Change |
+|------|--------|
+| `astro.config.mjs` | Add Starlight `locales` + `defaultLocale`, fix sidebar with i18n translations, add Astro i18n config |
+| `src/pages/api-explorer/index.astro` | Add auth panel, improve intro, add language-aware nav |
+| `src/content.config.ts` | Remove `docs` collection (Starlight manages it), keep `marketing` |
+
+### DELETED files
+| File | Reason |
+|------|--------|
+| `src/pages/features/index.astro` | Merged into landing page |
+
+---
+
+## 10. Open questions (reduced)
+
+1. **Auth panel**: Should the auth panel call the BE's `/api/v1/auth/login` endpoint directly from the browser (requires CORS), or should we proxy through the Worker?
+2. **Endpoint descriptions**: Should we also update the BE OpenAPI spec to add descriptions to all endpoints? (This is a separate BE task.)
+3. **Language logos in Scalar**: If Scalar doesn't support custom logos in the language selector, should we build a custom code generation panel, or accept the text-only dropdown?
+4. **Translation strategy**: Should I write all 6 language translations now, or write EN + IT first and leave the others as stubs (English fallback) for later?
 
 ---
 
