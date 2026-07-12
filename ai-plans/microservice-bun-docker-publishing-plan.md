@@ -7,11 +7,13 @@ BE and FE are NOT touched by this plan.
 
 ## Objectives
 
-1. **Switch microservice runtime from Node to Bun** — dev (`bun --watch`) and production (`bun dist/index.js`)
-2. **Create Dockerfiles for microservices** — multi-stage builds using `oven/bun` base image
-3. **Create a docker-compose for microservices** — orchestrate emailsender + infrastructure (postgres, nats, casdoor)
-4. **Publish SDK + DAL to npmjs** — replace `file:` dependencies with versioned npm packages
-5. **GitFlow-based npm versioning** — prerelease tags for `develop` branch, standard semver for `main`/hotfix
+1. **Switch microservice runtime from Node to Bun** — dev (`bun --hot`, soft reload) and production (`bun dist/index.js`)
+2. **Create Dockerfiles for microservices** — multi-stage builds using `oven/bun` base image (Phase 3A = BUILD)
+3. **Automate Docker image BUILD via GitHub Actions** — triggers on GitFlow close release/hotfix (git tag push), same pattern as SDK/DAL npm publishing
+4. **Per-microservice Terraform for container RELEASE** — dynamic port allocation, deploy scripts (Phase 3B = RELEASE)
+5. **Docker Compose Watch dev mode** — hot reload in Docker without rebuilds (bun --hot + Compose Watch)
+6. **Publish SDK + DAL to npmjs** — replace `file:` dependencies with versioned npm packages
+7. **GitFlow-based versioning** — version-sync.mjs auto-updates package.json on release/hotfix branches; Docker image tag matches git tag
 
 ## Current State
 
@@ -204,7 +206,7 @@ npm publish
 ```json
 {
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "dev": "bun --hot src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
     "start": "bun dist/index.js",
     "test": "vitest run",
@@ -215,7 +217,12 @@ npm publish
 ```
 
 **Notes:**
-- `bun --watch` replaces `tsx watch` — native Bun hot reload
+- `bun --hot` replaces `tsx watch` — native Bun hot reload
+  - `--hot` does **soft reload** (re-evaluates changed modules without
+    restarting the process). HTTP server stays running, connections are
+    preserved, `globalThis` state survives. This is better than `--watch`
+    (hard restart) for HTTP servers.
+  - Reference: https://bun.sh/docs/runtime/watch-mode
 - `bun build` replaces `tsc` — Bun's bundler (faster, produces single bundle)
   - Alternative: keep `tsc` for type-checking, use `bun dist/index.js` for runtime
   - Decision: **keep `tsc` for build** (type safety), use `bun dist/index.js` for runtime
@@ -226,7 +233,7 @@ npm publish
 ```json
 {
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "dev": "bun --hot src/index.ts",
     "build": "tsc",
     "start": "bun dist/index.js",
     "test": "vitest run",
@@ -277,23 +284,24 @@ and is loaded at startup via the existing `ConfigLoader`.
 | `DATABASE_URL` | ENV (required) | **STAYS ENV** | Chicken-and-egg: can't read config table without DB |
 | `DB_SCHEMA` | ENV (default "emailsender") | **STAYS ENV** (with default) | Needed before first query; structural, not configurable |
 | `NATS_URL` | ENV (default "nats://127.0.0.1:4222") | **→ config table** | Read after DB is up; `NatsClient.getConnection()` is called after config load |
-| `BREVO_API_KEY` | ENV (required) | **→ providers table** (already there) | Already duplicated in `emailsender.providers`; ENV copy is redundant |
+| `BREVO_API_KEY` | ENV (required) | **→ providers table** | EmailService reads `api_key` from `emailsender.providers` table at runtime; admin sets it via FE (POST/PUT /api/v1/providers). Seeded with placeholder `CHANGE_ME_ADMIN_MUST_SET_VIA_FE` |
 | `BREVO_API_ENDPOINT` | ENV (default "https://api.brevo.com/v1") | **→ config table** | Default endpoint, configurable per environment |
 | `SERVICE_CODE` | ENV (default "EMAILSENDER") | **→ config table** | Microservice identity, belongs in config |
-| `SERVICE_BASE_URL` | ENV (default "http://localhost:3003") | **→ config table** | Network config, different in Docker vs local |
+| `SERVICE_BASE_URL` | ENV (default "http://localhost:3003") | **STAYS ENV** (exception) | Dynamic host port allocated at deploy time by deploy script; can't be in config table (changes every deployment). Must be the EXPOSED URL (`http://localhost:{host_port}`), not internal Docker URL. See section 3B.2 for full analysis. |
 | `HTTP_PORT` | ENV (default "3003") | **→ config table** | Always 3003 internally; host port mapping is Docker/Terraform |
 | `WEBHOOK_API_KEY` | ENV (required!) | **REMOVE** | Dead code — defined in `requireEnv` but never read; webhook auth uses `public.api_keys` table |
 
 **Startup sequence after migration:**
 ```
-1. Read DATABASE_URL from ENV (only true ENV var)
-2. Read DB_SCHEMA from ENV (default: "emailsender")
-3. Init DAL → connect to PG → set search_path
-4. Load config from emailsender.config table via ConfigLoader
-5. Read NATS_URL, SERVICE_CODE, SERVICE_BASE_URL, HTTP_PORT, BREVO_API_ENDPOINT from config
-6. Connect to NATS
-7. Register service via NATS
-8. Start HTTP server on configured port
+1. Read DATABASE_URL from ENV (true primitive — needed before DB)
+2. Read DB_SCHEMA from ENV (default: "emailsender" — needed before first query)
+3. Read SERVICE_BASE_URL from ENV (default: "http://localhost:3003" — dynamic host port)
+4. Init DAL → connect to PG → set search_path
+5. Load config from emailsender.config table via ConfigLoader
+6. Read NATS_URL, SERVICE_CODE, HTTP_PORT, BREVO_API_ENDPOINT from config table
+7. Connect to NATS (using nats_url from config table)
+8. Register service via NATS (using service_base_url from ENV)
+9. Start HTTP server on configured port (http_port from config table)
 ```
 
 **Code changes in `index.ts`:**
@@ -315,10 +323,11 @@ const env = requireEnv({
 
 After:
 ```typescript
-// Only true ENV primitives — everything else comes from config table
+// ENV vars: 3 only (true primitives + SERVICE_BASE_URL exception)
 const env = requireEnv({
   DATABASE_URL: { required: true, description: "PostgreSQL connection string" },
   DB_SCHEMA: { required: false, default: "emailsender", description: "Database schema name" },
+  SERVICE_BASE_URL: { required: false, default: "http://localhost:3003", description: "Exposed URL for BE proxy routing (dynamic host port in Docker)" },
 });
 
 // ... init DAL, load config ...
@@ -326,9 +335,9 @@ const env = requireEnv({
 // Read everything else from config table
 const natsUrl = configLoader.require("nats_url");
 const serviceCode = configLoader.require("service_code");
-const serviceBaseUrl = configLoader.require("service_base_url");
 const httpPort = parseInt(configLoader.require("http_port"), 10);
 const brevoApiEndpoint = configLoader.get("brevo_api_endpoint") ?? "https://api.brevo.com/v1";
+// SERVICE_BASE_URL comes from ENV (not config table) — see section 3B.2
 // BREVO_API_KEY comes from providers table at runtime (already implemented)
 ```
 
@@ -346,9 +355,12 @@ const brevoApiEndpoint = configLoader.get("brevo_api_endpoint") ?? "https://api.
 |-----|---------------|-------------------|-------------|
 | `nats_url` | `nats://primebrick-nats:4222` | `nats://127.0.0.1:4222` | NATS server URL |
 | `service_code` | `EMAILSENDER` | `EMAILSENDER` | Microservice identifier |
-| `service_base_url` | `http://primebrick-emailsender:3003` | `http://localhost:3003` | Service base URL for NATS registration |
 | `http_port` | `3003` | `3003` | HTTP server internal port |
 | `brevo_api_endpoint` | `https://api.brevo.com/v1` | `https://api.brevo.com/v1` | Brevo API endpoint |
+
+**NOT in config table:** `service_base_url` — stays as ENV var because the
+host port is dynamic (allocated by deploy script at deploy time). See
+section 3B.2 for the full analysis.
 
 **Note:** `brevo_api_key` is NOT in the config table — it comes from the
 `emailsender.providers` table at runtime (per-provider credentials, already
@@ -366,16 +378,14 @@ etc.) are already in the config table — not touched by this plan.
 ```sql
 -- Seed microservice config keys into emailsender.config table.
 -- These replace ENV vars that were previously passed to the container.
--- Only DATABASE_URL and DB_SCHEMA remain as ENV vars (true primitives).
---
--- Values here are defaults for local dev. In Docker, override via
--- fire-and-forget script or manual UPDATE after deployment.
+-- Only DATABASE_URL, DB_SCHEMA, and SERVICE_BASE_URL remain as ENV vars.
+-- SERVICE_BASE_URL stays as ENV because the host port is dynamic (set by
+-- deploy script at deploy time) and can't be known when seeding the config table.
 
 INSERT INTO "emailsender"."config" ("key", "value", "label_key", "description_key", "created_by", "updated_by")
 VALUES
   ('nats_url', 'nats://127.0.0.1:4222', 'config.nats_url.label', 'config.nats_url.description', 'system', 'system'),
   ('service_code', 'EMAILSENDER', 'config.service_code.label', 'config.service_code.description', 'system', 'system'),
-  ('service_base_url', 'http://localhost:3003', 'config.service_base_url.label', 'config.service_base_url.description', 'system', 'system'),
   ('http_port', '3003', 'config.http_port.label', 'config.http_port.description', 'system', 'system'),
   ('brevo_api_endpoint', 'https://api.brevo.com/v1', 'config.brevo_api_endpoint.label', 'config.brevo_api_endpoint.description', 'system', 'system')
 ON CONFLICT ("key") DO NOTHING;
@@ -406,27 +416,23 @@ CREATE UNIQUE INDEX IF NOT EXISTS "emailsender_config_key_uq"
   ON "emailsender"."config" ("key") WHERE deleted_at IS NULL;
 
 -- Seed config keys with local dev defaults.
--- In Docker, UPDATE these values after running this script:
+-- In Docker, UPDATE nats_url after running this script:
 --   UPDATE emailsender.config SET value = 'nats://primebrick-nats:4222' WHERE key = 'nats_url';
---   UPDATE emailsender.config SET value = 'http://primebrick-emailsender:3003' WHERE key = 'service_base_url';
+-- Note: service_base_url is NOT in config table — it stays as ENV var
+-- (dynamic host port set by deploy script).
 
 INSERT INTO "emailsender"."config" ("key", "value", "label_key", "description_key", "created_by", "updated_by")
 VALUES
   ('nats_url', 'nats://127.0.0.1:4222', 'config.nats_url.label', 'config.nats_url.description', 'system', 'system'),
   ('service_code', 'EMAILSENDER', 'config.service_code.label', 'config.service_code.description', 'system', 'system'),
-  ('service_base_url', 'http://localhost:3003', 'config.service_base_url.label', 'config.service_base_url.description', 'system', 'system'),
   ('http_port', '3003', 'config.http_port.label', 'config.http_port.description', 'system', 'system'),
   ('brevo_api_endpoint', 'https://api.brevo.com/v1', 'config.brevo_api_endpoint.label', 'config.brevo_api_endpoint.description', 'system', 'system')
 ON CONFLICT ("key") DO NOTHING;
 ```
 
-### 2.4 Add .env.example for BE (bonus — not in scope but needed for Docker)
-
-Skip — BE is not in scope.
-
 ---
 
-## Phase 3: Dockerfiles for microservices
+## Phase 3A: BUILD — Dockerfiles for microservices
 
 ### 3.1 Rewrite emailsender Dockerfile for Bun
 
@@ -546,11 +552,188 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 CMD ["bun", "dist/index.js"]
 ```
 
+### 3.4 Fix US version-sync (prerequisite for versioned Docker images)
+
+**Problem (empirically verified):** The US repo has a pre-commit hook at
+`.githooks/pre-commit` that runs `node scripts/version-sync.mjs`, but
+**this file does not exist** in the US repo. The hook is broken.
+
+**Comparison with other repos:**
+
+| Repo | Has `version-sync.mjs`? | Has pre-commit hook? | Has CI/CD? |
+|------|------------------------|---------------------|-----------|
+| SDK | No (manual version) | No | Yes — GitHub Actions on tag push → npm publish |
+| DAL | Yes (`scripts/version-sync.mjs`) | Yes | Yes — GitHub Actions on tag push → npm publish |
+| BE | Yes (`scripts/version-sync.mjs`) | Yes | No |
+| US | **NO — broken hook** | Yes (references non-existent file) | No |
+
+**Fix:** Create `scripts/version-sync.mjs` in the US repo, based on the
+DAL implementation (simpler, parses version from branch name). This is
+the same pattern: on `release/X.Y.Z` or `hotfix/X.Y.Z` branches, the
+script syncs `package.json` version to match the branch name. On
+`develop`/`main`/`feature/` branches, it exits silently.
+
+**Repo:** `primebrick-us-v3`
+
+**File:** `scripts/version-sync.mjs` (new — copy from DAL and adapt)
+
+**Also:** Add `version:auto` and `prebuild` scripts to `emailsender/package.json`:
+```json
+{
+  "scripts": {
+    "version:auto": "node scripts/version-sync.mjs",
+    "prebuild": "node scripts/version-sync.mjs",
+    "dev": "bun --hot src/index.ts",
+    "build": "tsc",
+    ...
+  }
+}
+```
+
+**Note:** This script lives at the US repo root (`primebrick-us-v3/scripts/`),
+not per-microservice. Each microservice's `package.json` references it
+via `node scripts/version-sync.mjs` (relative to repo root when run from
+root, or via `pnpm --filter` workspace). The script reads the
+microservice's own `package.json` and updates its version field.
+
+### 3.5 GitHub Actions — BUILD workflow (Docker image publish)
+
+**Trigger:** Git tag push matching `[0-9]+.[0-9]+.[0-9]+` (same pattern
+as SDK/DAL workflows). This fires when a release or hotfix is closed
+and the tag is pushed to `main`.
+
+**Repo:** `primebrick-us-v3`
+
+**File:** `.github/workflows/build-docker.yml` (new)
+
+```yaml
+name: Build & Publish Docker Image
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Build & push emailsender image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./emailsender
+          push: true
+          tags: |
+            primebrick/emailsender:${{ steps.version.outputs.VERSION }}
+            primebrick/emailsender:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+```
+
+**How it works:**
+1. Developer closes a release/hotfix branch (GitFlow) → merges to `main`
+2. Developer tags `main` with the version (e.g., `git tag 0.2.0`)
+3. Developer pushes the tag: `git push --tags`
+4. GitHub Actions triggers on the tag push
+5. Workflow extracts version from tag name (`${GITHUB_REF_NAME}`)
+6. Builds the Docker image: `docker build -t primebrick/emailsender:0.2.0 ./emailsender`
+7. Also tags as `primebrick/emailsender:latest` (convenience for local dev)
+8. Pushes both tags to Docker Hub
+9. Uses GitHub Actions cache (`type=gha`) for fast rebuilds
+
+**Version flow (same as SDK/DAL):**
+```
+GitFlow close release/hotfix
+  → git tag 0.2.0 (pushed to main)
+  → GitHub Actions triggers
+  → version-sync.mjs already updated package.json to 0.2.0 (on pre-build)
+  → Docker image tagged as primebrick/emailsender:0.2.0
+  → Docker image also tagged as primebrick/emailsender:latest
+```
+
+**Note:** The Dockerfile itself does NOT contain the version. The
+version is applied at `docker build -t primebrick/emailsender:0.2.0 .`
+time by the CI workflow. The `package.json` version inside the image
+matches the tag (thanks to `version-sync.mjs` running as `prebuild`).
+
+**Note:** `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` must be set as
+GitHub Actions secrets in the US repo settings. This is a one-time
+setup step.
+
+**Note:** This workflow builds ALL microservices in the US repo. When a
+second microservice is added (e.g., `sms-sender`), add another
+`docker/build-push-action` step for it. All microservices share the
+same git tag (the US repo is versioned as a whole, not per-microservice).
+
 ---
 
-## Phase 4: Terraform orchestration for microservices
+## Phase 3B: RELEASE — Terraform orchestration (per-microservice)
 
-### Architecture: shared infra (existing docker-compose) + microservices (Terraform)
+### BUILD vs RELEASE — two distinct phases
+
+The Docker pipeline has two completely decoupled phases:
+
+**Phase 3A — BUILD** (produces the Docker image):
+```
+GitFlow close release/hotfix → git tag → version-sync.mjs updates package.json
+  → GitHub Actions triggers on tag push → tsc compile → docker build → docker push
+```
+- Input: source code + Dockerfile + git tag (version)
+- Output: published Docker image (e.g. `primebrick/emailsender:0.2.0`)
+- **When: on CLOSE RELEASE or CLOSE HOTFIX** (GitFlow — see `docs/gitflow.md`)
+  - Same trigger as SDK/DAL npm publishing: git tag push
+  - The git tag version becomes both the package.json version AND the Docker image tag
+- **Automated via GitHub Actions** (new workflow — see section 3A.4)
+- **Does NOT start anything** — only produces and publishes the image
+- Can run without a running infrastructure (no PG/NATS needed)
+
+**Phase 3B — RELEASE** (creates and starts the container):
+```
+Docker image (from registry) → find available port → terraform apply → running container
+```
+- Input: published Docker image + Terraform config + available port
+- Output: container running on the infra network
+- When: on deploy (manual or CD)
+- Command: `./scripts/deploy.ps1` (or `./scripts/deploy.sh`) which:
+  1. Finds the first available port 4000+ via `find-available-port` script
+  2. Runs `terraform apply -var="host_port=$PORT"`
+- **Requires running infrastructure** (PG, NATS, Casdoor must be up)
+- Can deploy an existing image without rebuilding
+
+**Three modes of operation:**
+
+| Mode | Tool | Hot reload | When |
+|------|------|-----------|------|
+| **Dev (local)** | `bun --hot src/index.ts` | Yes — soft reload, preserves HTTP server | Daily development |
+| **Dev (Docker)** | Docker Compose Watch + `bun --hot` | Yes — Compose Watch syncs files, `--hot` reloads | Testing in Docker env without rebuild |
+| **Prod** | Terraform (Phase 3B) | No — immutable container | Production deployment |
+
+These phases are **fully decoupled**:
+- BUILD without RELEASE = image published but not deployed (e.g. CI on tag push)
+- RELEASE without BUILD = deploy an existing image (e.g. rollback to previous version)
+- BUILD runs in CI (GitHub Actions on tag push), RELEASE runs manually or in CD
+
+### Architecture: shared infra (existing docker-compose) + microservices (per-service Terraform)
 
 ```
 primebrick-be-v3/infra/                   ← existing shared infrastructure (NOT renamed, NOT moved)
@@ -559,13 +742,23 @@ primebrick-be-v3/infra/                   ← existing shared infrastructure (NO
   network: primebrick-infra-net (bridge)  ← NEW: added to existing compose file
 
 primebrick-us-v3/
-  terraform/                              ← Terraform orchestration for microservices
-    main.tf                               ← Docker provider + microservice container resources
-    variables.tf                          ← all names/ports/connections are variables (no hardcoding)
-    terraform.tfvars.example              ← example values for local dev
-  emailsender/
-    Dockerfile                            ← Bun-based image (built before terraform apply)
+  emailsender/                            ← each microservice is self-contained
+    Dockerfile                            ← Bun-based image (Phase 3A = BUILD)
+    terraform/                            ← Per-microservice Terraform (Phase 3B = RELEASE)
+      main.tf                             ← ONE docker_container (no for_each)
+      variables.tf                        ← this microservice's variables only
+      terraform.tfvars.example
+      scripts/
+        find-available-port.ps1           ← Windows: Get-NetTCPConnection
+        find-available-port.sh            ← Mac/Linux: lsof / ss / netstat
+        deploy.ps1                        ← Windows wrapper: find port + terraform apply
+        deploy.sh                         ← Unix wrapper: find port + terraform apply
 ```
+
+**Key principle: each microservice has its own vertical Terraform.**
+A third-party module copies the `terraform/` boilerplate, changes
+`container_name` / `image_name` / `db_schema`, and runs `deploy.sh`.
+No dependency on other microservices' Terraform state.
 
 **The existing `primebrick-be-v3/infra/` directory is NOT renamed or moved.**
 The only change to BE is an edit to the existing
@@ -573,31 +766,32 @@ The only change to BE is an edit to the existing
 (`primebrick-infra-net`) so microservice containers can join it. No other
 BE files are touched.
 
-**Terraform** orchestrates microservice containers. It reads the infra
-network name as a `data` source (not hardcoded), starts each microservice
-container on that network, and passes connection strings as variables.
-Every name, port, and connection string is a Terraform variable — zero
-hardcoding.
+**Terraform** orchestrates one microservice container per Terraform
+directory. It reads the infra network name as a `data` source (not
+hardcoded), starts the container on that network, and passes connection
+strings as variables. Every name, port, and connection string is a
+Terraform variable — zero hardcoding.
 
 **Dev mode** (local, no Docker for the service itself):
 - Start infra: `docker compose -f infra/docker-compose.postgres.yml up -d` (from BE repo)
-- Start microservice: `cd emailsender && bun --watch src/index.ts`
+- Start microservice: `cd emailsender && bun --hot src/index.ts`
 - Terminal output is visible (Bun runs in foreground)
 - Connects to infra via `localhost:5432` (PG), `localhost:4222` (NATS)
+- `SERVICE_BASE_URL` defaults to `http://localhost:3003` (no ENV needed)
 
 **Docker mode** (Terraform-managed):
 - Start infra: `docker compose -f infra/docker-compose.postgres.yml up -d` (from BE repo)
-- Build images: `cd emailsender && docker build -t primebrick/emailsender .`
-- Apply: `cd terraform && terraform apply`
-- Terraform starts the container, joins the infra network, passes env vars
+- Build image: `cd emailsender && docker build -t primebrick/emailsender .` (Phase 3A)
+- Deploy: `cd emailsender/terraform && ./scripts/deploy.ps1` (Phase 3B)
+- The deploy script finds an available port and runs `terraform apply`
 
 | Layer | Tool | What it manages |
 |-------|------|----------------|
 | Infra | docker-compose (existing, in BE `infra/`) | PG, Casdoor, NATS, network, volumes |
-| Microservices | Terraform (Docker provider, in US `terraform/`) | Microservice containers, env vars, ports |
+| Microservices | Terraform (Docker provider, per-service) | One container + env vars + port mapping |
 | BE (next phase) | Terraform | BE container + eventually infra too |
 
-### 4.0 Edit existing BE infra docker-compose to add shared network
+### 3B.0 Edit existing BE infra docker-compose to add shared network
 
 **Repo:** `primebrick-be-v3`
 
@@ -638,15 +832,174 @@ The existing `infra/docker-compose.postgres.yml` path stays the same.
 Container names (`primebrick-postgres-18`, `primebrick-nats`,
 `primebrick-casdoor`) are unchanged.
 
-### 4.1 Create Terraform configuration for microservices
+### 3B.1 Dynamic port allocation — cross-platform scripts
 
-**Repo:** `primebrick-us-v3`
+**Problem:** Microservices can come from the main Primebrick project or
+from third-party modules. Port assignments can't be predicted in advance
+— each microservice must find its own available port at deploy time.
 
-**Directory:** `terraform/` (new)
+**Solution:** Cross-platform scripts that find the first available port
+starting from 4000. The deploy wrapper passes this port to Terraform as
+a variable.
+
+**Why 4000+?**
+- No conflict with BE (3001), FE (5173), or infra (5432, 4222, 8000)
+- Clear visual separation: 4xxx = microservices
+- No pre-allocation table needed — each deploy finds the next free port
+
+**Repo:** `primebrick-us-v3/emailsender/terraform/scripts/`
+
+#### `find-available-port.ps1` (Windows)
+
+Uses `Get-NetTCPConnection` (available on Windows 8+/Server 2012+):
+
+```powershell
+# find-available-port.ps1
+# Finds the first available TCP port starting from 4000.
+# Outputs the port number to stdout (no other output).
+# Exit code 0 = success, 1 = no port found in range.
+
+$StartPort = 4000
+$EndPort = 4999
+
+# Get all listening ports in the range
+$listening = @()
+try {
+    $listening = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
+        Where-Object { $_.LocalPort -ge $StartPort -and $_.LocalPort -le $EndPort } |
+        Select-Object -ExpandProperty LocalPort
+} catch {
+    # Get-NetTCPConnection not available or no connections — start from $StartPort
+}
+
+for ($port = $StartPort; $port -le $EndPort; $port++) {
+    if ($listening -notcontains $port) {
+        Write-Output $port
+        exit 0
+    }
+}
+
+Write-Error "No available port in range $StartPort-$EndPort"
+exit 1
+```
+
+#### `find-available-port.sh` (Mac/Linux)
+
+Uses `lsof` (Mac, always available) or `ss` (Linux, modern) with
+fallback to `netstat`:
+
+```bash
+#!/usr/bin/env bash
+# find-available-port.sh
+# Finds the first available TCP port starting from 4000.
+# Outputs the port number to stdout (no other output).
+# Exit code 0 = success, 1 = no port found in range.
+
+set -euo pipefail
+
+START_PORT=4000
+END_PORT=4999
+
+# Collect listening ports in the range
+get_listening_ports() {
+    if command -v ss &>/dev/null; then
+        # Linux: ss is modern and reliable
+        ss -tlnH 2>/dev/null | awk '{print $4}' | grep -oE '[0-9]+$' | sort -n
+    elif command -v lsof &>/dev/null; then
+        # Mac: lsof is always available
+        lsof -iTCP -sTCP:LISTEN -P -n 2>/dev/null | awk '{print $9}' | grep -oE '[0-9]+$' | sort -n
+    elif command -v netstat &>/dev/null; then
+        # Fallback: netstat (older systems)
+        netstat -tln 2>/dev/null | awk '{print $4}' | grep -oE '[0-9]+$' | sort -n
+    else
+        # No tool available — assume all ports are free
+        return 0
+    fi
+}
+
+listening=$(get_listening_ports || true)
+
+for port in $(seq $START_PORT $END_PORT); do
+    if ! echo "$listening" | grep -qx "$port"; then
+        echo "$port"
+        exit 0
+    fi
+done
+
+echo "No available port in range $START_PORT-$END_PORT" >&2
+exit 1
+```
+
+#### `deploy.ps1` (Windows wrapper)
+
+Combines port detection + Terraform apply:
+
+```powershell
+# deploy.ps1
+# Phase 3B — RELEASE: deploys the microservice container.
+# 1. Finds an available host port (4000+)
+# 2. Constructs SERVICE_BASE_URL from the port
+# 3. Runs terraform apply with the port as a variable
+
+$ErrorActionPreference = "Stop"
+
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$port = & "$scriptDir\find-available-port.ps1"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to find an available port"
+    exit 1
+}
+
+Write-Host "Deploying microservice on host port $port..."
+Write-Host "SERVICE_BASE_URL will be http://localhost:$port"
+
+# The host port is the EXPOSED port (reachable from the BE on the host).
+# The internal port is always 3003 (container-internal).
+# SERVICE_BASE_URL must be the exposed URL because the BE proxy runs on
+# the host and routes to the microservice via localhost:{host_port}.
+terraform -chdir="$scriptDir\.." apply `
+    -var="host_port=$port" `
+    -var="service_base_url=http://localhost:$port" `
+    -auto-approve
+```
+
+#### `deploy.sh` (Mac/Linux wrapper)
+
+```bash
+#!/usr/bin/env bash
+# deploy.sh
+# Phase 3B — RELEASE: deploys the microservice container.
+# 1. Finds an available host port (4000+)
+# 2. Constructs SERVICE_BASE_URL from the port
+# 3. Runs terraform apply with the port as a variable
+
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+port=$(bash "$script_dir/find-available-port.sh")
+if [ $? -ne 0 ]; then
+    echo "Failed to find an available port" >&2
+    exit 1
+fi
+
+echo "Deploying microservice on host port $port..."
+echo "SERVICE_BASE_URL will be http://localhost:$port"
+
+# The host port is the EXPOSED port (reachable from the BE on the host).
+terraform -chdir="$script_dir/.." apply \
+    -var="host_port=$port" \
+    -var="service_base_url=http://localhost:$port" \
+    -auto-approve
+```
+
+### 3B.2 Per-microservice Terraform configuration
+
+**Repo:** `primebrick-us-v3/emailsender/terraform/`
+
+Each microservice has its own `terraform/` directory with a single
+`docker_container` resource (no `for_each`).
 
 #### `terraform/variables.tf`
-
-All names, ports, and connection strings are variables — nothing is hardcoded:
 
 ```hcl
 # ─── Infrastructure connection (from primebrick-infra docker-compose) ──
@@ -677,7 +1030,7 @@ variable "postgres_user" {
 variable "postgres_password" {
   description = "PostgreSQL password"
   type        = string
-  default     = "primebrick_dev"
+  sensitive   = true
 }
 
 variable "postgres_db" {
@@ -686,31 +1039,85 @@ variable "postgres_db" {
   default     = "primebrick"
 }
 
-# NATS_URL is NOT a Terraform variable — it comes from the config table.
-# The config table is seeded with local dev defaults (nats://127.0.0.1:4222)
-# and updated for Docker via fire-and-forget SQL (nats://primebrick-nats:4222).
+# ─── This microservice's identity ──────────────────────────────────────
+variable "image_name" {
+  description = "Docker image name (without tag) for this microservice"
+  type        = string
+  default     = "primebrick/emailsender"
+}
 
-# ─── Microservice definitions ─────────────────────────────────────────
-variable "microservices" {
-  description = "Map of microservices to deploy. Each key is the service code. Ports start at 4001 and increment."
-  type = map(object({
-    image_name     = string
-    container_name = string
-    host_port      = number
-    internal_port  = number
-    db_schema      = string
-  }))
-  default = {
-    emailsender = {
-      image_name     = "primebrick/emailsender"
-      container_name = "primebrick-emailsender"
-      host_port      = 4001
-      internal_port  = 3003
-      db_schema      = "emailsender"
-    }
-  }
+variable "image_tag" {
+  description = "Docker image tag (version). Matches the git tag from GitFlow close release/hotfix. Use 'latest' for dev, or a specific version like '0.2.0' for prod."
+  type        = string
+  default     = "latest"
+}
+
+variable "container_name" {
+  description = "Docker container name"
+  type        = string
+  default     = "primebrick-emailsender"
+}
+
+variable "db_schema" {
+  description = "Database schema for this microservice"
+  type        = string
+  default     = "emailsender"
+}
+
+variable "internal_port" {
+  description = "Container-internal HTTP port (always 3003)"
+  type        = number
+  default     = 3003
+}
+
+# ─── Dynamic port (set by deploy script) ───────────────────────────────
+variable "host_port" {
+  description = "Host port to expose the microservice on. Set by deploy script (find-available-port). NOT hardcoded — found dynamically at deploy time."
+  type        = number
+  # No default — must be provided by deploy script
+}
+
+# ─── SERVICE_BASE_URL (ENV exception — see analysis below) ─────────────
+variable "service_base_url" {
+  description = "Exposed URL that the BE proxy uses to reach this microservice. Must be http://localhost:{host_port} because the BE runs on the host. Set by deploy script."
+  type        = string
+  # No default — must be provided by deploy script
 }
 ```
+
+**Why `service_base_url` is an ENV var exception:**
+
+The microservice needs `base_url` for one purpose only: self-registration
+via NATS (telling the BE proxy where to find it). The BE proxy
+(`proxy-service.ts` line 107) uses `instance.base_url` to route requests:
+`new URL(targetPath, instance.base_url)`.
+
+This value **cannot** come from the config table because:
+1. The host port is **dynamically allocated** at deploy time — it changes
+   every deployment
+2. The config table is seeded by SQL patches in the repo, which can't
+   know the future host port
+3. The microservice inside the container cannot discover its own host
+   port mapping
+
+The value must be the **EXPOSED URL** (`http://localhost:{host_port}`),
+not the internal Docker URL (`http://{container_name}:3003`), because the
+BE runs on the host and routes via `localhost:{host_port}`.
+
+In dev mode, `SERVICE_BASE_URL` defaults to `http://localhost:3003`
+(internal port, since the microservice runs locally — no Docker port
+mapping). No ENV var is needed in dev mode.
+
+**Final ENV var list (3 vars only):**
+| ENV var | Why it's ENV | Set by |
+|---------|-------------|--------|
+| `DATABASE_URL` | Needed before DB connection (chicken-and-egg) | Terraform (from PG vars) |
+| `DB_SCHEMA` | Needed before first query (structural) | Terraform (from microservice var) |
+| `SERVICE_BASE_URL` | Dynamic host port, can't be in config table | Terraform (from deploy script) |
+
+Everything else (`nats_url`, `service_code`, `http_port`,
+`brevo_api_endpoint`) comes from the `emailsender.config` table (see
+section 2.4–2.5).
 
 #### `terraform/main.tf`
 
@@ -727,66 +1134,46 @@ terraform {
 provider "docker" {}
 
 # ─── Data source: find the infra network (created by docker-compose) ────
-# This is NOT hardcoded — it reads the network by name from the variable.
 data "docker_network" "infra" {
   name = var.infra_network_name
 }
 
-# ─── Microservice containers ───────────────────────────────────────────
+# ─── This microservice's container (single resource, no for_each) ───────
 resource "docker_container" "microservice" {
-  for_each = var.microservices
-
-  name  = each.value.container_name
-  image = each.value.image_name
+  name  = var.container_name
+  image = "${var.image_name}:${var.image_tag}"
 
   # Expose the microservice port on the host
+  # host_port is dynamic (found by deploy script), internal_port is always 3003
   ports {
-    internal = each.value.internal_port
-    external = each.value.host_port
+    internal = var.internal_port
+    external = var.host_port
   }
 
-  # Join the shared infra network (referenced by data source, not hardcoded)
+  # Join the shared infra network
   networks {
     network_id = data.docker_network.infra.id
   }
 
-  # Environment variables — ONLY true primitives that can't come from config table.
-  # DATABASE_URL: needed before DB connection (chicken-and-egg)
-  # DB_SCHEMA: needed before first query (structural)
-  # Everything else (NATS_URL, SERVICE_CODE, SERVICE_BASE_URL, HTTP_PORT,
-  # BREVO_API_ENDPOINT) comes from the emailsender.config table at startup.
+  # Environment variables — only true primitives + SERVICE_BASE_URL exception.
+  # Everything else comes from the emailsender.config table at startup.
   env = [
     "DATABASE_URL=postgresql://${var.postgres_user}:${var.postgres_password}@${var.postgres_host}:${var.postgres_port}/${var.postgres_db}",
-    "DB_SCHEMA=${each.value.db_schema}",
+    "DB_SCHEMA=${var.db_schema}",
+    "SERVICE_BASE_URL=${var.service_base_url}",
     "NODE_ENV=production",
   ]
 
   restart = "unless-stopped"
 
-  # Healthcheck
+  # Healthcheck — internal port is always 3003
   healthcheck {
-    test     = ["CMD-SHELL", "bun -e \"fetch('http://localhost:${each.value.internal_port}/health').then(r => process.exit(r.status === 200 ? 0 : 1)).catch(() => process.exit(1))\""]
+    test     = ["CMD-SHELL", "bun -e \"fetch('http://localhost:3003/health').then(r => process.exit(r.status === 200 ? 0 : 1)).catch(() => process.exit(1))\""]
     interval = "30s"
     timeout  = "10s"
     retries  = 3
   }
 }
-```
-
-**Note on env vars:** Only `DATABASE_URL`, `DB_SCHEMA`, and `NODE_ENV` are
-passed as ENV vars. All other config (`nats_url`, `service_code`,
-`service_base_url`, `http_port`, `brevo_api_endpoint`) is read from the
-`emailsender.config` table at startup (see section 2.4–2.5). The
-`brevo_api_key` comes from the `emailsender.providers` table at runtime.
-
-**Post-deploy config UPDATE for Docker:** After the container starts and
-the DB patch runs, the config table will have local dev defaults. For
-Docker deployments, run a one-shot SQL update (or include it in the
-fire-and-forget scripts) to set Docker-appropriate values:
-
-```sql
-UPDATE emailsender.config SET value = 'nats://primebrick-nats:4222' WHERE key = 'nats_url';
-UPDATE emailsender.config SET value = 'http://primebrick-emailsender:3003' WHERE key = 'service_base_url';
 ```
 
 #### `terraform/terraform.tfvars.example`
@@ -796,44 +1183,53 @@ UPDATE emailsender.config SET value = 'http://primebrick-emailsender:3003' WHERE
 # Override only if you changed the infra compose defaults.
 # infra_network_name = "primebrick-infra-net"
 # postgres_host      = "primebrick-postgres-18"
-# Note: nats_host is NOT a Terraform var — NATS URL comes from config table.
 
-# ─── Microservices ─────────────────────────────────────────────────────
-# No secrets in ENV — BREVO_API_KEY comes from emailsender.providers table.
-# Config values (nats_url, service_base_url, etc.) come from emailsender.config table.
-# See section 2.4 for the full ENV-vs-config analysis.
-microservices = {
-  emailsender = {
-    image_name     = "primebrick/emailsender"
-    container_name = "primebrick-emailsender"
-    host_port      = 4001
-    internal_port  = 3003
-    db_schema      = "emailsender"
-  }
-}
+# ─── PostgreSQL credentials ────────────────────────────────────────────
+# Set these to match your infra docker-compose.
+postgres_password = "change_me"
+
+# ─── This microservice ─────────────────────────────────────────────────
+# image_name     = "primebrick/emailsender"
+# image_tag      = "latest"   # or a specific version: "0.2.0"
+# container_name = "primebrick-emailsender"
+# db_schema      = "emailsender"
+
+# ─── Dynamic port + base URL ───────────────────────────────────────────
+# These are set by the deploy script (deploy.ps1 / deploy.sh).
+# Do NOT set them manually here — the script finds the available port
+# and passes it via -var flags.
+# host_port         = 4001    # set by deploy script
+# service_base_url  = "http://localhost:4001"  # set by deploy script
 ```
 
-### 4.2 Port allocation — microservices at 4000+
+### 3B.3 Port allocation — dynamic, not pre-assigned
 
-Microservices are exposed on the host starting at port **4001** and incrementing:
+Ports are **not pre-assigned**. Each microservice finds its own available
+port at deploy time via the `find-available-port` script (see 3B.1).
 
-| Microservice | Host port | Internal port |
-|-------------|-----------|--------------|
-| emailsender | 4001 | 3003 |
-| (future) sms-sender | 4002 | 3003 |
-| (future) pdf-generator | 4003 | 3003 |
-| ... | 4004+ | 3003 |
+**Why dynamic?**
+- Microservices can come from the main project or third-party modules
+- Third-party modules can't know what ports other microservices use
+- Installation order is unpredictable
+- No central port registry to maintain
 
-**Why 4000+?**
-- No conflict with BE (3001), FE (5173), or infra (5432, 4222, 8000)
-- Clear visual separation: 4xxx = microservices
-- Incremental — each new microservice takes the next available port
+**How it works:**
+1. `find-available-port.ps1` / `.sh` scans ports 4000–4999
+2. Returns the first port not in `LISTEN` state
+3. Deploy script passes it to Terraform as `host_port`
+4. Terraform maps `host_port` → `internal_port` (always 3003)
 
-**Note:** Internal port is always 3003 (the microservice's HTTP_PORT).
-The host port is mapped via Terraform. This means all microservices use
-the same internal port, simplifying configuration.
+| Aspect | Value |
+|--------|-------|
+| Port range | 4000–4999 (100 available ports) |
+| Internal port | Always 3003 (container-internal) |
+| Host port | Dynamic, found at deploy time |
+| Conflict avoidance | Script checks `LISTEN` state before assigning |
 
-### 4.3 Dev mode — local Bun with terminal output
+**Note:** Internal port is always 3003. All microservices use the same
+internal port — the host port mapping is what differentiates them.
+
+### 3B.4 Dev mode — local Bun with terminal output
 
 For development, microservices run locally with Bun (not in Docker).
 The developer sees the terminal output directly.
@@ -850,71 +1246,170 @@ pnpm run dev    # tsx watch, port 3001, terminal output visible
 
 # 3. Start microservice(s) with Bun
 cd primebrick-us-v3/emailsender
-bun --watch src/index.ts    # port 3003, terminal output visible
+bun --hot src/index.ts    # port 3003, terminal output visible
 ```
+
+In dev mode, `SERVICE_BASE_URL` defaults to `http://localhost:3003`
+(the microservice runs locally, no Docker port mapping). No ENV var
+needed — the `requireEnv` default handles it. In Docker mode, the
+deploy script passes the dynamic host port as an ENV var.
 
 **Why not Docker for dev?**
 - Terminal output is immediately visible (no `docker logs -f`)
-- Hot reload via `bun --watch` is faster than Docker rebuild cycles
+- Hot reload via `bun --hot` is faster than Docker rebuild cycles
 - Debugger attaches directly to the local process
 - Infra containers (PG, NATS, Casdoor) are still in Docker — only the
   microservice itself runs locally
 
-### 4.4 Docker mode — Terraform-managed deployment
+**`bun --hot` vs `bun --watch`** (empirically verified from Bun docs):
+- `--hot`: soft reload — re-evaluates changed modules without restarting
+  the process. HTTP server stays running, in-flight requests are not
+  interrupted, `globalThis` state is preserved. **Best for HTTP servers.**
+- `--watch`: hard restart — shuts down and restarts the entire process.
+  Global state is reset. Better for scripts/CLI tools, not HTTP servers.
+- Reference: https://bun.sh/docs/runtime/watch-mode
 
-For testing the Docker image or deploying to a server:
+### 3B.4b Docker dev mode — Compose Watch + bun --hot
 
+For developers who want to test the microservice inside Docker (e.g., to
+verify the Dockerfile, test network connectivity to infra containers, or
+reproduce a Docker-only bug) **without rebuilding the image on every
+code change**.
+
+**Problem:** Bun's `--hot` and `--watch` have known issues in Docker
+with volume mounts — inotify events don't propagate reliably from host
+to container (GitHub issues #14380, #5841). This affects Mac and Windows
+especially.
+
+**Solution:** Docker Compose Watch (GA in Compose v2.17+) syncs changed
+files explicitly, bypassing inotify. Combined with `bun --hot` inside
+the container, this gives hot reload in Docker without rebuilds.
+
+**Repo:** `primebrick-us-v3/emailsender`
+
+**File:** `docker-compose.dev.yml` (new — dev only, not for production)
+
+```yaml
+# Development compose file — hot reload in Docker without rebuilds.
+# Usage: docker compose -f docker-compose.dev.yml up
+# Requires Docker Compose v2.17+ (for `watch` feature).
+#
+# This file is NOT used by Terraform (prod). It's dev-only.
+services:
+  emailsender-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Override the prod CMD with dev mode — run from source, not dist/
+    command: bun --hot src/index.ts
+    ports:
+      - "3003:3003"  # Direct mapping, no dynamic port needed in dev
+    environment:
+      DATABASE_URL: postgresql://primebrick:primebrick@primebrick-postgres-18:5432/primebrick
+      DB_SCHEMA: emailsender
+      SERVICE_BASE_URL: http://localhost:3003
+      NODE_ENV: development
+    networks:
+      - primebrick-infra-net
+    develop:
+      watch:
+        # Sync source code changes → bun --hot picks them up
+        - action: sync
+          path: ./src
+          target: /app/src
+        # Rebuild image when dependencies change
+        - action: rebuild
+          path: package.json
+        - action: rebuild
+          path: pnpm-lock.yaml
+
+networks:
+  primebrick-infra-net:
+    external: true
+    name: primebrick-infra-net
+```
+
+**How it works:**
+1. `docker compose -f docker-compose.dev.yml up` builds the image (first
+   time only) and starts the container with `bun --hot src/index.ts`
+2. When you edit a file in `./src/`, Compose Watch syncs it to `/app/src/`
+   inside the container (bypassing inotify)
+3. Bun's `--hot` detects the file change and soft-reloads the module
+4. HTTP server stays running — no restart, no connection drops
+5. When you change `package.json` or `pnpm-lock.yaml`, Compose rebuilds
+   the image (deps changed — needs `pnpm install`)
+
+**When to use this vs local dev:**
+
+| Scenario | Use |
+|----------|-----|
+| Daily development, fast iteration | Local `bun --hot src/index.ts` |
+| Testing Dockerfile changes | `docker compose -f docker-compose.dev.yml up` |
+| Reproducing Docker-only network issues | Compose Watch dev mode |
+| Testing against Dockerized infra (PG, NATS) | Either — local dev also connects to Dockerized infra via `localhost` |
+| Production deployment | Terraform (Phase 3B.5) |
+
+### 3B.5 Docker mode — BUILD + RELEASE
+
+**Phase 3A — BUILD (automated via GitHub Actions on tag push):**
+
+Normally, BUILD is automated by the GitHub Actions workflow (section 3.5):
+```
+GitFlow close release/hotfix → git tag 0.2.0 → git push --tags
+  → GitHub Actions triggers → builds image → pushes primebrick/emailsender:0.2.0
+```
+
+For local testing (manual build, no CI):
 ```bash
-# 1. Start shared infrastructure
+cd primebrick-us-v3/emailsender
+docker build -t primebrick/emailsender:0.2.0 .   # version from package.json
+# Or: docker build -t primebrick/emailsender:latest .  # for local dev
+```
+
+**Phase 3B — RELEASE (create and start the container):**
+```bash
+# 1. Start shared infrastructure (if not already running)
 cd primebrick-be-v3
 docker compose -f infra/docker-compose.postgres.yml up -d
 
-# 2. Build microservice Docker image
-cd primebrick-us-v3/emailsender
-docker build -t primebrick/emailsender .
+# 2. Deploy the microservice
+cd primebrick-us-v3/emailsender/terraform
+cp terraform.tfvars.example terraform.tfvars   # fill in postgres_password
+./scripts/deploy.ps1    # Windows
+# or: bash ./scripts/deploy.sh   # Mac/Linux
 
-# 3. Deploy via Terraform
-cd primebrick-us-v3/terraform
-cp terraform.tfvars.example terraform.tfvars   # fill in secrets
-terraform init
-terraform plan    # review what will be created
-terraform apply   # start the microservice container
+# The deploy script:
+#   - Finds the first available port 4000+ (e.g. 4001)
+#   - Runs: terraform apply -var="host_port=4001" -var="service_base_url=http://localhost:4001"
 
-# 4. Verify
-curl http://localhost:4001/health
+# 3. Verify
+curl http://localhost:4001/health    # port may vary — check deploy script output
+docker logs primebrick-emailsender   # verify NATS registration
 
-# 5. Tear down
-terraform destroy
+# 4. Tear down
+terraform -chdir=primebrick-us-v3/emailsender/terraform destroy
 ```
 
-### 4.5 Adding a new microservice
+### 3B.6 Adding a new microservice (or third-party module)
 
 To add a new microservice (e.g., `sms-sender`):
 
 1. Create the microservice directory: `primebrick-us-v3/sms-sender/`
-2. Create its `Dockerfile` (from the template in Phase 3.3)
+2. Create its `Dockerfile` (from the template in Phase 3A)
 3. Build the image: `cd sms-sender && docker build -t primebrick/sms-sender .`
-4. Add it to `terraform.tfvars`:
+4. Copy the `terraform/` boilerplate from `emailsender/terraform/`
+5. Edit `variables.tf` defaults:
 ```hcl
-microservices = {
-  emailsender = { ... },
-  sms-sender = {
-    image_name     = "primebrick/sms-sender"
-    container_name = "primebrick-sms-sender"
-    host_port      = 4002
-    internal_port  = 3003
-    db_schema      = "sms_sender"
-    service_code   = "SMS_SENDER"
-    env = {
-      TWILIO_API_KEY = "your_twilio_key"
-    }
-  }
-}
+variable "image_name"     { default = "primebrick/sms-sender" }
+variable "container_name" { default = "primebrick-sms-sender" }
+variable "db_schema"      { default = "sms_sender" }
 ```
-5. `terraform apply` — Terraform starts the new container alongside the existing one
+6. Deploy: `cd sms-sender/terraform && ./scripts/deploy.ps1`
 
-No changes to `main.tf` or `variables.tf` — the `for_each` over the
-`microservices` map handles it automatically.
+**No changes to emailsender's Terraform.** Each microservice is fully
+independent. A third-party module copies the boilerplate, changes 3
+variables, and deploys. The deploy script finds its own available port
+automatically — no port coordination needed between microservices.
 
 ---
 
@@ -929,7 +1424,7 @@ No changes to `main.tf` or `variables.tf` — the `for_each` over the
 5. `curl http://localhost:3003/health` — verify health endpoint
 6. `pnpm run test` — verify all tests pass
 
-### 5.2 Docker + Terraform verification
+### 5.2 Docker + Terraform verification (BUILD + RELEASE)
 
 1. Start shared infrastructure (from BE repo, existing path unchanged):
    ```
@@ -937,22 +1432,23 @@ No changes to `main.tf` or `variables.tf` — the `for_each` over the
    docker compose -f infra/docker-compose.postgres.yml up -d
    docker compose -f infra/docker-compose.postgres.yml ps  # all healthy
    ```
-2. Build the microservice image:
+2. BUILD — produce the Docker image (versioned):
    ```
    cd primebrick-us-v3/emailsender
-   docker build -t primebrick/emailsender .
+   docker build -t primebrick/emailsender:latest .
+   # In CI, the GitHub Actions workflow does this automatically on tag push:
+   #   docker build -t primebrick/emailsender:0.2.0 .
    ```
-3. Deploy via Terraform:
+3. RELEASE — deploy via deploy script (finds port + terraform apply):
    ```
-   cd primebrick-us-v3/terraform
-   cp terraform.tfvars.example terraform.tfvars  # fill in secrets
-   terraform init
-   terraform plan    # review
-   terraform apply   # start container
+   cd primebrick-us-v3/emailsender/terraform
+   cp terraform.tfvars.example terraform.tfvars  # fill in postgres_password
+   ./scripts/deploy.ps1    # Windows (or: bash ./scripts/deploy.sh)
+   # Note the port from script output (e.g. "Deploying on host port 4001")
    ```
-4. `curl http://localhost:4001/health` — verify emailsender responds (port 4001, not 3003)
+4. `curl http://localhost:{port}/health` — verify emailsender responds (port from step 3)
 5. `docker logs primebrick-emailsender` — verify NATS registration works
-6. `terraform destroy` — stop microservice
+6. `terraform -chdir=primebrick-us-v3/emailsender/terraform destroy` — stop microservice
 7. `docker compose -f ../primebrick-be-v3/infra/docker-compose.postgres.yml down` — stop infra
 
 ### 5.3 npm publishing verification
@@ -968,28 +1464,43 @@ No changes to `main.tf` or `variables.tf` — the `for_each` over the
 - [ ] SDK published to npmjs as `@primebrick/sdk`
 - [ ] DAL published to npmjs as `@primebrick/dal-pg`
 - [ ] US/emailsender `package.json` uses npm version ranges (no `file:` refs)
-- [ ] US/emailsender dev script uses `bun --watch` (no `tsx`)
+- [ ] US/emailsender dev script uses `bun --hot` (no `tsx`)
 - [ ] US/emailsender start script uses `bun dist/index.js` (no `node`)
 - [ ] US/emailsender Dockerfile uses `oven/bun:1.1.0-alpine` base image (pinned, not `latest`)
 - [ ] US/emailsender Docker build succeeds without workspace context
+- [ ] US `scripts/version-sync.mjs` created (fixes broken pre-commit hook)
+- [ ] US `package.json` has `version:auto` and `prebuild` scripts (version-sync)
+- [ ] US `.github/workflows/build-docker.yml` created (triggers on git tag push)
+- [ ] GitHub Actions workflow tags Docker image with version from git tag
+- [ ] GitHub Actions workflow also tags as `latest`
 - [ ] BE `infra/docker-compose.postgres.yml` edited to add `primebrick-infra-net` network (no rename, no new dirs)
 - [ ] No other BE files modified
-- [ ] `primebrick-us-v3/terraform/` directory created with `main.tf`, `variables.tf`, `terraform.tfvars.example`
+- [ ] `primebrick-us-v3/emailsender/terraform/` directory created with `main.tf`, `variables.tf`, `terraform.tfvars.example`
+- [ ] `primebrick-us-v3/emailsender/terraform/scripts/` contains `find-available-port.ps1`, `find-available-port.sh`, `deploy.ps1`, `deploy.sh`
+- [ ] `primebrick-us-v3/emailsender/docker-compose.dev.yml` created (Compose Watch + bun --hot)
 - [ ] Terraform uses `data "docker_network"` to reference infra network (not hardcoded)
-- [ ] Only DATABASE_URL and DB_SCHEMA passed as ENV vars (everything else from config table)
+- [ ] Terraform has a single `docker_container` resource (no `for_each` map)
+- [ ] Terraform `image_tag` variable defaults to `latest`, overridable for prod (e.g. `0.2.0`)
+- [ ] Only 3 ENV vars passed: `DATABASE_URL`, `DB_SCHEMA`, `SERVICE_BASE_URL` (everything else from config table)
+- [ ] `SERVICE_BASE_URL` is the exposed URL (`http://localhost:{host_port}`), not internal Docker URL
 - [ ] Config table seeded with microservice config keys (patch 0002 + fire-and-forget)
 - [ ] WEBHOOK_API_KEY removed from requireEnv (dead code)
 - [ ] NatsClient.getConnection() accepts URL parameter (not ENV-only)
 - [ ] Docker image name: `primebrick/emailsender` (slash-separated, lowercase)
 - [ ] Container name: `primebrick-emailsender` (hyphen-separated, lowercase)
-- [ ] Microservice host port: 4001 (first in the 4000+ range)
+- [ ] `find-available-port.ps1` finds first available port 4000+ on Windows
+- [ ] `find-available-port.sh` finds first available port 4000+ on Mac/Linux
+- [ ] `deploy.ps1` / `deploy.sh` combines port detection + terraform apply
 - [ ] `terraform plan` shows correct container resource
-- [ ] `terraform apply` starts the container on the infra network
-- [ ] `curl http://localhost:4001/health` returns 200
+- [ ] `terraform apply` (via deploy script) starts the container on the infra network
+- [ ] `curl http://localhost:{port}/health` returns 200 (port from deploy script output)
 - [ ] `terraform destroy` cleanly removes the container
-- [ ] Dev mode: `bun --watch src/index.ts` runs locally with terminal output
+- [ ] Dev mode (local): `bun --hot src/index.ts` runs with terminal output, soft reload on code changes
+- [ ] Dev mode (Docker): `docker compose -f docker-compose.dev.yml up` — Compose Watch syncs files, bun --hot reloads
+- [ ] Dev mode: `SERVICE_BASE_URL` defaults to `http://localhost:3003` (no ENV needed)
 - [ ] All US unit tests pass (`pnpm run test`)
-- [ ] GitFlow versioning documented (prerelease for develop, stable for main)
+- [ ] GitFlow versioning: BUILD triggers on close release/hotfix (git tag push)
+- [ ] GitFlow versioning: Docker image tag matches package.json version (via version-sync.mjs)
 - [ ] .dockerignore created for emailsender
 
 ---
@@ -1000,5 +1511,8 @@ No changes to `main.tf` or `variables.tf` — the `for_each` over the
 - BE Terraform orchestration (BE stays on docker-compose for infra) — next phase
 - Renaming or moving BE `infra/` directory — not doing this
 - FE Dockerfile or Bun migration (FE stays on Vite/Node)
-- CI/CD pipeline setup (GitHub Actions for auto-publish)
 - Verdaccio local registry (using real npmjs instead)
+- CD (continuous deployment) — auto-running `terraform apply` on tag push.
+  The BUILD (GitHub Actions → Docker image) is automated; the RELEASE
+  (Terraform deploy) is manual for now. CD can be added later by having
+  GitHub Actions invoke the deploy script after image push.
