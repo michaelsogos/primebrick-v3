@@ -5,3 +5,4 @@ packages:
   - "../primebrick-us-v3/emailsender"
   - "../primebrick-dal-v3"
   - "../primebrick-v3-sdk"
+  - "../primebrick-v3-docs"
