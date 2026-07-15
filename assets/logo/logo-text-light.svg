@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="130" height="28" viewBox="0 0 130 28" fill="none">
+  <defs>
+    <linearGradient id="pb-text-grad-light" x1="0" y1="0" x2="130" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+  <text x="0" y="21" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="url(#pb-text-grad-light)" letter-spacing="-0.3">PrimeBrick</text>
+</svg>
