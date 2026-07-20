@@ -17,6 +17,18 @@
 			"path": "../primebrick-dal-v3"
 		},
 		{
+			"name": "SDK Library",
+			"path": "../primebrick-v3-sdk"
+		},	
+				{
+			"name": "Astro Website",
+			"path": "../primebrick-v3-website"
+		},	
+				{
+			"name": "Zudoku Docs",
+			"path": "../primebrick-v3-docs"
+		},	
+		{
 			"name": "AI Plans",
 			"path": "ai-plans"
 		}
