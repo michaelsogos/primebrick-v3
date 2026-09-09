@@ -1,0 +1,305 @@
+# Smart Regex — Deterministic Breakdown + AI Status Animations
+
+## Objective
+
+Two improvements to the Smart Regex AI chat panel:
+
+1. **Deterministic breakdown** — Replace the LLM-generated regex breakdown with
+   a deterministic, AST-based breakdown using `@eslint-community/regexpp`.
+   The AI chat panel shows: preview card → bullet list → question (right-aligned).
+
+2. **AI status animations** — Improve the visual feedback for each AI state with
+   distinct icons and CSS-only animations (three-dot typing, bouncing, pulsing).
+
+The LLM continues to respond in JSON internally, but with a simplified format
+(pattern + flags + description only, no breakdown). The UI hides the JSON
+completely and shows only the regex + deterministic bullet list.
+
+## Decisions (confirmed with user)
+
+| Decision | Choice |
+|----------|--------|
+| LLM response format | Simplified JSON (pattern + flags + description, no breakdown) |
+| Multiple options | Keep A/B/C (1-3 regex candidates) |
+| Breakdown source | `@eslint-community/regexpp` (ESLint-grade AST parser, ESM, 0 deps) |
+| UI layout | Preview card → bullet list → question (right-aligned) |
+| Status animations | CSS-only, distinct icons per state, three-dot typing indicator |
+
+## Impacted Files
+
+### New files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/components/ui/smart-regex-input/regex-explainer.ts` | Uses `@eslint-community/regexpp` to parse regex AST and generate `RegexPart[]` breakdown |
+
+### Modified files
+
+| File | Changes |
+|------|---------|
+| `package.json` | Add `@eslint-community/regexpp` dependency (v4.12.2, fixed version) |
+| `use-regex-ai.svelte.ts` | Simplify `SYSTEM_PROMPT` (remove breakdown request). Simplify `parseRegexChoices` (no breakdown parsing). Remove `breakdown` from `RegexChoice`. |
+| `regex-ai-chat-panel.svelte` | Replace LLM breakdown with `explainRegex()` output. Add AI status animations + distinct icons per state. |
+
+### Files NOT modified
+
+- `tokenizeRegex` function — kept as-is for syntax highlighting in the preview card
+- Translations — no new keys needed (breakdown label already exists)
+- Seed patches / fire-and-forget — no translation changes
+- SDK — no changes
+
+---
+
+## Step 1: Add `@eslint-community/regexpp` dependency
+
+```bash
+cd D:\git\primebrick\primebrick-fe-v3
+pnpm add @eslint-community/regexpp@4.12.2
+```
+
+- Pin to exact version `4.12.2` (mandatory per package-versioning rule)
+- Verify it resolves in `package.json` with no `^` or `~`
+
+## Step 2: Create `regex-explainer.ts`
+
+New file: `src/lib/components/ui/smart-regex-input/regex-explainer.ts`
+
+**Purpose**: Parse a regex string into an AST using `@eslint-community/regexpp`,
+walk the AST with a visitor, and generate a `RegexPart[]` array (fragment + meaning).
+
+**API**:
+
+```ts
+import type { RegexPart } from './use-regex-ai.svelte';
+
+/**
+ * Parse a regex pattern + flags and return a deterministic breakdown
+ * of each component with a human-readable description.
+ */
+export function explainRegex(pattern: string, flags: string): RegexPart[];
+```
+
+**Implementation approach**:
+
+1. Use `parseRegExpLiteral(`/${pattern}/${flags}`)` to get the AST
+2. Use `visitRegExpAST(ast, handlers)` with a visitor that collects `RegexPart[]`
+3. Visitor handlers for each AST node type:
+   - `Assertion` (start/end) → "^" → "Start of string", "$" → "End of string"
+   - `CharacterClass` ([...]) → "[a-z]" → "Lowercase letters a-z"
+   - `Quantifier` ({n,m}, *, +, ?) → "{3,5}" → "Between 3 and 5 times"
+   - `Character` (literal) → "a" → "Literal 'a'"
+   - `Group` / `CapturingGroup` ((...)) → "(...)" → "Group: ..."
+   - `Alternation` (|) → "|" → "OR"
+   - `Backreference` (\1) → "\1" → "Backreference to group 1"
+   - `CharacterClassRange` (a-z inside [...]) → handled within CharacterClass
+4. If parsing fails (invalid regex), return empty array `[]`
+
+**Key considerations**:
+
+- The visitor walks the AST in order, so the breakdown follows the regex left-to-right
+- Nested groups are flattened with indentation in the meaning
+- Character classes are described as a single unit
+- Quantifiers are attached to the preceding element in the meaning
+
+## Step 3: Simplify `use-regex-ai.svelte.ts`
+
+1. **Simplify `SYSTEM_PROMPT`** — Remove the breakdown request. The LLM only returns
+   pattern + flags + description:
+
+   ```
+   You are a regex generation assistant. The user describes a validation requirement in natural language. You must:
+   1. Generate 1 to 3 valid JavaScript regex patterns that satisfy the requirement.
+   2. For each pattern, provide a brief one-line description.
+   3. Format your response as JSON:
+      {"patterns": [{"pattern": "...", "flags": "", "description": "..."}]}
+   4. Flags must be one of: "", "g", "i", "m", "gi", "gm", "im", "gim".
+   5. Keep patterns minimal and precise. Prefer anchored patterns (^...$) for full-string validation.
+   Always respond with valid JSON. No markdown, no code fences, just the JSON object.
+   ```
+
+2. **Remove `breakdown` from `RegexChoice`** — Now generated by frontend via `explainRegex()`
+
+3. **Simplify `parseRegexChoices`** — Remove the breakdown parsing logic
+
+4. **Keep `RegexPart` interface** — Still needed, used by `regex-explainer.ts`
+
+## Step 4: Update `regex-ai-chat-panel.svelte` — Breakdown
+
+1. **Import `explainRegex`** from `./regex-explainer.ts`
+2. **Replace LLM breakdown with deterministic breakdown**:
+   - Currently: `{#each choice.breakdown as part}` (from LLM)
+   - New: `{#each explainRegex(choice.pattern, choice.flags) as part}` (from regexpp)
+3. **Keep the bullet list rendering** (already exists, just change the data source)
+4. **Keep the preview card** with syntax highlighting + copy CTA (already done)
+5. **Keep the question on the right** (already done)
+6. **Keep A/B/C for multiple choices** (already done)
+
+## Step 5: Add AI Status Animations
+
+Improve the visual feedback for each AI state with distinct icons and CSS-only animations.
+
+### Current states (empirically verified from code)
+
+| State | Condition | Current UI |
+|-------|-----------|------------|
+| Initializing | `!is_ready && !is_loading_model && !error` | LoaderCircle spin + "Initializing..." |
+| WebGPU error | `error === 'webgpu_required'` | Brain icon (static) + error text |
+| Loading model | `is_loading_model` | LoaderCircle spin + progress bar |
+| Ready (empty) | `is_ready && messages.length === 0` | Brain icon (static) + "Model ready" |
+| Streaming | `is_streaming` | Bot icon + LoaderCircle spin in a bubble |
+| Error (generic) | `error && error !== 'webgpu_required'` | (not explicitly handled) |
+
+### Proposed design
+
+Each state gets a **distinct Lucide icon** + **CSS-only animation**:
+
+| State | Icon | Animation | Color |
+|-------|------|-----------|-------|
+| Initializing | `LoaderCircle` | spin (existing) | `text-muted-foreground` |
+| WebGPU error | `Brain` | pulse (subtle opacity) | `text-muted-foreground` |
+| Loading model | `BrainCircuit` | pulse + progress bar | `text-primary` |
+| Ready (empty) | `Sparkles` | gentle bounce | `text-primary` |
+| Streaming (thinking) | `Bot` | three-dot animation next to bot | `text-primary` |
+| Error (generic) | `AlertCircle` | shake (short) | `text-destructive` |
+
+### Three-dot animation (CSS-only)
+
+For the streaming/thinking state, replace the single `LoaderCircle` with a
+**bot avatar + animated three-dot indicator** in the message bubble:
+
+```css
+.ai-typing-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.ai-typing-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ai-dot-bounce 1.4s infinite ease-in-out both;
+}
+.ai-typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+.ai-typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+.ai-typing-dots span:nth-child(3) { animation-delay: 0s; }
+
+@keyframes ai-dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+```
+
+### Gentle bounce (for "Ready" state)
+
+```css
+@keyframes ai-gentle-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.ai-icon-bounce { animation: ai-gentle-bounce 2s infinite ease-in-out; }
+```
+
+### Pulse (for "Loading model" state)
+
+```css
+@keyframes ai-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.ai-icon-pulse { animation: ai-pulse 1.5s infinite ease-in-out; }
+```
+
+### Shake (for "Error" state)
+
+```css
+@keyframes ai-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+.ai-icon-shake { animation: ai-shake 0.4s ease-in-out 2; }
+```
+
+### Implementation notes
+
+- All animations are **CSS-only** (no JS, no Svelte transitions)
+- Add them as a `<style>` block at the bottom of the component
+- Icons imported from `@lucide/svelte/icons/*`:
+
+```svelte
+import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
+import Sparkles from '@lucide/svelte/icons/sparkles';
+import AlertCircle from '@lucide/svelte/icons/alert-circle';
+```
+
+## Step 6: Update tests
+
+**`src/lib/__tests__/smart-regex-input.test.ts`**:
+
+- Update tests that check for `breakdown` in `RegexChoice` (remove that assertion)
+- Add tests for `explainRegex()`:
+  - `^[a-z]{3,5}$` → 4 parts: ^, [a-z], {3,5}, $
+  - `\d{4}` → 2 parts: \d, {4}
+  - Invalid regex → empty array
+  - Flags are handled correctly
+
+## Step 7: Verification
+
+1. `pnpm run check` — 0 errors (3 pre-existing warnings OK)
+2. `pnpm test` — all tests pass
+3. `pnpm run build` — production build succeeds
+4. Manual test: open the AI panel, type a description, verify:
+   - No JSON shown in chat
+   - Preview card shows prettified regex + copy CTA
+   - Bullet list shows each component with description (deterministic, from regexpp)
+   - Question (Yes/No) on the right
+   - Multiple options (A/B/C) each have their own preview + bullet list
+   - Each AI state has a distinct icon + animation
+   - Three-dot animation during streaming (not a plain spinner)
+
+---
+
+## Acceptance Criteria
+
+### Breakdown
+
+- [ ] `@eslint-community/regexpp@4.12.2` added to `package.json` (pinned)
+- [ ] `regex-explainer.ts` created with `explainRegex(pattern, flags): RegexPart[]`
+- [ ] `SYSTEM_PROMPT` simplified (no breakdown request from LLM)
+- [ ] `RegexChoice.breakdown` removed (now generated by frontend)
+- [ ] `parseRegexChoices` simplified (no breakdown parsing)
+- [ ] UI shows deterministic bullet list from `explainRegex()`
+- [ ] UI hides JSON response completely
+- [ ] Preview card with prettifier + copy CTA (already done)
+- [ ] Question (Yes/No) on the right (already done)
+- [ ] A/B/C multiple options maintained (already done)
+
+### Status animations
+
+- [ ] Each AI state has a distinct icon
+- [ ] Three-dot animation shown during streaming (not a plain spinner)
+- [ ] Loading model state shows pulsing BrainCircuit + progress bar
+- [ ] Ready state shows bouncing Sparkles
+- [ ] WebGPU error shows pulsing Brain
+- [ ] Generic error shows shaking AlertCircle
+- [ ] All animations are CSS-only (no JS animation libraries)
+- [ ] Animations are subtle and professional (not distracting)
+
+### Verification
+
+- [ ] `pnpm run check` — 0 errors
+- [ ] `pnpm test` — all tests pass
+- [ ] `pnpm run build` — production build succeeds
+
+---
+
+## Risk Assessment
+
+| Risk | Mitigation |
+|------|------------|
+| `@eslint-community/regexpp` bundle size too large | Tree-shaking should help. If too large, fall back to custom tokenizer. |
+| `regexpp` fails to parse some regex patterns | `explainRegex` returns `[]` on parse failure — UI shows no bullet list (graceful degradation) |
+| LLM 0.5B can't generate valid JSON without breakdown field | Simpler JSON = easier for small model = more reliable |
+| `parseRegExpLiteral` expects `/pattern/flags` format | Wrap input: `/${pattern}/${flags}` |
+| CSS animations may conflict with existing Tailwind classes | Use scoped class names prefixed with `ai-` to avoid collisions |
