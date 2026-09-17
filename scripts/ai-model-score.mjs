@@ -3,7 +3,7 @@
 //
 // Usage:
 //   import { computeModelScore } from './ai-model-score.mjs';
-//   const { quality, speed, score, rank, affidability, speedGate }
+//   const { quality, speed, score, rank, speedGate }
 //     = computeModelScore([{ score: 5, response_s: 4.2 }, ...]);
 
 // Per-turn speed score from real response time in seconds.
@@ -17,7 +17,9 @@ export function speedScore(response_s) {
   return 1; // <= 10
 }
 
-// turns: [{ score: 5|2|1, response_s: number|'timeout' }]
+// turns: [{ score: 5|3|2|0, response_s: number|'timeout' }]
+// 5=correct, 3=compiles+semantically close but linguistic misunderstanding,
+// 2=compiles but semantically wrong, 0=total failure
 export function computeModelScore(turns) {
   const total = turns.length;
   const qualityMean = turns.reduce((a, t) => a + t.score, 0) / total;
@@ -35,7 +37,6 @@ export function computeModelScore(turns) {
     speed: Math.round(speed * 100) / 100,
     score: Math.round(score * 100) / 100,
     rank: Math.round(score * 10) / 10,
-    affidability: Math.max(1, Math.ceil((success / total) * 5)),
     // hard gate: >=2 of 5 turns timed out => unusable regardless of quality
     speedGate: timeouts >= 2,
   };
