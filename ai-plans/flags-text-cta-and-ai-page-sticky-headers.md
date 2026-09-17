@@ -21,14 +21,34 @@
 
 Replace the `Flag` icon + count badge with the flag letters rendered as text.
 
-- Button content: `{flags}` shown as `/{flags}` (e.g. `/gi`), class `font-serif` (per user preference — serif over mono), `text-sm`, `text-primary` when set.
-- Empty state: no flags → show `/` alone, dimmed (`text-foreground/50`), still clickable to open the sheet.
+### Flag display semantics (decided with user)
+
+- **Default = `/` (bare slash, nothing after it)** — always visible, means "no flags assigned". Never hide the control: a hidden CTA leaves the user unable to tell whether flags exist at all.
+- Display table:
+
+| Flags   | Rendered as |
+|---------|-------------|
+| none    | `/` (dimmed, `text-foreground/50`) |
+| i       | `/i` |
+| g       | `/g` |
+| i + g   | `/gi` |
+| i+g+m   | `/gim` |
+
+- **Canonical ordering**: render flags in JS canonical order (`dgimsuvy`, i.e. `re.flags` order) — always `/gi`, never `/ig`. If `flags` state can hold arbitrary order, normalize on render: `[...'dgimsuvy'].filter(f => flags.includes(f)).join('')`.
+- The `/` is the natural regex delimiter — `/` alone reads as "pattern present, zero flags" without ambiguity.
+- The text IS the CTA: clicking `/gi` opens the flags sheet (same behavior as the current icon button).
+
+### Implementation
+
+- Button content: `/{normalized_flags}` (e.g. `/gi`), class `font-serif` (per user preference — serif over mono), `text-sm`, `text-primary` when set; `/` alone dimmed when empty.
 - Keep: `open_flags_panel` onclick, `title`/`aria-label` i18n, `data-testid="smart-regex-flags-cta"`. Remove `smart-regex-flags-badge` testid (element deleted — brittle-on-purpose is the convention).
 - Add `data-testid="smart-regex-flags-text"` on the flag text span.
-- Width is dynamic (1-4 chars) — `pr-24` stays, cluster is auto-width flex, no layout issue.
+- Width is dynamic (1-8 chars) — `pr-24` stays, cluster is auto-width flex, no layout issue.
 - Remove unused `Flag` import.
 
-Open question (trivial, decide in impl): `/` alone vs `∅` for empty — default `/` dimmed.
+### Behavior note for the flags panel (context, not a change)
+
+`/g` is not cosmetic: without it `match()`/`exec()`/`test()` operate on the first match only; with it `matchAll`/`replaceAll` semantics apply and the regex becomes stateful (`lastIndex` advances — reusing a `/g` regex object across `test()` calls can flip results). The flags panel UI may want to surface this later; out of scope for this task.
 
 ## Task 2 — Sticky section headers on scroll
 
@@ -48,22 +68,49 @@ No JS scroll listeners needed — sticky elements are confined to their parent `
 **Models section**: wrap the header row (`div.flex.items-center.justify-between`, lines 171-193) with sticky classes directly on it:
 `sticky top-0 z-10 bg-background -mx-2 px-2 py-1` (bg covers rows scrolling under; negative mx compensates for breathing room — tune visually).
 
-**Cache section**: the sticky cluster must span page markup (title) + component internals (storage bar + censused toolbar) → restructure:
-- Pass the title row into `ModelCacheSection` as a `header` snippet prop (or move the h2 into the component — simpler: keep the h2 in the page but move it INSIDE the bordered card? No — cleaner: ModelCacheSection gets a new optional `sticky_header` snippet prop).
-- Inside `ModelCacheSection`, wrap in order: `{@render sticky_header?.()}` + storage bar block + censused `SelectableToolbar` inside one `<div class="sticky top-0 z-10 bg-background">`.
-- The censused toolbar is rendered only in the `{:else}` (non-empty) branch — the sticky wrapper lives inside that branch; when cache is empty there is no toolbar, sticky cluster = title + storage bar only.
-- `SelectableToolbar` stays in place in the DOM (it already precedes the fieldset) — only wrapped.
-- Orphan toolbar: NOT sticky (it appears mid-list).
+**Cache section — DECIDED (user): remove the inner bordered card entirely.**
 
-Wait — issue: the storage bar + censused toolbar are inside `{:else}` of the empty-state `{#if}`, and the title snippet render point is at component root. Restructure: component renders
+The `div.rounded-lg.border.p-4` wrapper at `+page.svelte:452` is redundant: the `SelectableFieldset`s already provide visual grouping ("Modelli censiti" / "Modelli non censiti" labels + borders). Removing it also avoids a confinement artifact — a sticky element inside the card would un-stick when the card ends and the card border would stay visible while rows scroll under it.
+
+New flat structure:
+
 ```
-<div sticky>header snippet, error? no — keep error outside/below, storage bar, censused toolbar</div>
+<section data-testid="ai-settings-cache-section">
+  <ModelCacheSection model_ranks={modelRanks}>
+    {#snippet header()}          ← NEW: title row passed in from the page
+      <div class="flex items-center gap-2">
+        <HardDrive class="size-4 text-foreground/70" />
+        <h2>{$t('...cache_section.title')}</h2>
+      </div>
+    {/snippet}
+  </ModelCacheSection>
+</section>
 ```
-but censused toolbar belongs to the `{:else}` branch. Option: keep error banner and empty-state OUTSIDE the sticky block; make the sticky div contain only header + storage bar, and add a second `sticky top-{offset}` on the censused toolbar? Two stacked stickies with offsets need a fixed pixel offset — fragile.
 
-Better: since cacheIsEmpty means no toolbar anyway, put the whole sticky cluster (title + storage + censused toolbar) inside the `{:else}` branch, and when `cacheIsEmpty` render a separate non-sticky title + storage + empty message. Slight duplication of title render — acceptable, it's `{@render}` so it's one line.
+Inside `ModelCacheSection`:
 
-**Background coverage**: sticky elements need opaque `bg-background` (or `bg-card` — the cache section sits inside a `rounded-lg border` card; sticky inside a card works but the card border stays put while content scrolls under — sticky within the card div confines to card height, fine; bg must match card interior = `bg-card`/`bg-background` whichever the card uses — it's plain `border` div → inherits page bg → use `bg-background`).
+```
+<div class="sticky top-0 z-10 bg-background">   ← single sticky cluster
+  {@render header()}        (h2 row)
+  [error banner]            (moved inside — see below)
+  [storage usage bar]       (always rendered when quota known)
+  [censused SelectableToolbar]   (only when !cacheIsEmpty)
+</div>
+[empty-state message OR censused fieldset]
+[divider]
+[orphan SelectableToolbar + fieldset]   ← NOT sticky
+```
+
+Rationale for the pieces:
+
+- **Title as `header` snippet prop** — one sticky div, no fragile `top` offsets between two stacked stickies. The page owns the i18n key + icon; the component owns positioning.
+- **Storage bar + censused toolbar hoisted out of the `{:else}`** — they're not "content", they're the section's persistent controls; they belong under the title regardless of empty state (storage bar already renders independently; toolbar renders only when `censusedModels.length > 0`).
+- **Error banner inside the sticky block** — if `in_use`/error shows while scrolling, it should stay visible (it's a status, not a row). Cheap: it's already at the top of the component output.
+- **Censused `SelectableFieldset` scrolls normally** — its "Modelli censiti" label scrolls away under the sticky toolbar; acceptable since the sticky toolbar keeps the selection controls visible, which is the actual need.
+- **Orphan block untouched** — mid-list, not sticky.
+- `cacheIsEmpty` case: sticky cluster = title + storage bar (+ error); empty-state message scrolls normally below it.
+
+**Background coverage**: sticky elements use opaque `bg-background` (no card anymore → page bg).
 
 **z-index**: model rows contain popovers (`Popover.Content` renders in portal — safe). Set `z-10` on sticky headers.
 
