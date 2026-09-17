@@ -1,0 +1,599 @@
+{
+  "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+  "dtype": "fp16",
+  "captured_at": 1789590769907,
+  "load": {
+    "type": "load_complete",
+    "seq": 1,
+    "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+    "repo_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX",
+    "dtype": "fp16",
+    "device": "webgpu",
+    "worker_nonce": "5813d196-911b-4733-a1ea-64ac8c59d340",
+    "files": [
+      "onnx/model_fp16.onnx",
+      "onnx/model_fp16.onnx_data",
+      "onnx/model_fp16.onnx_data_1",
+      "onnx/model_fp16.onnx_data_2",
+      "onnx/model_fp16.onnx_data_3"
+    ],
+    "external_data_files": [
+      "model.onnx",
+      "model_fp16.onnx",
+      "model_q4.onnx",
+      "model_q4f16.onnx"
+    ],
+    "model_config": {
+      "architectures": [
+        "Phi3ForCausalLM"
+      ],
+      "model_type": "phi3",
+      "hidden_size": 3072,
+      "num_hidden_layers": 32,
+      "vocab_size": 32064,
+      "max_position_embeddings": 4096
+    },
+    "fingerprint": "The capital of France is Paris.\n\n\nThe",
+    "warmup_ms": 1497
+  },
+  "turns": [
+    {
+      "type": "stream_complete",
+      "text": " {\n    \"patterns\": [\n        {\n            \"pattern\": \"^[a-zA-Z0-9]+$\",\n            \"flags\": \"\"\n        }\n    ]\n}",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "dtype": "fp16"
+    },
+    {
+      "type": "stream_complete",
+      "text": " It seems there might be some confusion here as adding both a period `.` and a comma `,` together would not make sense within this context since they represent different types of characters—period is used typically at the end of sentences while commas separate items in lists etc. However, if you want to include either periods or commas but not necessarily both simultaneously in your pattern, we can create two distinct regular expressions accordingly. Here’s how it could work based on what was requested beforehand:\n\nFor including only dots OR commas without combining them directly in the same expression due to their differing uses:\n```json\n{\n    \"patterns\": [\n        {\n            \"pattern\": \"^[a-zA-Z0-9,.\\\\s]*$\", // Allows alphanumeric chars along with . and , plus whitespace which includes spaces between words\n            \"flags\": \"\"\n        },\n        {\n            \"pattern\": \"^[a-zA-Z0-9\\\\s]*$\", // Excludes punctuation marks like . and ; from being part of allowed characters except space(s)\n            \"flags\": \"\"\n        }\n    ]\n}\n```\nThe first object allows strings",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "dtype": "fp16"
+    },
+    {
+      "type": "stream_complete",
+      "text": " Certainly! To incorporate an underscore `_` and hyphen `-`, commonly known as dashes when considering typical English usage such as dates (`YYYY-MM-DD`) or ranges (`x--y`), our updated regular expression will need to account for these additional symbols alongside allowing uppercase and lowercase alphabetical characters, digits, points, and commas where appropriate. The inclusion of `\\s` accounts for optional white space characters, ensuring flexibility across various text inputs. Below is the modified set of patterns presented in proper JSON format according to the rules provided earlier:\n\n```json\n{\n    \"patterns\": [\n        {\n            \"pattern\": \"^[a-zA-Z0-9,.\\\\s]*$\", // This pattern now also permits underscores (_) and hyphens (-) among other previously mentioned allowable characters.\n            \"flags\": \"\"\n        },\n        {\n            \"pattern\": \"^[a-zA-Z0-9\\\\s]*$\", // Remains unchanged because its purpose has been fulfilled by another similar pattern already present.\n            \"flags\": \"\"\n        }\n    ]\n}\n```\nIncluding multiple variations helps cover",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "dtype": "fp16"
+    }
+  ],
+  "measures": [
+    {
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "dtype": "fp16",
+      "load_time_ms": 347202,
+      "warmup_time_ms": 1497,
+      "generation_time_ms": 0,
+      "tokens_generated": 0,
+      "tokens_per_second": 0,
+      "first_token_latency_ms": 0,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 0,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 0,
+      "cache_bytes": 23221070638,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "dtype": "fp16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 11645,
+      "tokens_generated": 44,
+      "tokens_per_second": 3.8,
+      "first_token_latency_ms": 2220,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 686,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 730,
+      "prompt_token_count": 686,
+      "cache_bytes": 20018445121,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "dtype": "fp16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 59923,
+      "tokens_generated": 257,
+      "tokens_per_second": 4.3,
+      "first_token_latency_ms": 506,
+      "kv_cache_speedup": 0.2,
+      "kv_cache_hit_tokens": 730,
+      "kv_cache_miss_tokens": 61,
+      "kv_cache_hit_ratio": 0.923,
+      "kv_cache_seq_length": 1046,
+      "prompt_token_count": 791,
+      "cache_bytes": 20018445121,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "dtype": "fp16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 60696,
+      "tokens_generated": 257,
+      "tokens_per_second": 4.2,
+      "first_token_latency_ms": 1305,
+      "kv_cache_speedup": 1,
+      "kv_cache_hit_tokens": 1046,
+      "kv_cache_miss_tokens": 64,
+      "kv_cache_hit_ratio": 0.942,
+      "kv_cache_seq_length": 1365,
+      "prompt_token_count": 1110,
+      "cache_bytes": 20018445121,
+      "memory_usage_bytes": null
+    }
+  ],
+  "errors": [],
+  "debug": [
+    {
+      "type": "debug",
+      "step": "dispose_start",
+      "model_id": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4",
+      "has_generator": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_generator_done",
+      "model_id": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4"
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 2
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 1866,
+      "tail": "ags\":\"\"}]}<|end|>\n<|user|>\nsolo lettere e numeri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 686,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 0,
+      "cache_seq_len_after": 730,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 4
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2160,
+      "tail": "-Z0-9]+$\naggiungiamo anche il punto e la virgola\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 791,
+      "cache_len_before_gen": 730,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 730,
+      "cache_seq_len_after": 836,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 6
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2454,
+      "tail": "-zA-Z0-9,.']+$\naggiungiamo underscore e trattino\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 896,
+      "cache_len_before_gen": 836,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 836,
+      "cache_seq_len_after": 942,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 8
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2736,
+      "tail": "nt regex: ^[a-zA-Z0-9._'-]+$\nrimuoviamo il punto\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1000,
+      "cache_len_before_gen": 942,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 942,
+      "cache_seq_len_after": 1046,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 10
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 3006,
+      "tail": "user|>\nsolo lettere minuscole da 3 a 5 caratteri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1092,
+      "cache_len_before_gen": 1046,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 1046,
+      "cache_seq_len_after": 1346,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_start",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "has_generator": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_generator_done",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16"
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "kv_cache_reuse": true,
+      "num_messages": 2
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 1866,
+      "tail": "ags\":\"\"}]}<|end|>\n<|user|>\nsolo lettere e numeri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 686,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 0,
+      "cache_seq_len_after": 730,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "kv_cache_reuse": true,
+      "num_messages": 4
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2160,
+      "tail": "-Z0-9]+$\naggiungiamo anche il punto e la virgola\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 791,
+      "cache_len_before_gen": 730,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 730,
+      "cache_seq_len_after": 836,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "kv_cache_reuse": true,
+      "num_messages": 6
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2454,
+      "tail": "-zA-Z0-9,.']+$\naggiungiamo underscore e trattino\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 896,
+      "cache_len_before_gen": 836,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 836,
+      "cache_seq_len_after": 942,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "kv_cache_reuse": true,
+      "num_messages": 8
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2736,
+      "tail": "nt regex: ^[a-zA-Z0-9_.'-]+$\nrimuoviamo il punto\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1000,
+      "cache_len_before_gen": 942,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 942,
+      "cache_seq_len_after": 1047,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "kv_cache_reuse": true,
+      "num_messages": 10
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 3007,
+      "tail": "user|>\nsolo lettere minuscole da 3 a 5 caratteri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1093,
+      "cache_len_before_gen": 1047,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 1047,
+      "cache_seq_len_after": 1337,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_start",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "has_generator": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_generator_done",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4"
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "kv_cache_reuse": true,
+      "num_messages": 2
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 1866,
+      "tail": "ags\":\"\"}]}<|end|>\n<|user|>\nsolo lettere e numeri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 686,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 0,
+      "cache_seq_len_after": 730,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "kv_cache_reuse": true,
+      "num_messages": 4
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2160,
+      "tail": "-Z0-9]+$\naggiungiamo anche il punto e la virgola\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 791,
+      "cache_len_before_gen": 730,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 730,
+      "cache_seq_len_after": 1046,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "kv_cache_reuse": true,
+      "num_messages": 6
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 3421,
+      "tail": "zA-Z0-9,.\\s]*$\naggiungiamo underscore e trattino\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1110,
+      "cache_len_before_gen": 1046,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 1046,
+      "cache_seq_len_after": 1365,
+      "cache_valid": true
+    }
+  ],
+  "vram": [
+    {
+      "label": "before_switch",
+      "timestamp": 1789589462786,
+      "js_heap_mb": 94.01577568054199,
+      "cache_bytes": 12481214626,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_destroy",
+      "timestamp": 1789589462923,
+      "js_heap_mb": 94.32823944091797,
+      "cache_bytes": 12481214626,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_new_load",
+      "timestamp": 1789589667948,
+      "js_heap_mb": 95.49549198150635,
+      "cache_bytes": 14775422998,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "before_switch",
+      "timestamp": 1789589926249,
+      "js_heap_mb": 98.93503856658936,
+      "cache_bytes": 13920104960,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_destroy",
+      "timestamp": 1789589926350,
+      "js_heap_mb": 99.20841789245605,
+      "cache_bytes": 13920104960,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_new_load",
+      "timestamp": 1789590066816,
+      "js_heap_mb": 102.91599369049072,
+      "cache_bytes": 16643262181,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "before_switch",
+      "timestamp": 1789590221582,
+      "js_heap_mb": 105.06761360168457,
+      "cache_bytes": 15577910605,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_destroy",
+      "timestamp": 1789590221659,
+      "js_heap_mb": 105.33391666412354,
+      "cache_bytes": 15577910605,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_new_load",
+      "timestamp": 1789590570728,
+      "js_heap_mb": 133.4627170562744,
+      "cache_bytes": 23221070638,
+      "gpu_adapter": "nvidia blackwell"
+    }
+  ],
+  "note": "Turn 3 exceeded the 60s test bound (60,696ms) and the campaign turn was classified as timeout; raw output arrived immediately after polling ended."
+}

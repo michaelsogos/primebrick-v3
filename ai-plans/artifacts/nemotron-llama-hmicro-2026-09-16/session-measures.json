@@ -1,0 +1,665 @@
+{
+  "loads": [
+    {
+      "model": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4",
+      "files": [
+        "onnx/model_q4.onnx",
+        "onnx/model_q4.onnx_data"
+      ],
+      "arch": [
+        "Qwen2ForCausalLM"
+      ]
+    },
+    {
+      "model": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4",
+      "files": [
+        "onnx/model_q4.onnx",
+        "onnx/model_q4.onnx_data"
+      ],
+      "arch": [
+        "Qwen2ForCausalLM"
+      ]
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "files": [
+        "onnx/model_q4f16.onnx",
+        "onnx/model_q4f16.onnx_data",
+        "onnx/model_q4f16.onnx_data_1"
+      ],
+      "arch": [
+        "NemotronHForCausalLM"
+      ]
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#fp16",
+      "files": [
+        "onnx/model_fp16.onnx",
+        "onnx/model_fp16.onnx_data",
+        "onnx/model_fp16.onnx_data_1",
+        "onnx/model_fp16.onnx_data_2",
+        "onnx/model_fp16.onnx_data_3"
+      ],
+      "arch": [
+        "NemotronHForCausalLM"
+      ]
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4f16",
+      "files": [
+        "onnx/model_q4f16.onnx",
+        "onnx/model_q4f16.onnx_data"
+      ],
+      "arch": [
+        "LlamaForCausalLM"
+      ]
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4",
+      "files": [
+        "onnx/model_q4.onnx",
+        "onnx/model_q4.onnx_data"
+      ],
+      "arch": [
+        "LlamaForCausalLM"
+      ]
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#fp16",
+      "files": [
+        "onnx/model_fp16.onnx",
+        "onnx/model_fp16.onnx_data",
+        "onnx/model_fp16.onnx_data_1"
+      ],
+      "arch": [
+        "LlamaForCausalLM"
+      ]
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4f16",
+      "files": [
+        "onnx/model_q4f16.onnx",
+        "onnx/model_q4f16.onnx_data"
+      ],
+      "arch": [
+        "GraniteMoeHybridForCausalLM"
+      ]
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4",
+      "files": [
+        "onnx/model_q4.onnx",
+        "onnx/model_q4.onnx_data",
+        "onnx/model_q4.onnx_data_1"
+      ],
+      "arch": [
+        "GraniteMoeHybridForCausalLM"
+      ]
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#fp16",
+      "files": [
+        "onnx/model_fp16.onnx",
+        "onnx/model_fp16.onnx_data",
+        "onnx/model_fp16.onnx_data_1",
+        "onnx/model_fp16.onnx_data_2",
+        "onnx/model_fp16.onnx_data_3"
+      ],
+      "arch": [
+        "GraniteMoeHybridForCausalLM"
+      ]
+    }
+  ],
+  "measures": [
+    {
+      "model": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4",
+      "gen_ms": 0,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 0,
+      "load_ms": 11203,
+      "cache_bytes": 18751817282,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4",
+      "gen_ms": 0,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 0,
+      "load_ms": 8418,
+      "cache_bytes": 18751817282,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "gen_ms": 0,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 0,
+      "load_ms": 69099,
+      "cache_bytes": 21067530355,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "gen_ms": 24803,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 621,
+      "load_ms": 0,
+      "cache_bytes": 18498996635,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "gen_ms": 25321,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 670,
+      "load_ms": 0,
+      "cache_bytes": 18498996635,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "gen_ms": 26520,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 715,
+      "load_ms": 0,
+      "cache_bytes": 18498996635,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "gen_ms": 28803,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 759,
+      "load_ms": 0,
+      "cache_bytes": 18498996635,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "gen_ms": 29606,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 810,
+      "load_ms": 0,
+      "cache_bytes": 18498996635,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#fp16",
+      "gen_ms": 0,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 0,
+      "load_ms": 18547,
+      "cache_bytes": 18511613436,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#fp16",
+      "gen_ms": 31287,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 621,
+      "load_ms": 0,
+      "cache_bytes": 18511613436,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#fp16",
+      "gen_ms": 30656,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 670,
+      "load_ms": 0,
+      "cache_bytes": 18511613436,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#fp16",
+      "gen_ms": 31339,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 715,
+      "load_ms": 0,
+      "cache_bytes": 18511613436,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#fp16",
+      "gen_ms": 31944,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 759,
+      "load_ms": 0,
+      "cache_bytes": 18511613436,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#fp16",
+      "gen_ms": 32596,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 810,
+      "load_ms": 0,
+      "cache_bytes": 18511613436,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4f16",
+      "gen_ms": 0,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 0,
+      "load_ms": 38522,
+      "cache_bytes": 19601368858,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4f16",
+      "gen_ms": 1607,
+      "tok": 38,
+      "tps": 23.7,
+      "ttft": 573,
+      "prompt": 583,
+      "load_ms": 0,
+      "cache_bytes": 16398743341,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4f16",
+      "gen_ms": 948,
+      "tok": 38,
+      "tps": 40.1,
+      "ttft": 76,
+      "prompt": 677,
+      "load_ms": 0,
+      "cache_bytes": 16398743341,
+      "kv_hit": 0.916
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4f16",
+      "gen_ms": 1146,
+      "tok": 38,
+      "tps": 33.2,
+      "ttft": 75,
+      "prompt": 768,
+      "load_ms": 0,
+      "cache_bytes": 16398743341,
+      "kv_hit": 0.932
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4f16",
+      "gen_ms": 2358,
+      "tok": 84,
+      "tps": 35.6,
+      "ttft": 84,
+      "prompt": 858,
+      "load_ms": 0,
+      "cache_bytes": 16398743341,
+      "kv_hit": 0.941
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4f16",
+      "gen_ms": 4153,
+      "tok": 136,
+      "tps": 32.8,
+      "ttft": 112,
+      "prompt": 988,
+      "load_ms": 0,
+      "cache_bytes": 16398743341,
+      "kv_hit": 0.954
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4",
+      "gen_ms": 0,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 0,
+      "load_ms": 66367,
+      "cache_bytes": 18091564453,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4",
+      "gen_ms": 2084,
+      "tok": 38,
+      "tps": 18.2,
+      "ttft": 682,
+      "prompt": 583,
+      "load_ms": 0,
+      "cache_bytes": 15775851380,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4",
+      "gen_ms": 1012,
+      "tok": 38,
+      "tps": 37.5,
+      "ttft": 85,
+      "prompt": 677,
+      "load_ms": 0,
+      "cache_bytes": 15775851380,
+      "kv_hit": 0.916
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4",
+      "gen_ms": 1110,
+      "tok": 40,
+      "tps": 36,
+      "ttft": 87,
+      "prompt": 768,
+      "load_ms": 0,
+      "cache_bytes": 15775851380,
+      "kv_hit": 0.93
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4",
+      "gen_ms": 1201,
+      "tok": 40,
+      "tps": 33.3,
+      "ttft": 101,
+      "prompt": 861,
+      "load_ms": 0,
+      "cache_bytes": 15775851380,
+      "kv_hit": 0.937
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#q4",
+      "gen_ms": 1057,
+      "tok": 35,
+      "tps": 33.1,
+      "ttft": 87,
+      "prompt": 947,
+      "load_ms": 0,
+      "cache_bytes": 15775851380,
+      "kv_hit": 0.95
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#fp16",
+      "gen_ms": 0,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 0,
+      "load_ms": 177031,
+      "cache_bytes": 18264365884,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#fp16",
+      "gen_ms": 13927,
+      "tok": 257,
+      "tps": 18.5,
+      "ttft": 1815,
+      "prompt": 583,
+      "load_ms": 0,
+      "cache_bytes": 10313297460,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#fp16",
+      "gen_ms": 13065,
+      "tok": 257,
+      "tps": 19.7,
+      "ttft": 1072,
+      "prompt": 896,
+      "load_ms": 0,
+      "cache_bytes": 10313297460,
+      "kv_hit": 0.935
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#fp16",
+      "gen_ms": 13768,
+      "tok": 257,
+      "tps": 18.7,
+      "ttft": 1170,
+      "prompt": 1206,
+      "load_ms": 0,
+      "cache_bytes": 10313297460,
+      "kv_hit": 0.954
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#fp16",
+      "gen_ms": 14601,
+      "tok": 257,
+      "tps": 17.6,
+      "ttft": 1130,
+      "prompt": 1515,
+      "load_ms": 0,
+      "cache_bytes": 10313297460,
+      "kv_hit": 0.964
+    },
+    {
+      "model": "onnx-community/Llama-3.2-1B-Instruct-ONNX#fp16",
+      "gen_ms": 14880,
+      "tok": 256,
+      "tps": 17.2,
+      "ttft": 1149,
+      "prompt": 1818,
+      "load_ms": 0,
+      "cache_bytes": 10313297460,
+      "kv_hit": 0.974
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4f16",
+      "gen_ms": 0,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 0,
+      "load_ms": 188244,
+      "cache_bytes": 11169978585,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4f16",
+      "gen_ms": 7269,
+      "tok": 21,
+      "tps": 2.9,
+      "ttft": 7266,
+      "prompt": 599,
+      "load_ms": 0,
+      "cache_bytes": 11169978585,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4f16",
+      "gen_ms": 6528,
+      "tok": 25,
+      "tps": 3.8,
+      "ttft": 6526,
+      "prompt": 681,
+      "load_ms": 0,
+      "cache_bytes": 11169978585,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4f16",
+      "gen_ms": 6761,
+      "tok": 24,
+      "tps": 3.6,
+      "ttft": 6758,
+      "prompt": 768,
+      "load_ms": 0,
+      "cache_bytes": 11169978585,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4f16",
+      "gen_ms": 8042,
+      "tok": 23,
+      "tps": 2.9,
+      "ttft": 8040,
+      "prompt": 851,
+      "load_ms": 0,
+      "cache_bytes": 11169978585,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4f16",
+      "gen_ms": 7452,
+      "tok": 19,
+      "tps": 2.5,
+      "ttft": 7449,
+      "prompt": 922,
+      "load_ms": 0,
+      "cache_bytes": 11169978585,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4",
+      "gen_ms": 0,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 0,
+      "load_ms": 74183,
+      "cache_bytes": 13326971372,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4",
+      "gen_ms": 7847,
+      "tok": 21,
+      "tps": 2.7,
+      "ttft": 7845,
+      "prompt": 599,
+      "load_ms": 0,
+      "cache_bytes": 11634150260,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4",
+      "gen_ms": 6732,
+      "tok": 25,
+      "tps": 3.7,
+      "ttft": 6730,
+      "prompt": 681,
+      "load_ms": 0,
+      "cache_bytes": 11634150260,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4",
+      "gen_ms": 7052,
+      "tok": 24,
+      "tps": 3.4,
+      "ttft": 7050,
+      "prompt": 768,
+      "load_ms": 0,
+      "cache_bytes": 11634150260,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4",
+      "gen_ms": 7698,
+      "tok": 23,
+      "tps": 3,
+      "ttft": 7695,
+      "prompt": 851,
+      "load_ms": 0,
+      "cache_bytes": 11634150260,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#q4",
+      "gen_ms": 7621,
+      "tok": 19,
+      "tps": 2.5,
+      "ttft": 7619,
+      "prompt": 922,
+      "load_ms": 0,
+      "cache_bytes": 11634150260,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#fp16",
+      "gen_ms": 0,
+      "tok": 0,
+      "tps": 0,
+      "ttft": 0,
+      "prompt": 0,
+      "load_ms": 174011,
+      "cache_bytes": 18021410780,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#fp16",
+      "gen_ms": 6874,
+      "tok": 21,
+      "tps": 3.1,
+      "ttft": 6871,
+      "prompt": 599,
+      "load_ms": 0,
+      "cache_bytes": 15532896276,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#fp16",
+      "gen_ms": 5989,
+      "tok": 18,
+      "tps": 3,
+      "ttft": 5987,
+      "prompt": 681,
+      "load_ms": 0,
+      "cache_bytes": 15532896276,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#fp16",
+      "gen_ms": 6311,
+      "tok": 22,
+      "tps": 3.5,
+      "ttft": 6308,
+      "prompt": 754,
+      "load_ms": 0,
+      "cache_bytes": 15532896276,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#fp16",
+      "gen_ms": 7221,
+      "tok": 21,
+      "tps": 2.9,
+      "ttft": 7219,
+      "prompt": 834,
+      "load_ms": 0,
+      "cache_bytes": 15532896276,
+      "kv_hit": 0
+    },
+    {
+      "model": "onnx-community/granite-4.0-h-micro-ONNX#fp16",
+      "gen_ms": 7304,
+      "tok": 21,
+      "tps": 2.9,
+      "ttft": 7301,
+      "prompt": 903,
+      "load_ms": 0,
+      "cache_bytes": 15532896276,
+      "kv_hit": 0
+    }
+  ]
+}
