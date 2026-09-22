@@ -11,6 +11,13 @@ found in the BE, US, DAL, and FE repositories. Create the missing BE
 `.devin/rules/api-path-conventions.md`, update `AGENTS.md`, and add a
 user-guide page.
 
+> **Companion rule (implemented):** the write-PAYLOAD standard is a separate,
+> already-approved plan (`entity-write-payload-standard.md`): every
+> single-entity `POST`/`PUT` body is `{entity, translations?}` — flat bodies
+> rejected, bulk/action/RPC endpoints exempt. This taxonomy draft governs
+> PATHS only; the payload envelope is orthogonal and applies regardless of
+> any path rename proposed here.
+
 ## 2. Empirical findings
 
 ### 2.1 PG tables (public schema, excluding audit/partitions/test)
