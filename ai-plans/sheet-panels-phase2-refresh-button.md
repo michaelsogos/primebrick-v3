@@ -4,7 +4,7 @@
 > `entity-list-table/panels/` already removed. This file adds the ordered
 > execution table and the new **card-wrapper refresh button** request.
 
-## Status: 🟡 PARTIALLY DONE — Plan date: 2026-09-30 19:54 UTC / 21:54 CEST
+## Status: � DONE — Plan date: 2026-09-30 19:54 UTC / 21:54 CEST (updated 2026-10-01)
 
 | # | Task (detail level) | Status | When | Notes |
 |---|---------------------|--------|------|-------|
@@ -29,11 +29,11 @@
 | F | Customer write-response fix: `create` returned `{uuid}` → now entity from `RETURNING` | ✅ done | this session | found by e2e |
 | G | Bugfix: `PreviewPanel` BigInt mix (`extJsonParse` → bigint props) — normalized `Number()` at leaf + `footerPage` | ✅ done | this session | crash on open, row action + header CTA |
 | H | Bugfix: `entity` prop divergence — plural literals (`role_mappings`, `user_profiles`) built wrong endpoint URLs → 404 on audit/version-history | ✅ done | this session | now `entity={meta?.entity ?? 'canonical'}` — derived from BE meta |
-| I | Docs: `entity-router-factory.md` (makeEntityService + aggregates section), `api-conventions.mdx` (aggregate columns) | ✅ done | this session | |
-| E.7 | Entity-wide export system (`stream` exists; template/fieldMapping derivation from meta) | ⏳ not done | — | E.4 in plan — deferred |
-| E.8 | Identity-driven `duplicate` (uuid[] or key-condition objects, composite identity, ambiguity guard) | ⏳ not done | — | current impl = uuid[] via `repo.clone` only; design in plan |
-| E.9 | role_mapping read ops delegation to generic svc (list/get/audit) — needs non-uuid `matchBy` | ⏳ not done | — | future candidate |
-| E.10 | role_mapping purge + org list coverage in e2e matrix; ai_* lifecycle e2e | ⏳ partial | — | customer lifecycle + org read-only covered; ai_model/ai_cerebellum e2e missing |
+| I | Docs: `entity-router-factory.md` (makeEntityService + aggregates + duplicate default-on + export pipeline + audit/notes), `api-conventions.mdx` (aggregates, duplicate/CLONE, export, delete semantics) | ✅ done | 2026-10-01 | |
+| E.7 | Entity-wide export system (`stream` exists; template/fieldMapping derivation from meta) | 🟢 DONE | 2026-10-01 | `src/http/entity-export.ts` (`streamEntityExport`) + `config.export` in factory; customer migrated — ExportConfig (fieldMapping/labels/types) fully derived from meta + `system.entities.*.fields.*` translations; filename now `customer-export-*` (was `customers-export-*`) |
+| E.8 | `duplicate` default-ON with opt-out + `AuditAction.CLONE` | 🟢 DONE | 2026-10-01 | uuid[]-only (identity objects deferred — no clonable entity has composite identity). Route auto-registers w/ `<entity>.duplicate.bulk`; `duplicate: false` on org/role_mapping/user_profile/ai_model/ai_cerebellum. Clone writes CLONE audit (full-row delta, `cloned_from` = source uuid). role_mapping repo normalized to `matchBy: uuid` (row-driven service, 1 fetch). FE: CLONE label/color/icon in VersionHistoryPanel + seed SQL. e2e verified: clone audit contains CLONE |
+| E.9 | role_mapping read ops delegation to generic svc (list/get/audit) | 🟢 DONE | 2026-10-01 | No `matchBy` extension needed — uuid is the canonical key everywhere post-E.8. `RoleService` now holds an internal `makeEntityService` for list/get/audit; repo keeps only Casdoor-coupled writes. `listPaged`/`getRoleAudit`/`toDto`/dead imports removed. `entity-service` emits deleter join only when `deleted_by` exists + audit rows now carry canonical `changed_by_name` |
+| E.10 | role_mapping purge + org list coverage in e2e matrix; ai_* lifecycle e2e | 🟢 DONE | 2026-10-01 | ai_model+ai_cerebellum lifecycle covered: create/update/audit + name-uniqueness guard + duplicate 404 (opt-out) + MFA-gated delete; residue hard-deleted via pg pool |
 
 ## Part A — Non-compliant panels, ordered (simplest → most complex)
 
