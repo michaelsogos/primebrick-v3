@@ -3,7 +3,7 @@
 > Continuation of `<previous-plan>.md` — <optional notes: scope, warnings,
 > what changed since last session>. Remove blockquote if standalone.
 
-## Status: <TODO | WIP | PARTIALLY DONE | DONE> — Plan date: <YYYY-MM-DD HH:MM UTC> / <HH:MM TZ>
+## Status: <⚪ TODO | 🟠 WIP | 🟡 PARTIALLY DONE | 🟢 DONE | 🔴 BLOCKED> — Plan date: <YYYY-MM-DD HH:MM UTC> / <HH:MM TZ>
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|

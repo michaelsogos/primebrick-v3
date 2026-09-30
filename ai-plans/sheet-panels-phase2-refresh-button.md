@@ -4,7 +4,7 @@
 > `entity-list-table/panels/` already removed. This file adds the ordered
 > execution table and the new **card-wrapper refresh button** request.
 
-## Status: PARTIALLY DONE — Plan date: 2026-09-30 19:54 UTC / 21:54 CEST
+## Status: 🟡 PARTIALLY DONE — Plan date: 2026-09-30 19:54 UTC / 21:54 CEST
 
 | # | Task (detail level) | Status | When | Notes |
 |---|---------------------|--------|------|-------|
