@@ -14,14 +14,13 @@
 |---|------|--------|------|-------|
 | 1 | A0–A4 — Procedural MDX generation, full corpus, publish, reindex, E2E baseline | ✅ done | — | 15 pages, 213 chunks re-embedded, score 4.00 / rank 4.4, 5/5 pass |
 | 2 | B1/B2 — Stage fusion evaluation | 🚫 dropped | — | Micro-optimizations on an orchestrated-search loop; superseded by Part C |
-| 3 | C0 — Spike: render `apply_chat_template(messages, {tools, add_generation_prompt})` on our tokenizer and probe whether the 3B q4f16 emits a valid `<\|tool_call\|>` JSON block for a docs question | ⏳ not done | — | Gate for all of Part C; offline worker probe, no UI |
-
-| 4 | C1 — Tool registry: `docs_search(query)`, `docs_fetch(path)`, `list_routes()` — thin wrappers over existing `searchDocs`/`fetchRoutesCensus` + a fetch-by-path endpoint | ⏳ not done | — | Deterministic tools, no LLM inside |
-| 5 | C2 — Agent loop in guide-loop: generate → parse tool_call → execute → append `tool` message → repeat, cap 4 iterations | ⏳ not done | — | Replaces S0/S1/S2 orchestration |
-| 6 | C3 — Streaming/UX contract: suppress token stream during tool turns, show "Searching docs…" phase; stream only the final answer | ⏳ not done | — | Prevents tool-call JSON leaking into the bubble |
-| 7 | C4 — Final-answer contract: keep answer_markdown + actions JSON, or plain markdown + separate S4-style action pass — decide empirically | ⏳ not done | — | Same E2E spec both ways |
-| 8 | C5 — E2E A/B: current S0–S4 vs agent loop on the 5-turn spec, raw answers + scores + latency | ⏳ not done | — | Ship only if quality ≥ and latency acceptable |
-| 9 | C6 — Fallback: if the 3B can't tool-call reliably, evaluate Qwen2.5-3B-Instruct (non-Coder) or Hermes-style JSON-calls | ⏳ not done | — | Coder variant is weakest on tool-calling |
+| 3 | C0 — Spike: template `tools` render + tool_call emission probe | ✅ done | — | Template renders tools (Qwen XML dialect); CPU q4 emits valid calls AND completes the round-trip with `tool` messages |
+| 4 | C1 — Tool registry: `docs_search`, `docs_fetch`, `list_routes` + BE `POST /system/docs/document` | ✅ done | — | docs_fetch = fetch-by-path DAL+service+route, 401 verified live |
+| 5 | C2 — Agent loop in guide-loop replacing S0–S2 | ✅ done | — | Model-driven turns; premature-DONE reprompt (fp16 quirk); lazy-done seed-search guard; deterministic intent regex replaces S0 intent |
+| 6 | C3 — Multi-dialect tool-call parser | ✅ done | — | Wrapped, bare `{name,arguments}` JSON, AND fp16 shorthand `docs_search "query"` — WebGPU emits the third form |
+| 7 | C4 — Final-answer contract | ✅ done | — | Kept answer_markdown + separate S4 census selection (unchanged downstream, least risk) |
+| 8 | C5 — E2E on agent loop | ✅ done | — | score 4.00 / rank 4.4, 5/5 pass — parity with orchestrated v1, now model-driven |
+| 9 | C6 — Follow-ups: model never chains >1 tool on fp16; docs_fetch unused yet; evaluate stricter prompts or non-Coder Instruct variant for richer multi-hop | ⏳ not done | — | |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped -->
 
