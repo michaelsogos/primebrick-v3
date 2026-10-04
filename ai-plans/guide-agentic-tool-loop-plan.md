@@ -572,3 +572,28 @@ Esempi approvati:
 | 2.5.12 | Cerebellum tuning: temperature 0→0.7 (esperimento creatività) | ✅ done | 2026-10-03 | `tune_guide_cerebellum_temperature.sql` (riga id=25). Effetto su S3+S4 (effective_params), preflight invariati. E2E 5/5 score=4.00: risposte più lunghe/verbose ma degradazione grammaticale IT ("Gli permessi sono verificate", "tracabilità") + T4 troncata a 512 tok + 2 azioni (roles+roles/create). Verdict: 0.7 troppo alto per il 3B multilingua; candidato 0.2-0.3 |
 | 2.5.13 | De-hardcodizzazione completa guide path + temp 0.2 | ✅ done | 2026-10-03 | Loop caps residui → exec_config (max_queries 3, max_keywords 8, inspect_digest_size 6, max_searches 3); rank knobs DAL → request opts docs/search (keyword_boost .05, lexical_boost .15, lex_match_min .1, oversample 4, graph_max_paths 6) forwardati da guide-loop via exec_config; zod bounded. temp→0.2: E2E 5/5 4.00, grammatica OK, T3 più dettagliata (firma isPermissionGranted), ma T3/T4 troncate a 512 tok e T4 ancora 2 azioni (roles+roles/create spurio) |
 | 2.5.14 | Tuning finale: temp 0.1 + max_tokens 640 | ✅ done | 2026-10-03 | E2E 5/5 4.00. T1 migliore di sempre (procedura completa con route, 11.6s); T4 spurio `roles/create` sparito (solo `roles`); T3/T4 ancora chiudono la frase a metà. Verdict: compromesso migliore finora — risposte più narrative senza disastri grammaticali |
+
+### Phase 3 — Real agentic loop on WebGPU (eseguita 2026-10-06, sessione sera)
+
+Sostituito il retrieval orchestrato S0-S2 con loop model-driven
+`generate → tool_call → execute → append tool message → DONE` nel browser.
+Modello `onnx-community/Qwen2.5-Coder-3B-Instruct#q4f16` WebGPU, tools nel
+chat template nativo Qwen (`has_tools=true` verificato nel prompt renderizzato).
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 3.1 | Tool registry {docs_search, docs_fetch, list_routes} + BE `POST /system/docs/document` (metadata inclusa) | ✅ done | fetchDoc in api.ts; getDocByPath riunisce i chunk per path |
+| 3.2 | Multi-dialect tool-call parser | ✅ done | WebGPU non emette `<tool_call>` JSON canonico ma shorthand: `docs_search "q"`, `docs_search(q)`, `docs_search: "q"`, `docs_search(query="q")` — tutti parsati |
+| 3.3 | Guards onesti e telemetrati | ✅ done | `agent_premature_done` (DONE a turno 0 senza search → reprompt 1×); `agent_shallow_done` (DONE con hit ma zero fetch → reprompt 1×); seed-search solo se 0 call totali |
+| 3.4 | Coverage deterministica | ✅ done | `found` = searchHitCount>0; docs_fetch arricchisce ma non crea copertura (evita fabbricazioni su "torta"); NO_COVERAGE come parola terminale testato e REVERTED (il 3B la emetteva anche dopo fetch corretti) |
+| 3.5 | Digest per-documento + policy corpus | ✅ done | digest dedup per path (12 candidati), campo `entity` esposto, similarity rimossa (il modello sceglieva il numero più alto, non la policy); boost +0.25 a `frontend/guide/`; corpus filtrato a `frontend/guide/` — esclusi dev refs (backend/api/sdk) |
+| 3.6 | PRIMARY SOURCE condizionale + entity scoping S3 | ✅ done | marker solo se l'entity del fetch ∈ entity dei search hit; contesto S3 ristretto alle entity dei doc fetchati confermati |
+| 3.7 | Contenuto docs | ✅ done | nuovo `manual/permissions-rbac.mdx` (RBAC user-facing — prima esistevano solo reference dev); users-create/users-edit: step di ingresso nella procedura admin |
+
+E2E finale (WebGPU): score 4.00, rank 4.4, 5/5 pass.
+Evidenza chiave: T3 mostra retry autonomo genuino — `docs_search "RBAC
+permissions explanation"` → `[]` (filtro guida) → il modello riformula
+`docs_search "Role-Based Access Control (RBAC) explained"` →
+`docs_fetch permissions-rbac.mdx` → DONE → risposta user-facing corretta.
+
+Commit: FE 17d1bf8, BE 9e44519, docs c692dd1.
