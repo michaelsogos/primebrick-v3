@@ -297,6 +297,16 @@ contradict each other.
 Decision needed: deterministic derivation (recommended, no secrets on the
 bus) vs distributed-secret model (needs a secure channel we don't have).
 
+**Live provisioning (2026-10-09)**: `client_key` generated in-DB via
+`gen_random_bytes` for `public` (BE), `ai`, `emailsender` config_entries —
+values never in repo/chat/env. OpenAPI discovery + aggregated spec
+aggregation now send `backendIdentityHeaders()` (the 403 on the spec fetch
+was the gate correctly rejecting undici's default `node` UA — and it is
+403, not 401, because an UA was present but unallowlisted). Rejections log
+the RFC7807 `internal_code`. **Gap**: `webhook` uses `EnvConfigPort`
+(env-sourced config, no config table) — violates env policy and cannot
+hold a `client_key`; needs a config table or an explicit exemption.
+
 ### Translations drift — verified row-by-row (2026-10-09)
 
 
