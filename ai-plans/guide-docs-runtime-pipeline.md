@@ -6,14 +6,14 @@
 > background startup reconcile, user-triggered runtime regeneration, and
 > a docs-index admin page.
 
-## Status: ⚪ TODO — Plan date: 2026-01-23 (session: docs pipeline productization)
+## Status: 🟠 WIP — Plan date: 2026-01-23 (session: docs pipeline productization) · updated 2026-10-09
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
-| 1 | Move extractor+renderer into the repo as project code (not temp/) | ⏳ not done | — | decide host: us-v3/ai vs be-v3 scripts |
-| 2 | Build-time pre-generation of MDX (CI / prebuild hook) | ⏳ not done | — | pages-all.json + mdx out committed or artifact |
-| 3 | Startup reconcile: hash-diff → incremental embed, background/async | ⏳ not done | — | non-blocking; service must be usable immediately |
-| 4 | Full reinit path (model change / schema change / manual request) | ⏳ not done | — | truncate docs_kb + re-embed; content_hash already covers provider identity |
+| 1 | Move extractor+renderer into the repo as project code (not temp/) | ✅ done | 2026-10-09 | `us-v3/ai/scripts/docs-extract.ts` + `docs-render.ts` — paths parameterized (FE_DIR/BE_DIR/DATABASE_URL), default route scan added, `[uuid]`→`{uuid}` slug fix |
+| 2 | Build-time pre-generation of MDX (CI / prebuild hook) | ✅ done | 2026-10-09 | `docs-generate.ts` orchestrator + `pnpm docs:generate` (extract→render→index); output to `v3-docs/pages/frontend/guide/manual` (committed) |
+| 3 | Startup reconcile: hash-diff → incremental embed, background/async | ✅ done | 2026-10-09 | `index.ts` onReady → fire-and-forget `runEmbeddingPipeline`; `tsc` green |
+| 4 | Full reinit path (model change / schema change / manual request) | ✅ done | 2026-10-09 | `runEmbeddingPipeline({full})` → `truncateDocsKb()` before the loop; `--full` on `index-docs.ts` and `docs-generate.ts`. Needed for vector-dimension/index changes (hash alone can't swap column width) + known-state recovery. `tsc` green |
 | 5 | Runtime regeneration trigger (user-initiated only) | ⏳ not done | — | new module docs, tooltip change → regenerate + reindex on demand |
 | 6 | Docs-index admin page (list, group by type, sizes, vector stats) | ⏳ not done | — | reuse /system/settings/ai or dedicated page |
 | 7 | BE endpoints: docs index status, regenerate, reindex | ⏳ not done | — | controller→service, rbac declared |

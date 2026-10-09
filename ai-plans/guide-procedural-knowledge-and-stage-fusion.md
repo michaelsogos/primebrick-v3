@@ -8,7 +8,7 @@
 > manual pages — DONE; (B) stage fusion — SUPERSEDED by Part C;
 > (C) real model-driven agentic loop via native tool-calling.
 
-## Status: 🟠 WIP — Plan date: 2025-XX-XX
+## Status: �DONE — Plan date: 2025-XX-XX · updated 2026-10-09
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
