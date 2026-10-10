@@ -18,7 +18,7 @@
 > depends on predictable HTTP paths, no perf loss.
 > Continuation of `guide-docs-runtime-pipeline.md` (tasks 5-8 fold into A).
 
-Status: ⚪TODO — Plan date: 2026-10-09
+Status: 🟠WIP — Plan date: 2026-10-09, updated 2026-10-10
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
@@ -29,16 +29,25 @@ Status: ⚪TODO — Plan date: 2026-10-09
 | A5 | FE repoint: `entities/ai_model|ai_cerebellum`, `docs/search`, `docs/document` → AI endpoints | ⏳ not done | — | api.ts + smart-ai/smart-guide libs |
 | A6 | Move AI user-guide/agent docs + E2E specs to us-v3/ai | ⏳ not done | — | verify what actually lives in be-v3 vs fe-v3 |
 | B1 | REMOVE NATS req/res entirely — no tech debt: migrate `auth.apikey.byHash`, `service.registry.get`, `config.get` to governed correlation pub/sub, then DELETE `NatsClient.request`/`subscribeRequest` from SDK (hard removal, no compat shim) | ⏳ not done | — | 3 live subjects; deprecation markers already applied 2026-10-09 |
-| B2 | SDK endpoint factories — CLOSED set, the only legal ways to expose anything: `makeEntityRouter`/`makeEntityService`, `makeRpcRouter`/`makeRpcService`, `makeNatsRoutes`/`makeNatsRequestRoute` (pub/sub + correlation-reply). ALL enforce mandatory middleware: auth verify + RBAC + zod + optional redis cache. `createMicroservice` accepts ONLY factory-produced routers (no raw `routeHandler`); startup audit crashes with explicit error on manual `createServer`/`listen`/unregistered path; lint/CI grep as second net | ⏳ partial | 2026-10-09 | DONE: `makeRpcRouter`+`composeRouteHandlers` (auth kinds user/api_key/public, mandatory permissions — construction throws otherwise, :param, body validators→400, `streaming:"sse"` governed kind, RFC7807), `makeNatsRoutes`+`makeNatsRequestRoute`+`callNats` (queue default=serviceCode, `queue:null` explicit broadcast, verifyNatsMessage+enforceNatsRbac mandatory, correlation replies via msg.respond). 24/24 unit tests green, tsc clean. REMAINING: `makeEntityRouter`/`makeEntityService` US-side, `makeRpcService`, `createMicroservice` enforcement + startup audit crash, lint rule |
+| B2 | SDK endpoint factories — CLOSED set, the only legal ways to expose anything: `makeEntityRouter`/`makeEntityService`, `makeRpcRouter`/`makeRpcService`, `makeNatsRoutes`/`makeNatsRequestRoute` (pub/sub + correlation-reply). ALL enforce mandatory middleware: auth verify + RBAC + zod + optional redis cache. `createMicroservice` accepts ONLY factory-produced routers (no raw `routeHandler`); startup audit crashes with explicit error on manual `createServer`/`listen`/unregistered path; lint/CI grep as second net | ⏳ partial | 2026-10-09 | DONE: `makeRpcRouter`+`composeRouteHandlers` (auth kinds user/api_key/public, mandatory permissions — construction throws otherwise, :param, body validators→400, `streaming:"sse"` governed kind, RFC7807), `makeNatsRoutes`+`makeNatsRequestRoute`+`callNats` (queue default=serviceCode, `queue:null` explicit broadcast, verifyNatsMessage+enforceNatsRbac mandatory, correlation replies via msg.respond). 24/24 unit tests green, tsc clean. REMAINING: `makeEntityRouter`/`makeEntityService` US-side, `makeRpcService`, lint rule, manual `createServer`/`listen` audit. DONE 2026-10-10: **runtime factory enforcement** — `Symbol.for` brand on `makeRpcRouter`/`makeOpenApiHandler`/`composeRouteHandlers` outputs; `createMicroservice` REJECTS boot on unbranded `routeHandler`; `composeRouteHandlers` throws on non-factory components (no smuggling). Router extensions for webhook: trailing wildcard `:param*`, `rawBody:true`, lazy `apiKeyPort` getter. Negative tests included (331/331 SDK) |
 | B3 | Remove MCP client from US AI entirely: `/ai/chat` does inference only; tool definitions/execution stay in BE domain, callers drive the loop via `POST /system/mcp/call` (same as smart-guide already does) | ⏳ not done | — | decided — kills the only US→BE HTTP call (`ai/orchestrator.ts:120`) |
-| B4 | Event bus standard (choreography): subject conv `entity.<entity>.<action>`, envelope `{entity, action, uuid, actor, changes, ts}`; SDK `subscribe` gains `{queue}` — DEFAULTS to service code, overridable | ⏳ not done | — | BUG LATENT: zero queue groups today → scaled replicas would duplicate messages |
+| B4 | Event bus standard (choreography): subject conv `entity.<entity>.<action>`, envelope `{entity, action, uuid, actor, changes, ts}`; SDK `subscribe` gains `{queue}` — DEFAULTS to service code, overridable | ⏳ partial | 2026-10-10 | DONE: `{queue}` opt on `NatsClient.subscribe`/`subscribeRequest`; applied to ALL work items — `emailsender.send`→`emailsender`, BE lifecycle (register/heartbeat/unregister/stale)→`primebrick-api`, BE nats-req req/res→`primebrick-api`. Broadcasts correctly unqueued: `service.gateway_online`, `config.changed`, `client_registry.changed`, webhook registry-cache. TODO: envelope/subject naming convention for entity events |
 | B5 | SSE streaming stays HTTP as a GOVERNED option: `makeRpcRouter` supports `streaming: "sse"` route kind — not an escape hatch | ⏳ not done | — | `/ai/chat` SSE |
 | B6 | Doc update: AGENTS.md + controller-boundary rules + user-guide — transport matrix + DAL/audit/translations rules | ⏳ partial | 2026-10-09 | DONE: transport matrix in be architecture.mdx; new `dal-usage.md` rule in both repos (getDal-only, getPool internal-only, audit≠events≠collaboration, per-module translations); us-v3 architecture.mdx updated |
 | B8 | BUG: `proxyRequest`/`proxyRequestSse` do NOT forward `x-mfa-action-authorization` → US can't enforce MFA step-up at all | ✅ done | 2026-10-09 | `buildProxyRequestHeaders` closed allowlist + `x-request-id` gen + `x-forwarded-*`; response forwards etag too; 7/7 unit tests, tsc clean |
 | B9 | MFA token consume for US: `mfa_action_authorizations` is `public` (BE-owned); US verifies JWT signature offline but single-use consume needs governed `auth.mfa.consume` correlation route on BE | ⏳ not done | — | design in Part B |
 | B10 | DRIFT fix + seed backfill | ✅ done | 2026-10-09 | live: `fix_translations_table_drift.sql` moved 46+28 rows → 0 drift (5431 app.*/public, 6424 system.*/system). seeds: 448 keys (3063 rows) folded into patches 01–06 by language + new `00000000000012_seed_translations_en_us.sql`; fresh-env coverage = 100% of live keys |
-| B11 | Service-identity layer (design below) | ⏳ partial | 2026-10-09 | DONE: `service-identity.ts` SDK (10/10 tests); registrar auto-derives pkg name/version + sends `client_key_hash` (env `PRIMEBRICK_CLIENT_KEY`, raw key never travels); `system.client_registry` (init + live); BE upserts `source='registry'` rows on `service.register` + publishes `system.client_registry.changed`; SDK `ClientRegistry` cache (snapshot via `system.clientRegistry.get` nats-req + CHANGED subscription, fail-closed); `createHttpServer` identity gate (401 UNIDENTIFIED_CLIENT / 403 UNKNOWN_CLIENT / 401 INVALID_CLIENT_KEY, RFC7807, /health stays public) wired into `createMicroservice` — default ON, opt-out `PRIMEBRICK_IDENTITY_ENFORCEMENT=off`; BE `client-registry-repo` + `ClientRegistryEntity` + `system.clientRegistry.get` responder; BE self-enrolls its own UA prefix at startup (`initBackendIdentity`); proxy outbound sends `User-Agent={be-identity}` + `x-primebrick-client-key` and moves client UA to `x-forwarded-user-agent`. **Client key comes from module config, NOT env** (env policy: only `DATABASE_URL` is env — see `.devin/rules/env-policy.md` in be/us + docs): US services read `client_key` via `ConfigLoader` (per-service key — leaked key compromises one caller only); BE reads `client_key` from `config_entries` via `backend-identity.ts` holder (cached for the proxy hot path). TODO: NATS-side identity on subscribers, admin CRUD for `manual` rows (Postman clients), key rotation story, E2E live verification |
+| B11 | Service-identity layer (design below) | ⏳ partial | 2026-10-09 | DONE: `service-identity.ts` SDK (10/10 tests); registrar auto-derives pkg name/version + sends `client_key_hash` (env `PRIMEBRICK_CLIENT_KEY`, raw key never travels); `system.client_registry` (init + live); BE upserts `source='registry'` rows on `service.register` + publishes `system.client_registry.changed`; SDK `ClientRegistry` cache (snapshot via `system.clientRegistry.get` nats-req + CHANGED subscription, fail-closed); `createHttpServer` identity gate (401 UNIDENTIFIED_CLIENT / 403 UNKNOWN_CLIENT / 401 INVALID_CLIENT_SHIELD_KEY, RFC7807, /health stays public) wired into `createMicroservice` — default ON, opt-out `PRIMEBRICK_IDENTITY_ENFORCEMENT=off`; BE `client-registry-repo` + `ClientRegistryEntity` + `system.clientRegistry.get` responder; BE self-enrolls its own UA prefix at startup (`initBackendIdentity`); proxy outbound sends `User-Agent={be-identity}` + `x-primebrick-client-shield-key` and moves client UA to `x-forwarded-user-agent`. **Client key comes from module config, NOT env** (env policy: only `DATABASE_URL` is env — see `.devin/rules/env-policy.md` in be/us + docs): US services read `service_client_shield_key` via `ConfigLoader` (per-service key — leaked key compromises one caller only); BE reads `service_client_shield_key` from `config_entries` via `backend-identity.ts` holder (cached for the proxy hot path). DONE (2026-10-09 cont.): **NATS-side identity** — NatsClient.publish/request/replies auto-stamp User-Agent+x-primebrick-client-shield-key via internalIdentityHeaders() (same provider as internalFetch); ServiceLifecycleSubscriber gates register/heartbeat/unregister with verifyClientIdentity on msg headers (60s cached rows, invalidated on changed); REGISTER exempt only for NEW ua prefixes (it IS the enrollment channel — enrolled prefixes must present the matching key, no squatting); enrollment logged Client identity enrolled in client_registry:{ua}; OpenAPI discovery/aggregation messages name the service ({pkg}/{ver}) not the URL + one retry on 401/403 to absorb the changed-broadcast race. TODO: admin CRUD for manual rows (Postman clients), key rotation (B14), E2E live verification |
 | B7 | Verify BE exposes no HTTP endpoints called by microservices (besides MCP case in B3) | ✅ done | 2026-10-09 | Only violation: ai→BE `/mcp` HTTP. No other US→BE HTTP found |
+| B16 | service.register delivery guarantee | ✅ done | 2026-10-10 | DECIDED: req/reply on _INBOX + retry 5s until ack (stateless, no JetStream). Registrar loops until {registered:true}; BE subscribeRequest returns {registered,error}; no ack = no heartbeats. Rejected attempts get explicit negative ack. 323 SDK tests green. POST-FIX: register moved AFTER HTTP listen in createMicroservice (was racing the BE OpenAPI fetch on :port) |
+| B18 | Startup & lifecycle log standardization (US parity with BE pattern) + capabilities + register always re-discovers | ✅ done | 2026-10-10 | DONE + verified live: PG banner via `dbBanner`+`pgServerBanner` (pwd stripped), `Module config loaded — {n} keys ({schema}.config_entries)` (BE too), `Auth settings resolved ({n} keys)`, `Global config received from BE`, dup NATS log removed, `Listening on {url}` via logServiceStartup, register `Registering {pkg}/{ver} — attempt {n}` + ack `The service {code} has been successfully registered after {n} attempts` (tag [gateway_url]), allowlist → `Allowed services to communicate with:` + bullets (log only on real diff), first heartbeat immediate + `First heartbeat sent to api gateway`, `scaffold ready`/`started successfully` removed. capabilities: package.json → `ServiceRegisterPayload.capabilities` → `service_registry.capabilities` jsonb (patch 14, applied) — logged on accept + refreshed every register. handleRegister re-discovers on EVERY register (heartbeats keep dedup). 328/328 SDK tests green, tsc all repos. AI capability list: `llm_orchestrator, chat_orchestrator, vectorizing_engine`; emailsender `email_sender`; webhook `webhook_ingress` |
+| B17 | OpenAPI spec auto-generation from route metadata | ⏳ partial | 2026-10-10 | DONE: SDK `http/openapi.ts` — `buildOpenApiSpec`/`entityCrudSpec`/`rpcSpec`/`makeOpenApiHandler`/`operationIdFor` + `RpcRoute.openapi` field + `OpenApiRouteDoc` (doc-only routes) (5 new tests, 328/328 SDK green); AI serves generated `/api/v1/openapi.json` (all ai/* routes declared, composite handler kept for now — full makeRpcRouter migration TODO); emailsender spec regenerated from `entityCrudSpec` (replaced 400-line hand spec); BE `makeEntityRouter` pushes its real registered ops into `entitySpecRegistry` → `collectEntitySpecPaths()` merged into `/api/v1/openapi.json` (generated under hand-written — hand wins on conflicts); BE discovery: 404 spec fetch → info `No OpenAPI spec — skipping` (was warn). FIXED: emailsender provider UUID routes now singular `/entities/provider/:uuid` (was plural — convention violation; no callers referenced the plural form). DONE 2026-10-10: ALL US routes migrated to `makeRpcRouter` — AI (12 RpcRoute in `AI_ROUTES`, SSE chat lazy-writer so `X-Conversation-UUID` precedes headers, telemetry/reindex=ADMIN, spec derived from the same declarations = zero drift), emailsender (`providerRoutes` 6 entity-CRUD + `configEntryRoutes` 4, identical permissions/envelope/optimistic-version semantics), webhook (`auth:"api_key"` wildcard `:intent*` + `rawBody` pass-thru). Legacy `(req,res,url)=>boolean` path-switchers deleted. TODO: richer schemas via zod→JSON-schema |
+| B19 | Env-policy su tutti gli US: solo `DATABASE_URL`/`DB_SCHEMA` da env — tutto il resto in `{schema}.config_entries` | ⏳ partial | 2026-10-10 | DONE + verified live: AI (20 chiavi, patch `0003_seed_runtime_config`, holder `ai-config.ts`; llm/embedding/rate-limit/redact/docs/openapi/redis migrati — REDIS_URL eliminato, usa shared `redis_url` via `getSharedConfig`), emailsender (`service_base_url`, `service_client_shield_key`, `BREVO_API_KEY` in config), webhook (`WEBHOOK_API_KEY`→config). `SERVICE_BASE_URL` rimosso dagli envSchema → da config. `.env` ridotti a sole chiavi DB; `webhook/.env` creato. Census: zero `process.env` runtime residui |
+| B20 | `service_code` lowercase canonico ovunque (`AI`→`ai`, `EMAILSENDER`→`emailsender`, `WEBHOOK`→`webhook`) | ✅ done | 2026-10-10 | seeds+live DB+FE `/ws/emailsender`+BE `findByCode("ai")`+tests+docs allineati. SIDE-FIX trovato: proxy `findAllByCode("ai")` era già rotto (mai matchato `AI`). DECISO: riga stale `emailsender @ http://new-host:4000` tenuta come storico |
+| B21 | `service.gateway_online` broadcast + re-register al BE restart | ✅ done | 2026-10-10 | BE pubblica dopo le subscription lifecycle; registrar US si ri-registra (guard in-flight). Sequenza log visibile: `is registering` → `enrolled` → `has been registered` → `is live!` + riscoperta OpenAPI. Broadcast unqueued by design |
+| B22 | Register payload validation + ordine log/persistenza lato BE | ✅ done | 2026-10-10 | reject pulito `{registered:false,error}` su `code`/`base_url` mancanti (mai più crash 23502); `has been registered` loggato SOLO dopo upsert; MCP discovery solo con base_url valida |
+| B23 | Patch registry: nomi patch unici per servizio (registry `public.primebrick_database_patches` condiviso → collisioni `0001`/`0002` tra servizi) | ✅ done | 2026-10-10 | rinominate `ai_0001_*`/`emailsender_000*`/`webhook_000*` + f&amp;f aggiornamento hash live; `db:migrate` pulito sui 3 US. JetStream subscribe: retry 5s su stream-not-found (10059) — fixata la race webhook-vs-emailsender |
+| B24 | Hot-reload subscription/listener leak (`bun --hot`: N reload → N sub + N SIGINT handler) | ✅ done | 2026-10-10 | `lifecycle/process-registry.ts` su `globalThis`: `NatsClient.subscribe`/`subscribeRequest` deduplicano per `subject::queue` (replace, non stack); `GracefulShutdown.install` rimuove i listener precedenti via `process.off`. Osservato live: 24 re-register per evento → 1 |
 
 ### BE proxied API — full pipeline (verified 2026-10-09, `proxy-service.ts` + `proxy.router.ts`)
 
@@ -212,7 +221,7 @@ User-reviewed rules, all implemented:
 - **Fixed columns**: timestamp / level (padEnd 5) / `[service#version]`
   (padEnd 26) are space-delimited and aligned; `[tags]` and the message
   flow after the third column.
-- Missing `client_key` in module config is `error` (blocks the identity
+- Missing `service_client_shield_key` in module config is `error` (blocks the identity
   gate — every proxied/internal call 403s), not `warn`.
 - Positive events now `done`: NATS/Redis connected, HTTP listening,
   service registered, MCP server initialized, subscriptions bound.
@@ -289,7 +298,8 @@ contradict each other.
   instant propagation, grace via `previous_key_hash` + generation-1.
 - **Missed broadcast recovery**: US detects generation mismatch on
   `system.client_registry.changed` snapshot reload (already subscribed)
-  or on a 401 INVALID_CLIENT_KEY → refetch snapshot, derive current key,
+
+  or on a 401 INVALID_CLIENT_SHIELD_KEY → refetch snapshot, derive current key,
   retry once.
 - **TTL**: `previous_valid_until = now + grace` (e.g. 5min), new gen every
   30min → overlap window absorbs clock skew and mid-flight requests.
@@ -297,7 +307,7 @@ contradict each other.
 Decision needed: deterministic derivation (recommended, no secrets on the
 bus) vs distributed-secret model (needs a secure channel we don't have).
 
-**Live provisioning (2026-10-09)**: `client_key` generated in-DB via
+**Live provisioning (2026-10-09)**: `service_client_shield_key` generated in-DB via
 `gen_random_bytes` for `public` (BE), `ai`, `emailsender` config_entries —
 values never in repo/chat/env. OpenAPI discovery + aggregated spec
 aggregation now send `backendIdentityHeaders()` (the 403 on the spec fetch
@@ -305,7 +315,186 @@ was the gate correctly rejecting undici's default `node` UA — and it is
 403, not 401, because an UA was present but unallowlisted). Rejections log
 the RFC7807 `internal_code`. **Gap**: `webhook` uses `EnvConfigPort`
 (env-sourced config, no config table) — violates env policy and cannot
-hold a `client_key`; needs a config table or an explicit exemption.
+hold a `service_client_shield_key`; needs a config table or an explicit exemption.
+
+### B15 — Mandatory internal HTTP client (done 2026-10-09)
+
+Raw `fetch` between Primebrick services is now impossible-by-design:
+SDK `internal-client.ts` exposes `configureInternalClient(provider)` +
+`internalFetch(url, init)` — ambient, fail-closed (throws when not
+configured), force-injects `User-Agent` + `x-primebrick-client-shield-key` AFTER
+caller headers so identity can never be overridden/forgotten. Wired
+automatically in `createMicroservice` (service_client_shield_key from module config) and
+in the BE (`initBackendIdentity` → `configureInternalClient(backendIdentityHeaders)`).
+Migrated: `openapi-discovery`, `aggregated-router`, `dispatch` (MCP→US),
+`docs-search` (BE→AI embed). The proxy keeps its own header pipeline
+(already identity-aware). External calls (Casdoor, Brevo, LLM) stay on
+plain `fetch`. Rule file `.devin/rules/internal-client.md` in BE + US.
+Removed the `PRIMEBRICK_IDENTITY_ENFORCEMENT` env opt-out (env policy) —
+the gate is always on; public surfaces declare `identityExemptPaths`.
+
+**webhook verdict (empirical)**: it is a PUBLIC DMZ ingress — external
+providers (Brevo) POST `/webhook/{code}/{intent}` directly with API-key
+auth (`verifyApiKey`), then it JetStream-publishes `webhook.<code>.received`.
+NOT proxied by the BE (different traffic class — correct decision:
+webhooks get their own attack surface). It is DB-less by design
+(`initDal: noop`), subscribed to service.* lifecycle for routing. Now:
+`identityExemptPaths: [/^\/webhook(\/|$)/]` — the gate stays on for
+everything else. **Open item**: webhook is DB-less so `service_client_shield_key` has no
+config home; it also makes zero outbound HTTP calls, so enrollment is
+optional. Options: (a) a `system`-schema service-config table read via
+DATABASE_URL (the one allowed env) — my recommendation; (b) explicit
+exemption for DB-less ingress services. Needs user decision.
+
+**RESOLVED (user decision, 2026-10-09)**: webhook is BE-like — a public
+one-way ingress, only a client, never an internal HTTP server. Every
+microservice MUST own a config table; env = DATABASE_URL/DB_SCHEMA/
+SERVICE_BASE_URL only. Implemented: `webhook.config_entries` (initial
+scripts 0001+0002, service_client_shield_key generated per-env via gen_random_bytes —
+live provisioned), `src/db/dal.ts` (initDal/getDal), `ConfigEntryEntity`,
+`ConfigRepositoryAdapter` + `WebhookAuthConfigPort` (config-driven, no
+env) + `DatabaseAdapter` + `HealthCheckAdapter`; `EnvConfigPort`/
+`EnvAuthConfigPort` deleted; package.json gained pg/dal-pg/reflect-metadata,
+tsconfig decorators. `identityExemptPaths: [/^\/webhook/]` stays — the
+identity gate protects the rest of the surface; /webhook keeps its own
+API-key wall. Tests 4/4, tsc clean.
+
+### B16 — service.register reliability (design — USER DECISION REQUIRED)
+
+**Problem (observed live 2026-10-09)**: `service.register` is a plain
+fire-and-forget pub/sub message. If the BE is down, restarting, or running
+a build that drops it (e.g. the MsgHdrs case bug), the service is NEVER
+enrolled: no `client_registry` row, no `service_registry` row — and every
+subsequent heartbeat is rejected as `UNKNOWN_CLIENT` forever until the
+service is restarted. There is no delivery guarantee and no retry.
+
+**Wrong approach (implemented then reverted)**: piggyback
+`client_key_hash` on heartbeats + implicit re-enrollment / row insert on
+heartbeat. Rejected by user — lazy workaround that masks the real
+requirement. Reverted: heartbeats carry no hash, don't enroll, don't
+create rows; an unknown-row heartbeat warns once per service.
+
+**Correct requirement (user's words)**: every instance MUST send
+`service.register` at startup, and register must sanitize whatever is
+needed for service continuity — it must actually land.
+
+**Design options**:
+
+1. **JetStream-durable register** (fits transport matrix — durable/
+   replayable propagation): publisher uses `NatsClient.jetstream()` with a
+   stream bound to `service.register`; BE consumes via durable consumer.
+   Survives BE downtime; replayed on BE restart. Subscriber switches from
+   `subscribe` to a JS durable consumer on that subject.
+2. **Request/reply handshake with retry**: register becomes
+   `nats.request("service.register", payload)` — service retries with
+   backoff until acked; BE replies with ack + current key generation
+   (B14 hook). Changes transport category — req/reply is deprecated for
+   new app logic, but this is a lifecycle handshake, not app logic.
+3. **Confirm-then-retry on pub/sub**: service publishes register, waits
+   for a `service.registered.{ua}` broadcast (or heartbeat echo) within
+   N seconds; if absent, re-publishes register. No transport change; adds
+   a confirmation subject.
+4. **Request/reply on `_INBOX` + retry** (CHOSEN 2026-10-10): register is
+   a `NatsClient.request` → `subscribeRequest` responder on the BE. The
+   service retries every 5s until `{registered:true}`; **no ack = no
+   heartbeat ever** (an unregistered service is dead to the system).
+   Stateless — no JetStream, no memory kept when the BE is down.
+
+**Implemented**: `ServiceRegistrar.register()` = req/reply loop (3s
+timeout per attempt, 5s backoff, per-attempt warn, `done` on ack with
+attempt count); BE `service.register` moved to `subscribeRequest`
+returning `{registered, error}` — identity rejection gets an explicit
+negative ack instead of a silent drop. `handleRegister` is already
+idempotent (upsert service row + upsert client_registry hash + MCP
+entity rediscovery + SSE event). Registrar tests updated + new retry
+test (no responders → reject → ack). 323 SDK tests green.
+
+On anomalies like this, STOP and ask before patching — heartbeat
+piggybacking was reverted for exactly that reason.
+
+### B18 — startup & lifecycle log standardization (design, decided-with-user 2026-10-10)
+
+Live-verified gaps between US boot logs and the BE banner pattern
+(`logModuleStartup`/`logServiceStartup` in `sdk/src/lifecycle/startup-logger.ts`):
+
+**Current AI boot (observed) vs target:**
+
+1. **Missing infra banners** — BE logs `PostgreSQL 18.4 connected
+   (postgres://…)`, `Redis connected (v8.8.0)`, `NATS 2.14.3 connected
+   (nats://…)`, `Listening on http://localhost:3001`. AI logs only NATS
+   (twice — `NatsClient` logs `NATS 2.14.3 connected` AND
+   createMicroservice logs a redundant `NATS connection established` at
+   line 309) and a non-standard `HTTP server listening on port 3004`.
+   Changes:
+   - Drop `NATS connection established` (duplicate).
+   - `createHttpServer` uses `logServiceStartup(url)` → `Listening on http://localhost:3004`.
+   - PostgreSQL banner: SDK is DB-agnostic → add optional
+     `dbBanner?: () => Promise<{ name; version; url }>` to
+     `MicroserviceOptions`, called after `initDal`, rendered via
+     `logModuleStartup`. DAL adapters provide the probe (`SELECT version()`).
+   - Redis banner: normalize `initCacheFromSharedConfig` log to
+     `logModuleStartup("Redis", version, url)`; keep `cache disabled`
+     warn when absent.
+
+2. **Config counts** — `Config loaded from DB` →
+   `Module config loaded — {n} keys ({schema}.config_entries)`.
+   `ConfigLoader.load()` already returns the full map (count = free).
+   Global/shared config (fetched from BE via `config.get` nats-req) gets
+   its own line: `Global config received from BE — redis_url: set,
+   telemetry: enabled/disabled`. BE side: add the same count log where
+   `loadAuthConfig`/config_entries load runs.
+
+3. **`Auth config loaded` is opaque** — it's the second pass over the
+   module config table via `AuthConfigPort` (jwt/oidc/casdoor keys).
+   Rename to `Auth settings resolved ({n} keys)` or fold into the module
+   config log — one line per source, named by what it actually reads.
+
+4. **`(AI)` in the UA** = `service_code` from the module config table
+   (`configLoader.require("service_code")`), not a capability list —
+   `buildUserAgent(identity, serviceCode)` → `primebrick-ai/0.6.0 (AI)`.
+   It's the registry code. USER DECISION: case convention for
+   `service_code` — proposed `snake_case` lowercase (`ai`,
+   `emailsender`) matching the entity/route convention; capabilities
+   (llm_orchestrator, vectorizing_engine…) would be a separate declared
+   field if wanted in the register payload.
+
+5. **Register attempt log** — now a wall of prose + JSON meta. Target:
+   `Registering primebrick-ai/0.6.0 — attempt {n}` with
+   `tags: ["core", gateway_url]` where gateway_url = `BE_BASE_URL`
+   (default http://localhost:3001) passed into the registrar. No JSON
+   payload dump on attempts.
+
+6. **Allowlist logs** — `Client shield allowlist loaded (2): a, b` →
+   `Allowed services to communicate with:` + one bullet per prefix;
+   reload → `Allowed services to communicate with has been updated:` +
+   bullets. Same wording on the BE side where it logs enrolled
+   identities. Also: suppress the reload log when the set is unchanged —
+   the observed `loaded`→`reloaded` double-line is correct behavior (BE
+   publishes `client_registry.changed` after enrolling AI's identity)
+   but should log only on actual diff.
+
+7. **Ack log** — `service.register acknowledged by BE — … is live at …
+   — heartbeat starting` + JSON →
+   `The service {service_code} has been successfully registered after {n} attempts`
+   (`done`, tags include gateway_url).
+
+8. **`Heartbeat started` is noise** — either drop it or make it real:
+   send the first heartbeat immediately at `startHeartbeat()` and log
+   `First heartbeat sent to api gateway ({gateway_url})`.
+
+9. **Startup tail alignment** — `ai microservice started successfully` +
+   `AI microservice scaffold ready` (scaffold of what? — it's the legacy
+   Phase-2.3 marker in ai/index.ts) collapse into the BE pattern:
+   `Listening on http://localhost:3004` via `logServiceStartup` (from
+   step 1) + service-specific readiness only if meaningful. Remove
+   `scaffold ready`.
+
+10. **Register always re-discovers (approved)** — in
+    `handleRegister`, `service.register` must re-run MCP/OpenAPI
+    discovery even when `registeredServices` already has the code: a
+    restarted service may carry new endpoints; register is the
+    continuity-sanitizing moment (heartbeats keep the dedup). Removes
+    the observed silent skip on re-registration.
 
 ### Translations drift — verified row-by-row (2026-10-09)
 
