@@ -18,16 +18,16 @@
 > depends on predictable HTTP paths, no perf loss.
 > Continuation of `guide-docs-runtime-pipeline.md` (tasks 5-8 fold into A).
 
-Status: 🟠WIP — Plan date: 2026-10-09, updated 2026-10-10
+Status: 🟠WIP — Plan date: 2026-10-09, updated 2026-10-10 (A1-A6 migration executed — pending commit)
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
-| A1 | Move `ai_models` + `ai_cerebellum` modules (entity, meta, service, dto, list-config, router, tests) to us-v3/ai | ⏳ not done | — | Tables live in `public` schema today — see §DB |
-| A2 | Move `docs-search` (dal+service+router+tests) to AI | ⏳ not done | — | BE runs pgvector SQL on `ai.docs_kb` — architectural violation |
-| A3 | Move AI DDL/seed patches out of `be-v3/db-meta` | ⏳ not done | — | ~40 `add_ai_*`/`add_guide_*` SQL files + ai_* table DDL |
-| A4 | DB migration: `ai_models`/`ai_cerebellum` → `ai` schema | ⏳ not done | — | preserve data; see impediments |
-| A5 | FE repoint: `entities/ai_model|ai_cerebellum`, `docs/search`, `docs/document` → AI endpoints | ⏳ not done | — | api.ts + smart-ai/smart-guide libs |
-| A6 | Move AI user-guide/agent docs + E2E specs to us-v3/ai | ⏳ not done | — | verify what actually lives in be-v3 vs fe-v3 |
+| A1 | Move `ai_models` + `ai_cerebellum` modules (entity, meta, service, dto, list-config, router, tests) to us-v3/ai | ✅ done | 2026-10-10 | modules in us-v3/ai/src/modules; BE modules+routers+registry deleted; SDK makeEntityRouter + dal-pg makeEntityService used |
+| A2 | Move `docs-search` (dal+service+router+tests) to AI | ✅ done | 2026-10-10 | dal+service+routes in us-v3/ai; local embedding; BE dal/service/router deleted; MCP search_docs proxies to /ws/ai |
+| A3 | Move AI DDL/seed patches out of `be-v3/db-meta` | ⏳ partial | 2026-10-10 | patch 0005 creates entity tables natively in `ai` (fresh-DB path); historical BE f&f files kept as applied records |
+| A4 | DB migration: `ai_models`/`ai_cerebellum` → `ai` schema | ✅ done | 2026-10-10 | patch 0004 applied live: 30 tables in `ai` incl. audit partitions; 177 models + 54 cerebellum rows preserved |
+| A5 | FE repoint: `entities/ai_model|ai_cerebellum`, `docs/search`, `docs/document` → AI endpoints | ✅ done | 2026-10-10 | all call sites → /ws/ai/api/v1/*; entityApiBase() service map for generic layers |
+| A6 | Move AI user-guide/agent docs + E2E specs to us-v3/ai | ✅ done | 2026-10-10 | ai-models.md moved to us-v3/ai/docs/modules; api-conventions + entity-router-factory updated |
 | B1 | REMOVE NATS req/res entirely — no tech debt: migrate `auth.apikey.byHash`, `service.registry.get`, `config.get` to governed correlation pub/sub, then DELETE `NatsClient.request`/`subscribeRequest` from SDK (hard removal, no compat shim) | ⏳ not done | — | 3 live subjects; deprecation markers already applied 2026-10-09 |
 | B2 | SDK endpoint factories — CLOSED set, the only legal ways to expose anything: `makeEntityRouter`/`makeEntityService`, `makeRpcRouter`/`makeRpcService`, `makeNatsRoutes`/`makeNatsRequestRoute` (pub/sub + correlation-reply). ALL enforce mandatory middleware: auth verify + RBAC + zod + optional redis cache. `createMicroservice` accepts ONLY factory-produced routers (no raw `routeHandler`); startup audit crashes with explicit error on manual `createServer`/`listen`/unregistered path; lint/CI grep as second net | ⏳ partial | 2026-10-09 | DONE: `makeRpcRouter`+`composeRouteHandlers` (auth kinds user/api_key/public, mandatory permissions — construction throws otherwise, :param, body validators→400, `streaming:"sse"` governed kind, RFC7807), `makeNatsRoutes`+`makeNatsRequestRoute`+`callNats` (queue default=serviceCode, `queue:null` explicit broadcast, verifyNatsMessage+enforceNatsRbac mandatory, correlation replies via msg.respond). 24/24 unit tests green, tsc clean. REMAINING: `makeEntityRouter`/`makeEntityService` US-side, `makeRpcService`, lint rule, manual `createServer`/`listen` audit. DONE 2026-10-10: **runtime factory enforcement** — `Symbol.for` brand on `makeRpcRouter`/`makeOpenApiHandler`/`composeRouteHandlers` outputs; `createMicroservice` REJECTS boot on unbranded `routeHandler`; `composeRouteHandlers` throws on non-factory components (no smuggling). Router extensions for webhook: trailing wildcard `:param*`, `rawBody:true`, lazy `apiKeyPort` getter. Negative tests included (331/331 SDK) |
 | B3 | Remove MCP client from US AI entirely: `/ai/chat` does inference only; tool definitions/execution stay in BE domain, callers drive the loop via `POST /system/mcp/call` (same as smart-guide already does) | ⏳ not done | — | decided — kills the only US→BE HTTP call (`ai/orchestrator.ts:120`) |
