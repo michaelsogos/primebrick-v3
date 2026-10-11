@@ -22,7 +22,7 @@
 | 10 | Pack includes `openapi.json` (self-contained); retire `openapi_path` | ⏳ partial | 2026-10-12 | payload.openapi implemented (SDK serve + BE service + AI ingest as *-openapi spec). openapi_path still used by legacy FS pipeline — retirement pending task 13 |
 | 11 | BE: platform aggregator serves FE manual pack (`repo=frontend`) | 🚫 dropped | 2026-10-12 | golden rule: FE is dev-only (presentation layer speaks only to devs, like DAL/SDK). No FE pack exists — manuals now live in BE user-guide |
 | 12 | Update stale `services/ai.mdx` (post-B3 rewrite) | ⏳ not done | — | |
-| 13 | Retire `docs_path` → v3-docs/pages coupling | ⏳ not done | — | dev fallback only |
+| 13 | Retire `docs_path` → v3-docs/pages coupling | ✅ done | 2026-10-12 | docs_fs_pipeline opt-in fallback (startup + reindex gated); FS stale-delete scoped to source repos so packs cannot be wiped |
 | 14 | Zudoku: add `dev-guide` sync pass → `pages/<repo>/dev/` | ⏳ not done | — | user wants dev docs published |
 | 15 | Move `generate-reference-docs` generators into owning repos (`generate:docs` → `docs/user-guide/generated/`) | ⏳ not done | — | POSTPONED after task 8 (needs GenerateDocsFn runner). nav-map NOT cross-repo: BE module-nav-meta.ts (ModuleRouteDecl census + route_prefixes) already owns all FE routes — collectFeRoutes() scanning +page.svelte is obsolete |
 | 16 | Per-repo: create missing dev-guide docs; agent docs reference dev-guide (no duplication) | ⏳ not done | — | |
