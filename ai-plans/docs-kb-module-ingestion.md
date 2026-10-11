@@ -23,7 +23,7 @@
 | 11 | BE: platform aggregator serves FE manual pack (`repo=frontend`) | 🚫 dropped | 2026-10-12 | golden rule: FE is dev-only (presentation layer speaks only to devs, like DAL/SDK). No FE pack exists — manuals now live in BE user-guide |
 | 12 | Update stale `services/ai.mdx` (post-B3 rewrite) | ⏳ not done | — | |
 | 13 | Retire `docs_path` → v3-docs/pages coupling | ✅ done | 2026-10-12 | docs_fs_pipeline opt-in fallback (startup + reindex gated); FS stale-delete scoped to source repos so packs cannot be wiped |
-| 14 | Zudoku: add `dev-guide` sync pass → `pages/<repo>/dev/` | ⏳ not done | — | user wants dev docs published |
+| 14 | Zudoku: add `dev-guide` sync pass → `pages/<repo>/dev/` | ✅ done | 2026-10-12 | sync-repo-docs.mjs tiered (guide+dev), absent tier removes stale pages; generate-nav wraps dev items in Developer Guide category; generate-reference-docs.mjs retired. Verified against main: dev dirs populate once feature branch merges |
 | 15 | Move `generate-reference-docs` generators into owning repos (`generate:docs` → `docs/user-guide/generated/`) | ✅ done | 2026-10-12 | BE scripts/generate-reference-docs.ts: 4 pages from repo-local sources (meta imports, dal-pg decl, MODULE_NAV registry + listModuleNavCodes). Generated committed for Zudoku as-is sync. v3-docs generate-reference-docs.mjs can now be retired |
 | 16 | Per-repo: create missing dev-guide docs; agent docs reference dev-guide (no duplication) | ⏳ not done | — | |
 | 17 | E2E verification: guide tests on real corpus + module install/uninstall | ⏳ not done | — | |
