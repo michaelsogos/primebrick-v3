@@ -13,14 +13,14 @@
 | 1 | Empirical audit of `docs/user-guide` coverage per repo | ✅ done | 2026-10-11 | see Part A |
 | 2 | Decide doc remediation (stale/missing pages) with user | ⏳ not done | — | Part B |
 | 3 | Design docs-pack contract (manifest + content, no vectors) | ✅ decided | 2026-10-11 | Part C — user approved |
-| 4 | FE: split `docs/user-guide` → `user-guide` (manual) + `dev-guide` | ✅ done | 2026-10-11 | manual/ kept in user-guide; 15 top-level entries → dev-guide; _order split; AGENTS/rules/scripts refs updated |
+| 4 | FE: split `docs/user-guide` → `user-guide` (manual) + `dev-guide` | ✅ done | 2026-10-11 | superseded 2026-10-12: FE is dev-only — user-guide removed entirely; manual/users+organizations → BE user-guide/manual; roles page superseded by BE rbac.mdx; button-styles→dev-guide; gitflow→.devin/rules; .obsidian dropped |
 | 5 | DAL/SDK: rename `docs/user-guide` → `docs/dev-guide` (not end-user) | ✅ done | 2026-10-11 | extract-docs scripts, AGENTS, rules renamed docs-dev-guide.md |
 | 6 | Add `.devin/rules/docs-audience.md` guardrail per repo | ✅ done | 2026-10-11 | all 5 code repos (be/fe/us/dal/sdk) |
 | 7 | us-v3: move `docs/user-guide/services/<svc>.mdx` → `<svc>/docs/` | ✅ done | 2026-10-11 | → `<svc>/docs/dev-guide/index.mdx` (dev tier — corrected from decision 2: these are dev docs, not end-user); shared pages → `docs/dev-guide/` |
 | 8 | SDK `docs-pack` module: manifest+schema, `buildDocsPack`, `serveDocsPack`, `GenerateDocsFn` runner, `docsPackClient`, auto-capability in `ServiceRegistrar` | ⏳ not done | — | single implementation, consumed by BE+US |
 | 9 | AI: subscribe `service.register`, pull pack, per-repo ingest; delete on unregister | ⏳ not done | — | |
 | 10 | Pack includes `openapi.json` (self-contained); retire `openapi_path` | ⏳ not done | — | |
-| 11 | BE: platform aggregator serves FE manual pack (`repo=frontend`) | ⏳ not done | — | |
+| 11 | BE: platform aggregator serves FE manual pack (`repo=frontend`) | 🚫 dropped | 2026-10-12 | golden rule: FE is dev-only (presentation layer speaks only to devs, like DAL/SDK). No FE pack exists — manuals now live in BE user-guide |
 | 12 | Update stale `services/ai.mdx` (post-B3 rewrite) | ⏳ not done | — | |
 | 13 | Retire `docs_path` → v3-docs/pages coupling | ⏳ not done | — | dev fallback only |
 | 14 | Zudoku: add `dev-guide` sync pass → `pages/<repo>/dev/` | ⏳ not done | — | user wants dev docs published |
@@ -144,7 +144,7 @@ Rule: anything crossing a repo boundary lives in the SDK once; only doc *content
 - **AI subscribes to `service.register`** (already has lifecycle subscriber). On register of a service with `docs_pack` → AI `fetch(base_url + /api/v1/system/docs/pack)` → ingest under `repo = <service code>`.
 - On `service.unregister` → AI deletes `repo = <code>` docs (module removal cleans the KB).
 - **No BE orchestration, no "BE waits for AI"**: fire-and-forget, idempotent via content-hash; AI re-pulls on every re-registration → self-healing after AI restart (`gateway_online` → re-register → re-ingest; hashes make it cheap).
-- The BE is just another `docs_pack` producer (its own docs). FE is **not a runtime service** → its *end-user manual* pages (`docs/user-guide/manual/*`, ~5 files) still need a runtime host → the BE serves them under `repo=frontend` (platform aggregator role). **DAL and SDK produce NO user pack at all** — their docs are entirely dev-guide → Zudoku only, never the KB, never any pack.
+- The BE is just another `docs_pack` producer (its own docs incl. the adopted FE manuals under `user-guide/manual/`). **Golden rule (2026-10-12): FE, DAL and SDK are dev-only repos** — they produce NO user pack at all; their docs are entirely dev-guide → Zudoku only, never the KB, never any pack. Only BE and US services produce docs packs.
 
 ### C.3 AI changes
 
