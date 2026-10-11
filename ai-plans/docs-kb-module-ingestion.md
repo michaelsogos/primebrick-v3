@@ -18,8 +18,8 @@
 | 6 | Add `.devin/rules/docs-audience.md` guardrail per repo | ✅ done | 2026-10-11 | all 5 code repos (be/fe/us/dal/sdk) |
 | 7 | us-v3: move `docs/user-guide/services/<svc>.mdx` → `<svc>/docs/` | ✅ done | 2026-10-11 | → `<svc>/docs/dev-guide/index.mdx` (dev tier — corrected from decision 2: these are dev docs, not end-user); shared pages → `docs/dev-guide/` |
 | 8 | SDK `docs-pack` module: manifest+schema, `buildDocsPack`, `serveDocsPack`, `GenerateDocsFn` runner, `docsPackClient`, auto-capability in `ServiceRegistrar` | ✅ done | 2026-10-12 | SDK module (manifest/build/serve/fetch + auto docs_pack capability); wired in BE (s2s shield route + DocsPackService + generate:docs) and AI (route + script). Packs verified building on both repos |
-| 9 | AI: subscribe `service.register`, pull pack, per-repo ingest; delete on unregister | ⏳ not done | — | |
-| 10 | Pack includes `openapi.json` (self-contained); retire `openapi_path` | ⏳ not done | — | |
+| 9 | AI: subscribe `service.register`, pull pack, per-repo ingest; delete on unregister | ✅ done | 2026-10-12 | docs-pack-subscriber: register→fetchDocsPack→ingestDocsPack (repo-scoped), unregister→deleteRepoDocs, BE pack at startup + gateway_online; ingest core extracted from embedding-pipeline |
+| 10 | Pack includes `openapi.json` (self-contained); retire `openapi_path` | ⏳ partial | 2026-10-12 | payload.openapi implemented (SDK serve + BE service + AI ingest as *-openapi spec). openapi_path still used by legacy FS pipeline — retirement pending task 13 |
 | 11 | BE: platform aggregator serves FE manual pack (`repo=frontend`) | 🚫 dropped | 2026-10-12 | golden rule: FE is dev-only (presentation layer speaks only to devs, like DAL/SDK). No FE pack exists — manuals now live in BE user-guide |
 | 12 | Update stale `services/ai.mdx` (post-B3 rewrite) | ⏳ not done | — | |
 | 13 | Retire `docs_path` → v3-docs/pages coupling | ⏳ not done | — | dev fallback only |
