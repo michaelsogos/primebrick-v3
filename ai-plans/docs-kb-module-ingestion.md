@@ -11,7 +11,7 @@
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
 | 1 | Empirical audit of `docs/user-guide` coverage per repo | ✅ done | 2026-10-11 | see Part A |
-| 2 | Decide doc remediation (stale/missing pages) with user | ⏳ not done | — | Part B |
+| 2 | Decide doc remediation (stale/missing pages) with user | ✅ done | 2026-10-12 | BE missing pages produced: dev-guide mcp/proxy/secrets-engine (dev topics), user-guide modules + security-and-mfa (end-user topics). All other Part B items closed by tasks 4-10 |
 | 3 | Design docs-pack contract (manifest + content, no vectors) | ✅ decided | 2026-10-11 | Part C — user approved |
 | 4 | FE: split `docs/user-guide` → `user-guide` (manual) + `dev-guide` | ✅ done | 2026-10-11 | superseded 2026-10-12: FE is dev-only — user-guide removed entirely; manual/users+organizations → BE user-guide/manual; roles page superseded by BE rbac.mdx; button-styles→dev-guide; gitflow→.devin/rules; .obsidian dropped |
 | 5 | DAL/SDK: rename `docs/user-guide` → `docs/dev-guide` (not end-user) | ✅ done | 2026-10-11 | extract-docs scripts, AGENTS, rules renamed docs-dev-guide.md |
@@ -21,7 +21,7 @@
 | 9 | AI: subscribe `service.register`, pull pack, per-repo ingest; delete on unregister | ✅ done | 2026-10-12 | docs-pack-subscriber: register→fetchDocsPack→ingestDocsPack (repo-scoped), unregister→deleteRepoDocs, BE pack at startup + gateway_online; ingest core extracted from embedding-pipeline |
 | 10 | Pack includes `openapi.json` (self-contained); retire `openapi_path` | ✅ done | 2026-10-12 | buildDocsPack: openapi object option + optional docsDir (openapi-only packs for dev-only svcs). Standard: runtime spec via buildOpenApiSpec/entityCrudSpec/rpcSpec — BE+AI+emailsender+webhook all build packs (webhook spec created from its RpcRoute table). openapi_path fully retired from AI |
 | 11 | BE: platform aggregator serves FE manual pack (`repo=frontend`) | 🚫 dropped | 2026-10-12 | golden rule: FE is dev-only (presentation layer speaks only to devs, like DAL/SDK). No FE pack exists — manuals now live in BE user-guide |
-| 12 | Update stale `services/ai.mdx` (post-B3 rewrite) | ⏳ not done | — | |
+| 12 | Update stale `services/ai.mdx` (post-B3 rewrite) | ✅ done | 2026-10-12 | ai/docs/dev-guide/index.mdx rewritten: inference-only, caller-driven tool loop, real routes incl. embed+docs search, be_base_url annotated |
 | 13 | Retire `docs_path` → v3-docs/pages coupling | ✅ done | 2026-10-12 | docs_fs_pipeline opt-in fallback (startup + reindex gated); FS stale-delete scoped to source repos so packs cannot be wiped |
 | 14 | Zudoku: add `dev-guide` sync pass → `pages/<repo>/dev/` | ✅ done | 2026-10-12 | sync-repo-docs.mjs tiered (guide+dev), absent tier removes stale pages; generate-nav wraps dev items in Developer Guide category; generate-reference-docs.mjs retired. Verified against main: dev dirs populate once feature branch merges |
 | 15 | Move `generate-reference-docs` generators into owning repos (`generate:docs` → `docs/user-guide/generated/`) | ✅ done | 2026-10-12 | BE scripts/generate-reference-docs.ts: 4 pages from repo-local sources (meta imports, dal-pg decl, MODULE_NAV registry + listModuleNavCodes). Generated committed for Zudoku as-is sync. v3-docs generate-reference-docs.mjs can now be retired |
