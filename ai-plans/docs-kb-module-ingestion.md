@@ -17,14 +17,14 @@
 | 5 | DAL/SDK: rename `docs/user-guide` → `docs/dev-guide` (not end-user) | ✅ done | 2026-10-11 | extract-docs scripts, AGENTS, rules renamed docs-dev-guide.md |
 | 6 | Add `.devin/rules/docs-audience.md` guardrail per repo | ✅ done | 2026-10-11 | all 5 code repos (be/fe/us/dal/sdk) |
 | 7 | us-v3: move `docs/user-guide/services/<svc>.mdx` → `<svc>/docs/` | ✅ done | 2026-10-11 | → `<svc>/docs/dev-guide/index.mdx` (dev tier — corrected from decision 2: these are dev docs, not end-user); shared pages → `docs/dev-guide/` |
-| 8 | SDK `docs-pack` module: manifest+schema, `buildDocsPack`, `serveDocsPack`, `GenerateDocsFn` runner, `docsPackClient`, auto-capability in `ServiceRegistrar` | ⏳ not done | — | single implementation, consumed by BE+US |
+| 8 | SDK `docs-pack` module: manifest+schema, `buildDocsPack`, `serveDocsPack`, `GenerateDocsFn` runner, `docsPackClient`, auto-capability in `ServiceRegistrar` | 🟡 in progress | 2026-10-12 | single implementation, consumed by BE+US — STARTED (next task) |
 | 9 | AI: subscribe `service.register`, pull pack, per-repo ingest; delete on unregister | ⏳ not done | — | |
 | 10 | Pack includes `openapi.json` (self-contained); retire `openapi_path` | ⏳ not done | — | |
 | 11 | BE: platform aggregator serves FE manual pack (`repo=frontend`) | 🚫 dropped | 2026-10-12 | golden rule: FE is dev-only (presentation layer speaks only to devs, like DAL/SDK). No FE pack exists — manuals now live in BE user-guide |
 | 12 | Update stale `services/ai.mdx` (post-B3 rewrite) | ⏳ not done | — | |
 | 13 | Retire `docs_path` → v3-docs/pages coupling | ⏳ not done | — | dev fallback only |
 | 14 | Zudoku: add `dev-guide` sync pass → `pages/<repo>/dev/` | ⏳ not done | — | user wants dev docs published |
-| 15 | Move `generate-reference-docs` generators into owning repos (`generate:docs` → `docs/user-guide/generated/`) | ⏳ not done | — | one standard for pack + site |
+| 15 | Move `generate-reference-docs` generators into owning repos (`generate:docs` → `docs/user-guide/generated/`) | ⏳ not done | — | POSTPONED after task 8 (needs GenerateDocsFn runner). nav-map NOT cross-repo: BE module-nav-meta.ts (ModuleRouteDecl census + route_prefixes) already owns all FE routes — collectFeRoutes() scanning +page.svelte is obsolete |
 | 16 | Per-repo: create missing dev-guide docs; agent docs reference dev-guide (no duplication) | ⏳ not done | — | |
 | 17 | E2E verification: guide tests on real corpus + module install/uninstall | ⏳ not done | — | |
 
