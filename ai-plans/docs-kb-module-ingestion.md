@@ -13,10 +13,10 @@
 | 1 | Empirical audit of `docs/user-guide` coverage per repo | ✅ done | 2026-10-11 | see Part A |
 | 2 | Decide doc remediation (stale/missing pages) with user | ⏳ not done | — | Part B |
 | 3 | Design docs-pack contract (manifest + content, no vectors) | ✅ decided | 2026-10-11 | Part C — user approved |
-| 4 | FE: split `docs/user-guide` → `user-guide` (manual) + `dev-guide` | ⏳ not done | — | 57/73 files are dev docs |
-| 5 | DAL/SDK: rename `docs/user-guide` → `docs/dev-guide` (not end-user) | ⏳ not done | — | user decision |
-| 6 | Add `.devin/rules/docs-audience.md` guardrail per repo | ⏳ not done | — | prevent KB pollution |
-| 7 | us-v3: move `docs/user-guide/services/<svc>.mdx` → `<svc>/docs/` | ⏳ not done | — | user approved |
+| 4 | FE: split `docs/user-guide` → `user-guide` (manual) + `dev-guide` | ✅ done | 2026-10-11 | manual/ kept in user-guide; 15 top-level entries → dev-guide; _order split; AGENTS/rules/scripts refs updated |
+| 5 | DAL/SDK: rename `docs/user-guide` → `docs/dev-guide` (not end-user) | ✅ done | 2026-10-11 | extract-docs scripts, AGENTS, rules renamed docs-dev-guide.md |
+| 6 | Add `.devin/rules/docs-audience.md` guardrail per repo | ✅ done | 2026-10-11 | all 5 code repos (be/fe/us/dal/sdk) |
+| 7 | us-v3: move `docs/user-guide/services/<svc>.mdx` → `<svc>/docs/` | ✅ done | 2026-10-11 | → `<svc>/docs/dev-guide/index.mdx` (dev tier — corrected from decision 2: these are dev docs, not end-user); shared pages → `docs/dev-guide/` |
 | 8 | SDK `docs-pack` module: manifest+schema, `buildDocsPack`, `serveDocsPack`, `GenerateDocsFn` runner, `docsPackClient`, auto-capability in `ServiceRegistrar` | ⏳ not done | — | single implementation, consumed by BE+US |
 | 9 | AI: subscribe `service.register`, pull pack, per-repo ingest; delete on unregister | ⏳ not done | — | |
 | 10 | Pack includes `openapi.json` (self-contained); retire `openapi_path` | ⏳ not done | — | |
