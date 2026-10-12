@@ -589,6 +589,8 @@ chat template nativo Qwen (`has_tools=true` verificato nel prompt renderizzato).
 | 3.5 | Digest per-documento + policy corpus | ✅ done | digest dedup per path (12 candidati), campo `entity` esposto, similarity rimossa (il modello sceglieva il numero più alto, non la policy); boost +0.25 a `frontend/guide/`; corpus filtrato a `frontend/guide/` — esclusi dev refs (backend/api/sdk) |
 | 3.6 | PRIMARY SOURCE condizionale + entity scoping S3 | ✅ done | marker solo se l'entity del fetch ∈ entity dei search hit; contesto S3 ristretto alle entity dei doc fetchati confermati |
 | 3.7 | Contenuto docs | ✅ done | nuovo `manual/permissions-rbac.mdx` (RBAC user-facing — prima esistevano solo reference dev); users-create/users-edit: step di ingresso nella procedura admin |
+| 3.8 | Last-round reprompt guards (2026-10-13) | ✅ done | reprompt guards (`agent_shallow_done`, `bare_prose`, blind NO_MATCH-seed) ora richiedono un round successivo (`round+1 < max_agent_turns`); all'ultimo round si cade in `auto_seed_fetch` (DONE cieco con hit aperti → seeda la pagina migliore) o rifiuto onesto. Prima: reprompt a round 3=max → loop usciva con 0 fetch → "Non lo so" falso su T3. Unit 13/13, E2E 3.43→3.53. FE commit 5db2106 |
+| 3.9 | Scorer path normalization (2026-10-13) | ✅ done | `citedContexts()` strippa `<repo>/guide/` dagli href prima di `docs_kb` lookup (ctx=0/faith=0 falsi su ogni turno); `expected_sources` → `generated/*` + `generated/roles*` per T3. Misura ora onesta: stesso run 1.89→3.43 |
 
 E2E finale (WebGPU): score 4.00, rank 4.4, 5/5 pass.
 Evidenza chiave: T3 mostra retry autonomo genuino — `docs_search "RBAC

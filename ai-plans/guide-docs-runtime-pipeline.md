@@ -6,18 +6,20 @@
 > background startup reconcile, user-triggered runtime regeneration, and
 > a docs-index admin page.
 
-## Status: 🟠 WIP — Plan date: 2026-01-23 (session: docs pipeline productization) · updated 2026-10-09
+## Status: 🟠 WIP — Plan date: 2026-01-23 (session: docs pipeline productization) · updated 2026-10-28
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
-| 1 | Move extractor+renderer into the repo as project code (not temp/) | ✅ done | 2026-10-09 | `us-v3/ai/scripts/docs-extract.ts` + `docs-render.ts` — paths parameterized (FE_DIR/BE_DIR/DATABASE_URL), default route scan added, `[uuid]`→`{uuid}` slug fix |
-| 2 | Build-time pre-generation of MDX (CI / prebuild hook) | ✅ done | 2026-10-09 | `docs-generate.ts` orchestrator + `pnpm docs:generate` (extract→render→index); output to `v3-docs/pages/frontend/guide/manual` (committed) |
-| 3 | Startup reconcile: hash-diff → incremental embed, background/async | ✅ done | 2026-10-09 | `index.ts` onReady → fire-and-forget `runEmbeddingPipeline`; `tsc` green |
-| 4 | Full reinit path (model change / schema change / manual request) | ✅ done | 2026-10-09 | `runEmbeddingPipeline({full})` → `truncateDocsKb()` before the loop; `--full` on `index-docs.ts` and `docs-generate.ts`. Needed for vector-dimension/index changes (hash alone can't swap column width) + known-state recovery. `tsc` green |
-| 5 | Runtime regeneration trigger (user-initiated only) | ⏳ not done | — | new module docs, tooltip change → regenerate + reindex on demand |
-| 6 | Docs-index admin page (list, group by type, sizes, vector stats) | ⏳ not done | — | reuse /system/settings/ai or dedicated page |
-| 7 | BE endpoints: docs index status, regenerate, reindex | ⏳ not done | — | controller→service, rbac declared |
-| 8 | Verification tooling: doc↔chunk match check + search probe | ⏳ not done | — | SQL + endpoint, see Part E |
+| 1 | Move extractor+renderer into the repo as project code (not temp/) | ✅ done | 2026-10-09 | `us-v3/ai/scripts/docs-extract.ts` + `docs-render.ts` |
+| 2 | Build-time pre-generation of MDX (CI / prebuild hook) | ✅ done | 2026-10-09 | `docs-generate.ts` + per-repo `generate:docs` (docs-pack build) |
+| 3 | Startup reconcile: hash-diff → incremental embed, background/async | ✅ done | 2026-10-13 | `docs-pack-subscriber` pulls on `service.register` / `gateway_online` / AI startup; `ingestDocsPack` hash-diff is incremental by design |
+| 4 | Full reinit path (model change / schema change / manual request) | ✅ done | 2026-10-09 | `runEmbeddingPipeline({full})` for the FS fallback; pack path re-embeds everything on provider/content-hash change |
+| 5 | ~~Runtime regeneration trigger~~ → **rescoped**: production trigger is service restart/register (already implemented); no live MDX authoring exists | 🚫 dropped | 2026-10-28 | Docs are 1:1 with code/release — a new MDX ships with a deploy, the normal restart/register pull covers it. No always-on mechanism allowed |
+| 5b | Dev-mode reindex command — `pnpm docs:reindex` in `us-v3/ai` | ✅ done | 2026-10-28 | `scripts/reindex-packs.ts` — re-pulls BE + all live `docs_pack` services via the same `internalFetch`+shield wire path (secret hydrated from Redis); `--repo` to narrow; logs to `docs_ingest_log` with `dev_script` trigger |
+| 5c | Admin force-reindex endpoint — `POST /api/v1/ai/reindex {mode:'packs', repo?}` | ✅ done | 2026-10-28 | Controlled recovery (corruption/model/index issues), NOT authoring. RBAC `AUTHENTICATED_ADMIN`; `mode:'fs'` keeps the old gated fallback. Shared `reindexDocsPacks()` in `src/services/docs-pack-reindex.ts` — single code path for lifecycle, HTTP, script |
+| 6 | Docs-index admin page (inventory, sizes, vector stats, history, force-reindex button) | ✅ done | 2026-10-28 | `fe/src/routes/(app)/system/settings/docs-index/+page.svelte` — inventory + drift + probes + history + reindex-all/per-repo buttons. Nav entry in BE `module-nav-meta.ts` + `add_docs_index_translations.sql` applied. Observability + recovery only |
+| 7 | AI endpoints: `GET /api/v1/ai/docs/index-status` + `ai.docs_ingest_log` table | ✅ done | 2026-10-28 | Status: per-repo docs/chunks/unembedded + last 20 ingest runs + storage + drift + probes (`?probe=1`). Log table records every pull (repo, service, trigger, stats, ok, error) |
+| 8 | Verification tooling: doc↔chunk match check + search probe | ✅ done | 2026-10-28 | `services/docs-drift.ts` — `computeDocsDrift` recomputes expected chunk hashes with the SAME functions as ingest (missing/stale/orphans/unembedded); `runSearchProbes` runs canonical queries top-k. Exposed via index-status `drift`/`probes` |
 
 ---
 
@@ -151,11 +153,20 @@ kill the hand-copy step).
   embedding-input schema changed, or explicitly requested — everything
   else is incremental by `content_hash`.
 
-**A4. Runtime regeneration — user-triggered only.** An explicit action
-(e.g. after installing a module's docs or editing a tooltip) calls
-`regenerate → reindex-incremental` for the affected scope. Never
-automatic: no watchers, no DB triggers on translations — the admin
-decides when the KB rebuilds.
+**A4. Reindex triggers — corrected lifecycle (2026-10-28).** The earlier
+"runtime regeneration" task assumed live doc authoring, which does not
+exist: docs are 1:1 with source code and ride the release. The real
+trigger matrix:
+
+| Trigger | When | Mechanism | Status |
+|---|---|---|---|
+| Service restart/register | **standard** — new feature+docs deployed | `service.register`/`gateway_online`/AI-startup → `pullAndIngest` | ✅ already live |
+| `pnpm docs:reindex` (`us-v3/ai`) | dev edge — MDX/code edited under a running service, fresh git pull, regenerated generated/ | `scripts/reindex-packs.ts` → `reindexDocsPacks({trigger:'dev_script'})` | ✅ done |
+| `POST /api/v1/ai/reindex {mode:'packs', repo?}` | admin recovery — corruption, model/index issues, controlled rebuild | RBAC admin → same `reindexDocsPacks({trigger:'manual'})` | ✅ done |
+
+No other triggers are allowed — no watchers, no live authoring endpoint,
+no DB triggers on docs. `docs_ingest_log` records every run for the
+admin history view (why, when, outcome).
 
 ## Part B — Docs-index admin page
 

@@ -1,5 +1,13 @@
 # Plan: Avatar Gradient Rendering (Hexagon + Dynamic Gradient)
 
+## Status: 🟢 DONE — updated 2026-10-13 (chat bubble chrome session)
+
+Sessione 2026-10-13 — chrome condiviso chat (commit FE a515d97):
+- `chat-avatar-chrome.ts` — unica fonte per tutti gli assistenti: user bubble = avatar sidebar + sfondo gradiente avatar all'8% + ring gradiente pieno via `.gradient-ring` (mask, unica tecnica con fill trasparente — il double-background padding/border-box trapassa)
+- `BotIcon` condiviso (SVG gradient-stroke primary, icon-only) sostituisce i cerchi
+- `max-w-[80%]` → `min-w-0 max-w-full` su entrambi i renderer
+- Bug correlato chiuso: `avatar_color` era nullable → NOT NULL + default palette deterministico (BE d3c6ae1)
+
 ## Objective
 
 Replace solid-color avatar backgrounds with dynamic gradients in the Primebrick FE.
