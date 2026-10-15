@@ -44,7 +44,7 @@
 
 ## Residual / next
 
-- **Legacy FS-pipeline corpus cleanup** (from task 19 note): old `repo='frontend'` FS-pipeline rows may still coexist with pack docs and will drift — cleanup decision still pending.
+- ~~**Legacy FS-pipeline corpus cleanup**~~ — resolved 2026-10-28: `ai.docs_kb` contains zero rows outside the 4 pack repos (`backend` 42, `ai` 31, `emailsender` 10, `webhook` 1). The old `repo='frontend'` FS-pipeline corpus is already gone — the KB is 100% pack-sourced; no cleanup needed. FE user docs live inside the **backend** pack as `generated/*.mdx` (per task 11 decision: FE ships no pack).
 - **Guide E2E remaining gaps** (not KB, model behavior): T3/T4 synthesis — model answers on-topic but generalizes (roles page vs Edit User→Application Roles) and skips docs_fetch until guards force it. Scores now honest (T3 3.8 partial).
 - **Global AI chat panel** (`shell.aiChat`): POC, does NOT share the smart-ai skeleton — the day it's productized it becomes a remote-engine assistant on the shared panel (engine:'remote' composable + hide WebLLM chrome). Until then it shares only chat-avatar-chrome.
 
