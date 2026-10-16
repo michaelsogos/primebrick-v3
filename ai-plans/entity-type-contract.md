@@ -7,7 +7,7 @@
 > `primebrick-db check`/`compare` — whitelist violations are hard errors,
 > `*_uuid`-name and redundant-`pgType` are advisory warnings.
 
-## Status: 🟠 WIP — Plan date: 2026-10-15 15:10 UTC / 17:10 CEST+2
+## Status: � DONE — Plan date: 2026-10-15 15:10 UTC / 17:10 CEST+2 — closed 2026-10-15 (task 18 extracted to dedicated plan `entity-validation-autoderive.md`; task 21 index absorption landed)
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -31,9 +31,10 @@
 | 16c | `mcp_oauth_clients` audit-col nullability | ✅ done | 10-15 | entity declared nullable vs DB NOT NULL+defaults → `nullable:false`; BE compare now clean |
 | 16d | Stale draft cleanup | ✅ done | 10-15 | 11 superseded drafts deleted; unsigned MANIFESTs rebuilt to existing files only |
 | 17 | type-matrix canonical entity + tests in dal-pg | ✅ done | 10-15 | `test/entities/type-matrix-entity.ts` + `test/type-matrix.test.ts` — 160 tests; found+fixed 2 real bugs (unmappable-check ordering, `boolean[]` family-key leak) |
-| 18 | Validation auto-derivation (`meta.validation`, `zodFromEntity`) | ⏳ not done | — | separate task — user requirement: required/max/format hints from decorators |
+| 18 | Validation auto-derivation (`meta.validation`, `zodFromEntity`) | 🚫 dropped | 10-15 | extracted to dedicated plan `entity-validation-autoderive.md` — out of this plan's scope |
 | 19 | Docs: index + per-type pages + decorator reference + agent rule "new type → discuss first" | ✅ done | 10-15 | `column-types.mdx` + `_order.json`; entities/getting-started/architecture/connections/repository-pattern/index/api-reference/audit-trail/clone/optimistic-lock/partitioning modernized; `docs/ai/*` + `docs/skills/dal-usage.md` updated; `.devin/rules/entity-type-contract.md` + AGENTS.md contract line; typedoc.json output path fixed (was writing to user-guide/_extracted, stale since tier split) |
 | 20 | Patch sign + apply (numeric→float8, varchar(n), vector(1024), missing uq index) | ✅ done | 10-15 | reviewed vs live data + consumers (varchar bounds ok, all embeddings 1024-dim, pmi uq = real webhook correlation invariant); signed w/ dev-micha, applied both; post-apply compare: **zero drift** ai+emailsender+BE. Bonus fix: vector typmod dropped by normalizer → `comparablePgType` now parses vector(N) dims |
+| 21 | DB-only indexes absorbed into entities + `@Index` group-seed bugfix | ✅ done | 10-15 | `docs_kb.repo`/`content_hash` → `@Index()`, `embedding` → `@Index({using:'hnsw',opclass:'vector_cosine_ops'})` — auto-names match live (`docs_kb_*_idx`); compare: no drift. Bug found+fixed in `entity-decorators.ts`: fresh index group didn't seed `opclass`/`where` from first member → explicit-opclass index always threw |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 
@@ -76,10 +77,10 @@ which is accepted since the constraint is equivalent. If canonical naming is
 ever wanted it's a separate metadata-only `ALTER INDEX`/`RENAME CONSTRAINT`
 decision — not required for correctness.
 
-## Patch drafts pending review (unsigned)
+## Patches — signed + applied 2026-10-15
 
 - `ai/db-meta/patches/20261015144424_*` — 10× numeric→float8, 4× text→varchar(n),
-  vector→vector(1024). No index creates (all equivalent uniques exist).
+  vector→vector(1024). Reviewed vs live data + consumers, signed w/ dev-micha, applied.
 - `emailsender/db-meta/patches/20261015144425_noop.sql` — the single legit
-  `sender_log_provider_message_id_uq` create.
-- job-handler / webhook / BE: `compare` reports **no drift** — nothing pending.
+  `sender_log_provider_message_id_uq` create. Signed + applied.
+- Post-apply `compare`: **zero drift** ai + emailsender + BE.

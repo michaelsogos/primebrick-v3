@@ -3,13 +3,13 @@
 > Continuation of `dal-pgvector-repository.md` §ARCH-1. Scope: NEW architecture — **not retro-compatible**, designed once, designed right.
 > Related workstream already applied: `ai_conversations` partitioned by `last_seen_at` (local DB) — the generated path in this plan will replace the hand-written patch approach.
 
-Status: 🟡 PARTIALLY DONE — Plan date: 2026-10-12 23:58 UTC / 01:58 CEST+1
+Status: � DONE — Plan date: 2026-10-12 23:58 UTC / 01:58 CEST+1 — closed 2026-10-15 (tasks 3+11 landed via `db-migration-engine.md` + dal-pg docs)
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
 | 1 | `@PartitionField` field decorator + meta `partition` + hard validation | ✅ done | 2026-10-12 | `entity-decorators.ts`/`entity-meta.ts`; unique-group + PK-widen checks enforced |
 | 2 | `@PartitionChildOf` child decorator — logical FK graph for cascade delete + retention purge | ✅ done | 2026-10-12 | child-side declaration; leaf→root purge order derived from graph |
-| 3 | Migrate `database-patch-compare` machinery to `@primebrick/dal-pg` | ⏳ not done | — | still BE-only; US patches stay handwritten for now |
+| 3 | Migrate `database-patch-compare` machinery to `@primebrick/dal-pg` | ✅ done | 2026-10-15 | `src/schema-diff/` lives in dal-pg with `primebrick-db` CLI (compare/check/sign/apply); BE `src/db` schema-diff deleted; all US generate patches via shared engine — see `db-migration-engine.md` |
 | 4 | SDK: `jetstreamSubscribe` lane+consumer opts + verified `authUser`+`subject` in handler meta; `ensureJobSchedule`/`cancelJobSchedule`; `jetstreamPublish` identity stamping; `ensureStream` `allow_msg_schedules`+`syncSubjects` | ✅ done | 2026-10-12 | all in; `syncSubjects` reconciles existing streams |
 | 5 | New microservice `job-handler` — schema `job`, `jobs.ctl.schedule.request` governed route, due/result taps, JOBS stream provisioning | ✅ done | 2026-10-12 | live on :3006; sole writer of `jobs.schedule.*`; namespace checks: remote callers confined to own namespace AND own due target; internal callers may target any service |
 | 6 | `dal.partitionMaintenance()` in `@primebrick/dal-pg` | ✅ done | 2026-10-12 | per-parent `SELECT partman.run_maintenance(parent)` — NOT the global proc (it aborts on other schemas' stale parents); children purged set-based leaf→root before drop |
@@ -17,7 +17,7 @@ Status: 🟡 PARTIALLY DONE — Plan date: 2026-10-12 23:58 UTC / 01:58 CEST+1
 | 8 | Client registry entry for `primebrick-job` + namespace ACL semantics | ✅ done | 2026-10-12 | `primebrick-job` enrolled; enrollment chicken-and-egg fixed via `enrollment: true` flag on `service.register` route + lazy one-shot reload in `verifyNatsPublisher` on UNKNOWN_CLIENT (stale per-instance verifier cache bug fixed) |
 | 9 | `job_schedules`/`job_runs`/`job_rules` entities+patches + taps + `job-run-stats` (adaptive hour/day/week/month bucket) + `schedule-job`/`disarm-job` actions | ✅ done | 2026-10-12 | patches 0001–0003 applied; `schedule_type` (recurring/once) derived from spec; BigInt report bug fixed by passing raw object to DAL jsonb |
 | 10 | FE admin page `/(app)/system/jobs` — EntityListTable views (RECURRING / EXECUTED ONCE / RULES / RUNS), `run_stats_sparkline` cell, create-job dialog | ✅ done | 2026-10-12 | LIVE-VERIFIED via Playwright: sections render, sparkline draws, arm/disarm via UI works end-to-end, duration humanized (ms→s→m→h); `useEntityList` composable + `JobEntityTable`/`RunStatsSparkline` under `src/lib/components/jobs/`; nav entry in `module-nav-meta.ts`; translations via fire-and-forget SQL (396 rows, 6 langs) |
-| 11 | Docs: agent docs (DAL architecture, jobs svc), dev-guide, standards/rules update | ⏳ not done | — | make-docs per repo |
+| 11 | Docs: agent docs (DAL architecture, jobs svc), dev-guide, standards/rules update | ✅ done | 2026-10-15 | `primebrick-us-v3/docs/dev-guide/job-handler.mdx` + `adding-a-service.mdx` + `overview.mdx`; dal-pg `partitioning.mdx` documents partman + retention runner; sdk `migrations.mdx`; rules updated (`patch-sha256-management.md`, env-policy, dal-usage) |
 
 **Live empirical evidence (2026-10-12):**
 - Seed: 10,000 `ai_conversations`, 2,450 older than 6mo across 7 retro partitions; 7,550 recent.

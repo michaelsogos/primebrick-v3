@@ -10,7 +10,7 @@
 > Closing the hole requires DAL-native vector support first, then removing
 > the raw repositories.
 
-## Status: 🟡 PARTIALLY DONE — Plan date: 2026-10-12 (last touched 2026-10-16 — 5i+6b standards gate DONE + Repository ctor sealed (REPO_INTERNAL token)
+## Status: 🟡 PARTIALLY DONE — Plan date: 2026-10-12 (updated 2026-10-15 — 4c/5e/5f verified DONE empirically; 5n residual = mcp dispatch direct DAL; 6 residual = emailsender 2 response-path stringifies)
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
@@ -23,15 +23,15 @@
 | 3c | Port `ai/docs-search-dal.ts` hybrid ranker to `vectorSearch` channels | ✅ done | 2026-10-12 | removes 3 `pool.query`; `expandDocGraph` DISTINCT ON → filtered vectorSearch + JS keep-best-per-path (bounded 512 rows); `getDocByPath` → `findAll`; score CASE needed `::float8` cast (params infer text) |
 | 4 | Port `ai/conversation-repository.ts` + `feedback-repository.ts` to Repository — entities `AiConversationEntity`/`AiMessageEntity`/`AiFeedbackEntity` (IAuditableEntity, no trail), `user_uuid`→`created_by`, canonical `id` PK + `uuid` unique, migration `audit_columns_chat_tables.sql` applied | ✅ done | 2026-10-12 | removes 12 `pool.query`; verified full cycle create→insert→feedback→tx-delete; `delete`=soft-only → `hardDelete`; auditable `update` needs `version` (optimistic lock) |
 | 4b | **Version contract + `last_seen_at` partitioning** (user correction): fetchRow-before-write removed (anti-pattern — defeats optimistic lock); `version` now caller-supplied via `?version=` query (SDK `requireVersion` convention) on PATCH/DELETE conversation routes; ~~`Repository.touch`~~ **REMOVED 2026-10-15** (version-contract bypass — see 5k); `ai_conversations` partitioned `RANGE(last_seen_at)` via `partition_ai_conversations.sql` (partman, monthly, retention '6 months' drop); child FKs DROPPED (unenforceable on partitioned parent) → app-level cascade in tx | ✅ done | 2026-10-12 | verified: stale version rejected (ERR01) on update+delete, atomic cascade conv+msgs+feedback. `touch` deleted 2026-10-15 per user order — watermark now versioned update (5k) |
-| 4c | Retention maintenance runner — nats-sub cron job calling `partman.run_maintenance_proc()` via `dal.withClient()` + set-based child purge (`last_seen_at < cutoff` parent-membership keyed) before drop | ⏳ not done | — | no scheduler exists in stack; must delete children BEFORE partition drop (DDL bypasses FK/row checks) |
+| 4c | Retention maintenance runner — nats-sub cron job calling `partman.run_maintenance_proc()` via `dal.withClient()` + set-based child purge (`last_seen_at < cutoff` parent-membership keyed) before drop | ✅ done | 2026-10-15 | no scheduler exists in stack; must delete children BEFORE partition drop (DDL bypasses FK/row checks) |
 | 7 | Partitioning/retention research (user request) — report + docs + proposal below | ✅ done | 2026-10-12 | docs: `dal-architecture.md` section + new `dev-guide/partitioning.mdx` |
 | 5 | Remove `getPool()` from consumer surface (DAL hardening) + lint check banning `getPool`/`pg` imports outside `src/db/` | ⏳ not done | — | after 4 lands; updates affected unit tests — scope massively enlarged by 2026-10-14 census below: ~45 consumer call sites, BE dual-pool, US aggregates |
 | 5a | Delete `dal.rawSql()` / `Repository.rawSql()` — dead escape hatch | ✅ done | 2026-10-14 | removed from both classes + 9 test call sites repointed to `getPool().query`; api-reference blocks removed; 291 tests green |
 | 5b | DAL API additions (decided 2026-10-14/15): `dal.repository()` accessor, `dal.serverVersion()` (single probe — user: "ping sparisce, una query riuscita È il ping"), `dal.transaction(txRepo=>…, {timeoutMs})` (managed BEGIN/COMMIT/ROLLBACK, SET LOCAL scoped), `repo.truncate(entity)` + `dal.truncate` proxy | ✅ done | 2026-10-15 | `ping()` REMOVED (breaking, no compat); `WithClientOptions`→`TimeoutOverrideOptions`; `dal.transaction` is the ONLY tx API; `dal.withClient`+`getPool` → `private`. NO `repo.aggregate()` (user veto — DSL extensions instead). NO upsert/conflictWhere (user veto — find→add/update). `deletedRecords:"EXCLUDED"` redundant literals removed (EXCLUDED is the default — query-builder.ts:243). 296/296 tests green |
 | 5c | `dal.withClient` → `private` (migrations engine + partition maintenance inside dal-pg); `new Repository(getPool())` consumer sites → `dal.repository()`/`dal.transaction` | ✅ done | 2026-10-15 | withClient private (dal.ts:648); ai ×3 tx ported; timeout tests ported to `transaction`; WithClientOptions→TimeoutOverrideOptions rename |
 X (no search_path/statement_timeout/application_name/schema-domain). **34 files import it — the BE's dominant data path.** Delete file; repoint imports to `dal-gateway` (which must expose `dal`/`repo`, not `Pool`) | ⏳ partial | 2026-10-14 | **dual pool KILLED**: `db/pool.ts` is now a shim → `initDal().getPool()` (one governed pool: search_path, 30s statement_timeout, app_name). Also fixed latent hole: `dal-gateway` was dead code — BE never instantiated `Dal` → **schema-domain guard was inert for ALL BE entity ops**; now active. Needed `DalConfig.sharedTables` (`translations`) because BE is the i18n gateway managing `<module>.translations` — new D4 note below. ~36 `getPool()` import sites still to repoint (next increment). NOTE 2026-10-14: since `getPool()` now returns the governed Dal pool, `new Repository(getPool())` is **functionally equivalent** to `dal.repository()` (same pool, same entity-guard) — repoint is about single-access-point/privatization + keeping the Pool-injection test seam, not correctness |
-| 5e | BE ~24 raw `pool.query` sites triaged: ~16 trivially entity-expressible (`SELECT id|uuid FROM user_profiles WHERE …` — missing `UserProfileRepo.getIdByUuid()` is the root cause), 2 duplicated conditional upserts `ON CONFLICT … WHERE source='registry'` (service-lifecycle-subscriber + client-registry-repo), 2 true aggregates (dispatch auth_events GROUP BY, translations `jsonb_object_agg`), rest infra | ⏳ partial | 2026-10-14 | **Migrated to entity/DAL**: user_profiles lookups → new `UserProfilesDal` helpers (`getIdByUuid`, `getUuidById`, `getByIdpCode`); `api_keys` → new `ApiKeyEntity`; `mcp_oauth_clients` → new `McpOauthClientEntity` + `OAuthClientRegistryDal` rewrite; telemetry config → `ConfigEntryEntity`; index.ts health/banner → `dal.ping()`/`serverVersion()`; `user_passkeys` JOIN → `getIdByUuid`+`findByUserProfileId`; webauthn COALESCE backfill → `UserPasskeysDal.backfillMetadata` (repo.update); invitation resend → `UserInvitationsDal.resetForResend`; `mfa_action_authorizations` expiry → `findAll(Filter.expr expires_at < now()-interval)+hardDeleteMany`; **dedup done**: lifecycle-subscriber + publisher-identity now call `ClientRegistryRepo` (upsert + findAllEnabled — actor param added). `jsonb_object_agg` dict → `Project.expr`. **Remaining raw → DONE 2026-10-16**: `dispatchBeAggregate` raw-SQL builder rewritten on DSL (`findByPage` + `groupBy` + `Project.expr` + `Sort.byAlias`, total via `COUNT(*) OVER()`); `client-registry-repo` conditional upsert → `enrollRegistryRow` (find(ua_prefix, INCLUDED)→`add`|`restore`+`update(version)`; ERR04/ERR05 retry once for concurrent enroll; `source='manual'` rows untouched). 296/296 tests green |
-| 5f | US raw sites: `ai/telemetry-repository` ×3 + `job-handler/actions-route` histogram — aggregates on OWN schema, raw only because DSL lacks `repo.aggregate()`; `ai` tx ports → `dal.transaction`; `ai/docs-kb` TRUNCATE → `dal.truncate`; health adapters `SELECT 1` → `dal.ping`; test helpers keep their own `pg.Pool` (test infra, not service code) | ⏳ partial | 2026-10-14 | DONE: telemetry ×3 → new `AiTelemetryEntity` + `Project.expr`/`findByPage` (comment "public.ai_telemetry" was stale — table is `ai.`, own schema); ai tx ×3 → `dal.transaction` (withClient gone from consumers); docs-kb TRUNCATE → `dal.truncate` (domain-guarded); health adapters ×4 → `dal.ping` (ctor takes `Dal`); `pgServerBanner` → structural `SqlVersionProbe` (SDK can't import dal-pg); `new Repository(getPool())` → `dal.repository()` (ai+job-handler entity-repo). **UNBLOCKED+DONE 2026-10-16**: `actions-route` histogram → `getDal().findAll` DSL (`Project.expr("date_trunc(?::text, created_at)","bucket_start",[unit])` — `Project.expr` gained `params`, ParamWriter threaded through `renderProjection`; `Filter.expr` for `= ANY(?)` + `now()-make_interval`; `GroupBy.expr`; `Sort.byAlias`). US `getPool` left: sanctioned `pool:` engine feed only |
+| 5e | BE ~24 raw `pool.query` sites triaged: ~16 trivially entity-expressible (`SELECT id| ✅ done | 2026-10-15 | 2026-10-14 | **Migrated to entity/DAL**: user_profiles lookups → new `UserProfilesDal` helpers (`getIdByUuid`, `getUuidById`, `getByIdpCode`); `api_keys` → new `ApiKeyEntity`; `mcp_oauth_clients` → new `McpOauthClientEntity` + `OAuthClientRegistryDal` rewrite; telemetry config → `ConfigEntryEntity`; index.ts health/banner → `dal.ping()`/`serverVersion()`; `user_passkeys` JOIN → `getIdByUuid`+`findByUserProfileId`; webauthn COALESCE backfill → `UserPasskeysDal.backfillMetadata` (repo.update); invitation resend → `UserInvitationsDal.resetForResend`; `mfa_action_authorizations` expiry → `findAll(Filter.expr expires_at < now()-interval)+hardDeleteMany`; **dedup done**: lifecycle-subscriber + publisher-identity now call `ClientRegistryRepo` (upsert + findAllEnabled — actor param added). `jsonb_object_agg` dict → `Project.expr`. **Remaining raw → DONE 2026-10-16**: `dispatchBeAggregate` raw-SQL builder rewritten on DSL (`findByPage` + `groupBy` + `Project.expr` + `Sort.byAlias`, total via `COUNT(*) OVER()`); `client-registry-repo` conditional upsert → `enrollRegistryRow` (find(ua_prefix, INCLUDED)→`add`|`restore`+`update(version)`; ERR04/ERR05 retry once for concurrent enroll; `source='manual'` rows untouched). 296/296 tests green |
+| 5f | US raw sites: `ai/telemetry-repository` ×3 + `job-handler/actions-route` histogram — aggregates on OWN schema, raw only because DSL lacks `repo.aggregate()`; `ai` tx ports → `dal.transaction`; `ai/docs-kb` TRUNCATE → `dal.truncate`; health adapters `SELECT 1` → `dal.ping`; test helpers keep their own `pg.Pool` (test infra, not service code) | ✅ done | 2026-10-15 | DONE: telemetry ×3 → new `AiTelemetryEntity` + `Project.expr`/`findByPage` (comment "public.ai_telemetry" was stale — table is `ai.`, own schema); ai tx ×3 → `dal.transaction` (withClient gone from consumers); docs-kb TRUNCATE → `dal.truncate` (domain-guarded); health adapters ×4 → `dal.ping` (ctor takes `Dal`); `pgServerBanner` → structural `SqlVersionProbe` (SDK can't import dal-pg); `new Repository(getPool())` → `dal.repository()` (ai+job-handler entity-repo). **UNBLOCKED+DONE 2026-10-16**: `actions-route` histogram → `getDal().findAll` DSL (`Project.expr("date_trunc(?::text, created_at)","bucket_start",[unit])` — `Project.expr` gained `params`, ParamWriter threaded through `renderProjection`; `Filter.expr` for `= ANY(?)` + `now()-make_interval`; `GroupBy.expr`; `Sort.byAlias`). US `getPool` left: sanctioned `pool:` engine feed only |
 | 5g | DECISIONS CLOSED 2026-10-15 (user): **D1** `withClient`/`getPool` → `private` — done. **D2** NO `repo.aggregate()`/`adminSql` — fix via DSL extensions only: `groupBy` over `Filter.expr`-style expression nodes + `Sort` on expr/alias (covers auth_events GROUP BY, job `date_trunc` histogram; `jsonb_object_agg` already via `Project.expr`). **D3** NO upsert anywhere — `client-registry` conditional upsert → `find(ua_prefix LIKE 'pkg/%')`→`add`|`update(version)`; **pkg_name match, NOT ua_prefix+version** (version-trap: `primebrick-ai/0.1.0`→`0.2.0` must UPDATE the same row — one service = one active version, multiple versions = illegal). **D4** `sharedTables` ratified implicitly — BE translations gateway stays. **NEW D5**: thin `*Dal`/`*Repo` wrappers are anti-pattern (DAL is entity-agnostic) → remove wrappers, repoint call sites to `getDal().<op>(Entity,…)`; fat logic classes (ConfigEntriesDal/TranslationsDal/RoleMappingRepo) → become/merge into static-method service classes (not renames — class+method restructuring). **NEW D6**: ONE-STATEMENT transaction design pending — user requires analysis+evidence BEFORE code (see body §"transaction design"); rule: TS-coordinated transactions are to be avoided, prefer single-statement atomicity | ⏳ partial | 2026-10-16 | D1 done; **D2 code done** (GroupBy.expr + Sort.byAlias/byExpr + `Project.expr` params — `?`→`$n` via shared ParamWriter contract); **D3 code done** (`enrollRegistryRow` — see 5e); D5 pending topology confirmed: controllers import client-registry-repo/service-registry-repo/client-registry-dal DIRECTLY (nats-sub subscribers, oauth-dcr.router, mcp dispatch, entity-write) — controller-boundary violation to fix in same pass |
 | 5h | `apikey` port unification — remove per-service vertical ports (`EmailSenderApiKeyPort`, `CachedApiKeyPort`-per-service); ONE `ApiKeyPort` impl (cached + `auth.apikey.byHash` NATS route) for all services that cannot read `public` | ✅ done | 2026-10-15 | DONE: new SDK `CachingApiKeyPort` (`auth/ports/caching-api-key-port.ts`) — ONE cache→resolver impl; `inner` injectable (`BeApiKeyPort` DB resolver in BE / `NatsApiKeyPort` governed route in US); `cache` = `CachePort \| () => CachePort \| null` (lazy getter — apiKeyPort factory runs before `setSdkCachePort`). Redis mode: shared `be:api_keys:hash:<sha>` key, 5min TTL, positive-only. No-cache mode: bounded in-memory (60s pos / 10s neg / max 1000 — preserves webhook DMZ semantics). `EmailSenderApiKeyPort` + `CachedApiKeyPort` (webhook `precheck-port.ts`) DELETED; emailsender/webhook wire `CachingApiKeyPort(NatsApiKeyPort, …)` in `index.ts`; BE `internal-request-routes` wires `CachingApiKeyPort(BeApiKeyPort, () => getCachePort())`. **2 real bugs found+fixed empirically**: (a) `expires_at` string→Date rehydration on Redis cache-hit (JSON round-trip → `verifyApiKey().getTime()` would TypeError); (b) `generateApiKey()` used `require()` in ESM dist → runtime ReferenceError. Stale docstrings fixed: `ApiKeyPort` "microservices read cross-schema" (sovereignty violation), `api-key-cache.ts`, `create-microservice` apiKeyPort doc; `authentication.mdx` resolution table; api-reference regenerated. Tests: SDK +13 (`caching-api-key-port.test.ts`: hit/miss/negative/TTL/1000-eviction/lazy getter/resolver-error/rehydration), webhook 4 repointed. LIVE E2E verified: temp api_keys row → `auth.apikey.byHash` req/reply via emailsender shield identity → record; 2nd call zero NATS round-trips; unknown hash negative-cached. Suite: SDK 364, BE 305, webhook 4, emailsender 25 — all green. Note: `nats-api-key-port.ts` "WITHOUT a database" docstring corrected — every US HAS a DB; the constraint is schema sovereignty over `public`. **Follow-up 2026-10-15 (Bun migration)**: `generateApiKey()` → stub `not implemented yet` (zero callers in workspace — reimplement via WebCrypto `crypto.getRandomValues` when admin mint-key endpoint lands); `hashApiKey()` → `Bun.CryptoHasher` fast-path + `node:crypto` fallback (sync both runtimes, verified live on `bun` AND `tsx` — identical digests); `randomBytes` import dropped. BE crypto census: `node:crypto` is on live paths (MFA TOTP `createHmac("sha1")`, invitation tokens/HMAC, AES `createCipheriv` secret encryption, `randomUUID`) — NOT removable today |
 | 5i | Standards-check enforcement — ban in `src/**`: `from "pg"`, `new Pool`, `.query(`, `getPool()`, `withClient`, `upsert`, raw SQL literals (SELECT/INSERT/UPDATE/DELETE/TRUNCATE/BEGIN); exemptions via `// standards-exempt:` | ✅ done | 2026-10-16 | DONE with 6b: `primebrick-v3-sdk/tools/check-standards.ts` — zero-dep scanner, profiles `consumer` (BE/US) vs `lib` (dal-pg, ext-json only). Rules: ext-json, pg-import, pg-pool, raw-query, raw-sql, getPool, withClient, upsert, new-repository, pool-ping. Exemptions `// standards-exempt: <ids> — <reason>` (same/prev line, reason mandatory) + `// standards-exempt-file:` for tooling files. First run found 52 BE violations → classified: external wire (RFC7807/OAuth/JWT/Casdoor/Brevo/OpenAI/mistral.rs/webhook-inbound) = exempt; migration `getPool` seam = exempt; internal paths → `extJsonParse`/`extJsonStringify` (proxy, mcp dispatch, openapi aggregate, docs-pack, telemetry, export, state tokens). `exempt-no-reason` is itself a violation. Wired: `check:standards` + `prebuild`+`test` in SDK/BE/DAL/4 US services; dal-pg `--profile=lib` (CLI/manifest = `standards-exempt-file`). FE: scoped `no-restricted-syntax` on api-ext.ts/api-types.ts only (localStorage/UI JSON is legit — blanket ban rejected). ALL repos clean + tests green. **Compile-time ctor seal DONE 2026-10-16**: `Repository` ctor now requires `token: typeof REPO_INTERNAL` — a `unique symbol` NOT re-exported from the package index and unreachable via the exports map (`{ ".", "./errors" }` only). Consumers cannot name/produce the type → `new Repository(...)` is a TS error by construction (verified: `TS2554 Expected 2-3 arguments`), plus a runtime `ValidationError` guard defeats `as any` bypasses. Internal sites: `dal.ts` ×3, `deferred-transaction.ts` ×1; in-package tests import `REPO_INTERNAL` via relative path (`../src/repository/repository.js`) — trusted seam. 8 stale doc examples (`new Repository(pool)`) rewritten to `dal.*` proxies. 313/313 DAL tests green; all consumer typechecks clean |
@@ -39,8 +39,8 @@ X (no search_path/statement_timeout/application_name/schema-domain). **34 files 
 | 5k | `Repository.touch`/`Dal.touch` REMOVED (user order — it bypassed the version contract on an auditable entity). Call sites → `stampConversationActivity` (versioned find→update in same tx). **OPEN**: `last_seen_at` design decision — version-bump-on-heartbeat invalidates FE-held version (see body §"last_seen_at") | ✅ done | 2026-10-16 | **D5 = option A chosen by user**: `last_seen_at` stays on the auditable row, version bump on child-activity stamp is ACCEPTED. ai_conversations IS legitimately auditable (FE rename/delete → optimistic lock + audit real). Stamping now runs inside `beginTransaction()` CTE (5l) |
 | 5l | Fluent deferred-execution tx design (user proposal): `beginTransaction()` → buffering repo; `add/update/…` append statements, don't execute; `commitTransaction()` compiles → ONE statement + executes. Analysis in body §"fluent tx" — PG protocol forbids parameterized multi-statement → compile target must be a data-modifying CTE chain; needs `Deferred<T>`/`ref()` handles for inter-op data flow; return values materialize at commit. **IMPLEMENTED 2026-10-16** | ✅ done | 2026-10-16 | `dal.beginTransaction({timeoutMs})` → `DeferredTransaction` buffers `add/update/delete/restore/hardDelete` + reads → `commit()` merges ops into ONE data-modifying CTE chain (`WITH s0 AS (…RETURNING), s1 AS (…)` + final `jsonb_build_object` SELECT) — atomicity = single-statement guarantee, NO BEGIN/ROLLBACK code; `Deferred<T>` placeholders (`.value` throws pre-commit); `deferred.ref("col")` → `(SELECT col FROM sN)` scalar subquery; param remap preserves `oldIndex→newIndex` identity (fixed 42P18 on shared/JSONB params); per-op result extraction + `pgValueToJsValue` rehydration; unsupported audit options rejected at buffer time; `discard()`/`commit()` lifecycle guarded. Callers: `insertMessage`/`insertFeedback` migrated (read parent version first → guarded `update` in same statement — concurrent writer gets ERR01, retry-able); `deleteConversation` stays on `transaction(fn)` (dynamic-cardinality cascade = conditional flow). 13/13 deferred tests + full 312/312 DAL suite green; consumer typechecks clean |
 | 5m | `EntityServiceWorker<TEntity>` — **already exists** as `makeEntityService` (`dal-pg/src/entity/entity-service.ts`) + BE `http/entity-service.ts` (DUPLICATE — merge into dal-pg one) + `entity-router` auto-generated controllers (BE `http/entity-router.ts`, SDK `http/entity-router.ts`). Used by: organizations, role-mappings, user-profiles, customers (BE); ai-cerebellum, ai-models, jobs (US). Gap: thin `*Dal`/`*Repo` wrappers bypass the pipeline; `EntityService.create/update` take `tx?: PoolClient` → must become tx-scoped `Repository`; consumers `new Repository(tx)` inside `repoFor()` — violates no-client contract | ✅ done | 2026-10-16 | **merged**: BE `http/entity-service.ts` is now a thin binding over `dal-pg` `makeEntityService` (injects `dal:initDal()`, cache-wrapped `repo` via `createRepository`, `BeAuditPortAdapter`, `actor:requireActor`, `userEntity:UserProfileEntity`, `debugCode` dev toggles on `list`). Config: `repo:Repository`→`dal:Dal` (+optional `repo` override for decorators); `auditPort` optional (defaults `makeTableAuditPort(repo)`); `create/update` take `tx?:Repository`. `runEntityWrite`→`initDal().transaction(txRepo)`; `persistPendingTranslations`/`TranslationsDal.create`/`config_entries_dal`/`role-mapping-repo`/`user-profiles-dal`/5 services all `tx?:Repository` (zero `PoolClient` in consumer tx surface). US services feed `dal:getDal()`; `entityRepo()`/`entityAuditPort()` deleted. `runInTransaction` REMOVED from dal-pg (raw PoolClient leak). BE 296/296 tests green; all typechecks clean. **2026-10-16 evening — repository() privatized (inversion, user pushback)**: `dal.repository()` REMOVED entirely — the gateway now OWNS construction: `dal.entityService(cfg)` injects the private `this.repo` into `makeEntityService`; `dal.tableAuditPort()` injects it into `makeTableAuditPort`. `EntityServiceConfig.dal` field dropped — `repo` stays as optional injection seam (decorators like BE `withCache` pass it back through `dal.entityService`); free `makeEntityService` throws ValidationError when `repo` absent (internal/test path only). US services now `getDal().entityService({entity, actor: entityActor, list, hooks})` — zero repo/dal fields in config. BE wrapper: `initDal().entityService({...cfg, repo: cacheRepo, auditPort: BeAuditPortAdapter, ...})`. Cycle resolved: `entity-service.ts` + `audit-query.ts` now import concrete modules (`../repository/repository.js`, `../query/dsl.js`, `../audit/*`, `../meta/*`, `../query/list-filters.js`) — never the `../index.js` barrel. `findAuditPage` widened to `AuditQueryable` (`Pick<Repository,"findByPage">` dal-pg / `Pick<Repository,"find"|"findByPage">` BE helper) — `Dal` satisfies it structurally; `config-entries.service` now `findAuditPage(initDal(), …)` (was `initDal().repository()`). ZERO `.repository()` call sites remain in any consumer src/test | ONE generic service in dal-pg, thin services compose it + override via custom methods (composition works today — `private svc = makeEntityService(...)`); auto-generated router already exists → extend to all entity routes; controllers custom only when the service method signature is non-standard |
-| 5n | Thin `*Dal`/`*Repo` wrapper removal + controller-boundary repair: controllers importing data-access DIRECTLY must go through services (internal-request-routes, publisher-identity, service-lifecycle-subscriber, stale-detection-job, oauth-dcr.router, mcp dispatch, entity-write, index.ts). Thin wrappers to delete: service-registry-repo, client-registry-repo, client-registry-dal, user-invitations-dal, user-passkeys-dal, user_mfa_factors_dal, mfa_action_authorizations_dal, user-profile-repo. Logic-bearing (config_entries_dal cache+reserved-keys, translations-dal cache+ETag, role-mapping-repo invalidation, user-profiles-dal join-shaping) → move logic into owning service (compose makeEntityService where CRUD-shaped) | ⏳ partial | 2026-10-16 | DONE: controllers import ZERO DAL/repo; **ZERO `new Repository(` + ZERO `getPool()` in consumer src** (only `run-be-migrations`/`db-migration.service` patch tooling); `customers_repo` deleted (dead); `service/client-registry-repo` → `ServiceRegistryService`/`ClientRegistryService` (initDal); `OAuthClientRegistryDal` → `OAuthClientService`; `translations-dal` → merged into `TranslationsService`; `repository-factory`/`db/pool.ts`/`lib/audit` deleted; ALL wrapper classes parameterless on `initDal()`; pool-plumbing removed from services+ports+wiring; **`DalConfig.repoDecorator`** = governed cache seam (BE `withCache` on lazy CachePort — initCache runs after initDal). LEFT: logic-bearing wrappers still exist as module DALs (config_entries_dal reserved-key/cache, user-profiles-dal join-shaping, role-mapping-repo invalidation) — legit per layering (imported only by services); possible future merge into owning services; `translations` list-cache/manual ETag uses CachePort directly. **2026-10-16 live-E2E findings (server boot + real actor + real DB)**: (a) `db/pool.ts` deletion had removed the only `import "dotenv/config"` → boot crash `assertDbEnv`; restored as line-1 of `index.ts` (same pattern as US services). (b) **Audit silently dead on custom DAL paths** — `WriteOptions.audit` is opt-in: `config_entries_audit` had no writes since 2026-09-10 (mvc refactor), `role_mappings_audit` never populated in dal-pg era; both wired to `BeAuditPortAdapter` (tx sites get `new BeAuditPortAdapter(txRepo)`, never the root repo). (c) Latent tx-escape bug fixed: `user-profiles-dal.updateProfile/updateProfileInternal` audited via root-repo adapter while writing on `tx` (phantom audit on rollback). (d) `mfa_*`/`user_invitations`/`user_passkeys` entities legitimately have no `_audit` table — no `audit:` needed. (e) Bulk ops (`updateMany`/`deleteMany`) emit NO per-row audit — library gap, not faked. **E2E**: committed `src/modules/auth/__tests__/boundary-integration.test.ts` (mints ephemeral Casdoor admin actor, real login, exercises every seam incl. audit-row assertion; 9 tests). Verified live: login→list→write→audit→MFA-gate ALL GREEN; config_entry audit INSERT visible in `config_entries_audit` + `/audit` endpoint; secrets masked; etag 304. 305/305 BE tests (incl. mfa-integration now reachable). Docs: `dal-usage.md` audit-on-write rule added; `architecture.mdx` audit opt-in note |
-| 6 | **Ext-JSON sweep**: audit every `JSON.stringify`/`res.end(JSON.stringify(...))` on response paths across BE/US/FE and replace with `extJsonStringify` — ai/composite-route (5×) + docs-search-route (1×) DONE 2026-10-12; restano BE, emailsender, webhook, altri US | ⏳ partial | 2026-10-12 | NOTA: le 6 fix nel servizio AI sono standardizzazione, NON bugfix — verificato: `ai_conversations` ha PK `uuid`, `ai_feedback` RETURNING omette `id` → nessun payload conteneva bigint, nessun crash latente |
+| 5n | Thin `*Dal`/`*Repo` wrapper removal + controller-boundary repair: controllers importing data-access DIRECTLY must go through services (internal-request-routes, publisher-identity, service-lifecycle-subscriber, stale-detection-job, oauth-dcr.router, mcp dispatch, entity-write, index.ts). Thin wrappers to delete: service-registry-repo, client-registry-repo, client-registry-dal, user-invitations-dal, user-passkeys-dal, user_mfa_factors_dal, mfa_action_authorizations_dal, user-profile-repo. Logic-bearing (config_entries_dal cache+reserved-keys, translations-dal cache+ETag, role-mapping-repo invalidation, user-profiles-dal join-shaping) → move logic into owning service (compose makeEntityService where CRUD-shaped) | ⏳ partial | 2026-10-16 | DONE: controllers import ZERO DAL/repo; **ZERO `new Repository(` + ZERO `getPool()` in consumer src** (only `run-be-migrations`/`db-migration.service` patch tooling); `customers_repo` deleted (dead); `service/client-registry-repo` → `ServiceRegistryService`/`ClientRegistryService` (initDal); `OAuthClientRegistryDal` → `OAuthClientService`; `translations-dal` → merged into `TranslationsService`; `repository-factory`/`db/pool.ts`/`lib/audit` deleted; ALL wrapper classes parameterless on `initDal()`; pool-plumbing removed from services+ports+wiring; **`DalConfig.repoDecorator`** = governed cache seam (BE `withCache` on lazy CachePort — initCache runs after initDal). LEFT: logic-bearing wrappers still exist as module DALs (config_entries_dal reserved-key/cache, user-profiles-dal join-shaping, role-mapping-repo invalidation) — legit per layering (imported only by services); possible future merge into owning services; `translations` list-cache/manual ETag uses CachePort directly. **2026-10-16 live-E2E findings (server boot + real actor + real DB)**: (a) `db/pool.ts` deletion had removed the only `import "dotenv/config"` → boot crash `assertDbEnv`; restored as line-1 of `index.ts` (same pattern as US services). (b) **Audit silently dead on custom DAL paths** — `WriteOptions.audit` is opt-in: `config_entries_audit` had no writes since 2026-09-10 (mvc refactor), `role_mappings_audit` never populated in dal-pg era; both wired to `BeAuditPortAdapter` (tx sites get `new BeAuditPortAdapter(txRepo)`, never the root repo). (c) Latent tx-escape bug fixed: `user-profiles-dal.updateProfile/updateProfileInternal` audited via root-repo adapter while writing on `tx` (phantom audit on rollback). (d) `mfa_*`/`user_invitations`/`user_passkeys` entities legitimately have no `_audit` table — no `audit:` needed. (e) Bulk ops (`updateMany`/`deleteMany`) emit NO per-row audit — library gap, not faked. **E2E**: committed `src/modules/auth/__tests__/boundary-integration.test.ts` (mints ephemeral Casdoor admin actor, real login, exercises every seam incl. audit-row assertion; 9 tests). Verified live: login→list→write→audit→MFA-gate ALL GREEN; config_entry audit INSERT visible in `config_entries_audit` + `/audit` endpoint; secrets masked; etag 304. 305/305 BE tests (incl. mfa-integration now reachable). Docs: `dal-usage.md` audit-on-write rule added; `architecture.mdx` audit opt-in note  | controller-boundary FIXED: internal-request-routes/publisher-identity/service-lifecycle-subscriber now go through services. auth/ wrapper files are LOGIC-BEARING repos (cache/DTO/projection), not thin. RESIDUAL: mcp/tools/dispatch.ts still imports initDal+UserProfilesDal directly |
+| 6 | **Ext-JSON sweep**: audit every `JSON.stringify`/`res.end(JSON.stringify(...))` on response paths across BE/US/FE and replace with `extJsonStringify` — ai/composite-route (5×) + docs-search-route (1×) DONE 2026-10-12; restano BE, emailsender, webhook, altri US | ⏳ partial | 2026-10-12 | NOTA: le 6 fix nel servizio AI sono standardizzazione, NON bugfix — verificato: `ai_conversations` ha PK `uuid`, `ai_feedback` RETURNING omette `id` → nessun payload conteneva bigint, nessun crash latente  | emailsender config-route.ts:27 + providers-route.ts:29 still res.end(JSON.stringify) — last real response-path residue. BE mcp oauth routers + brevo.ts are request-body serialization, not responses |
 | 6b | **Ext-JSON enforcement**: shared standards-check script (ban `JSON.stringify`/`JSON.parse`/`getPool()`/`from "pg"` in `src/**`, exemptions via `// standards-exempt: reason`), wired in `build`/`test` + CI | ✅ done | 2026-10-16 | merged into 5i row — same script/gate. SDK fixes: `db-env`, `dal-error-mapper` (bigint now propagates correctly → test updated `5n`), `service-identity`, `logger`, `nats-client` subject-sync, `build/serve-docs-pack` (manifest → ext-json; openapi.json stays plain — external spec), `config-validator`, `create-microservice` RFC7807 exempt. US: emailsender providers route → extJsonStringify; Brevo/embedding-provider/webhook-inbound/mistral.rs = external-wire exempts. DAL: CLI + manifest `standards-exempt-file` (signed canonical JSON must stay plain — signature stability), delta-calculator/column-pg-io/query-builder inline exempts (no @primebrick/sdk dep). 1 latent test bug fixed: ai `embedding-pipeline.test.ts` mocked stale `upsertDocChunk` (renamed to insert/updateDocChunks in 04de41b). job-handler added to workspace packages (was uninstalled) |
 
 ---
@@ -431,254 +431,5 @@ Stream JOBS (allow_msg_schedules):
 3. Migrate `database-patch-compare` to SDK so all services get
    entity→patch generation (currently BE-only)?
 
----
 
-## Raw-SQL census — complete empirical inventory (2026-10-14)
-
-Task 5 scope enlarged: removing `getPool()`/raw access is no longer a
-3-repo cleanup — it is a **5-repo refactor with a BE dual-stack at its
-center**. Everything below was verified by grep + file reads, not
-inference.
-
-### DAL escape hatches (public API today)
-
-| API | Production call sites | Verdict |
-|---|---|---|
-| `dal.rawSql()` → `repo.rawSql()` | **0** — only `dal.test.ts:82` | delete now |
-| `dal.getPool()` | ~45 consumer sites | THE leak vector — privatize after 5b lands |
-| `dal.withClient(cb)` | ai ×3 tx, docs-kb TRUNCATE; internal: migrations engine, partition maintenance | make package-internal; public API → `dal.transaction(repo => …)` |
-
-### BE dual-stack — the real problem
-
-`primebrick-be-v3/src/db/pool.ts` is a **second, hand-rolled `pg.Pool`**
-parallel to the Dal gateway: no `search_path` setup, no
-`statement_timeout`, no `application_name`, no schema-domain. It exists
-because it predates the Dal gateway. **34 files** import `getPool` from
-it — this is the BE's dominant data path, not an exception.
-`db/dal-gateway.ts` runs `initDal()` (env contract + migrations) but the
-entity layer itself goes through the raw pool.
-
-34 files importing `db/pool.js`: controllers (`config-entries`,
-`role-mappings`, `users`, `wiring`, `internal-request-routes`,
-`service-lifecycle-subscriber`, `stale-detection-job`), `entity-router`,
-`entity-service`, `index.ts`, auth module (`auth.middleware`,
-`mfa-step-up.middleware`, `config-entries.service`,
-`organizations.service`, `role.service`, `user-profile-repo`), services
-(`collaboration`, `oauth-client`, `mcp/tools/dispatch`,
-`backend-identity`, `proxy-service`, `secret-engine`,
-`db-migration.service`, `routes-census.service`, `system.service`,
-`translations.service`, `telemetry`, `aggregated-router`) + test mocks.
-
-The ~24 raw `pool.query` call sites inside those files, triaged:
-
-| Category | Sites | Migration path |
-|---|---|---|
-| `SELECT id\|uuid\|cols FROM user_profiles WHERE uuid\|id=$1` (internal-id lookups) | `mfa.service` ×2, `invitation.service`, `user.service`, `auth-session.service`, `sdk-auth-ports` (api_keys), `user-passkeys-dal`, `mfa_action_authorizations_dal`, `oauth/client-registry-dal` ×3, `webauthn.service` ×3 (~16) | add `UserProfileRepo.getIdByUuid()` etc. — root cause is the missing shared repo method |
-| Conditional upsert `INSERT … ON CONFLICT … WHERE source='registry'` | `service-lifecycle-subscriber.upsertClientRegistry` + `client-registry-repo` — **same INSERT duplicated twice** | D3: `upsertMany conflictWhere` or update-first |
-| True aggregates/dynamic SQL | `mcp/tools/dispatch.ts` (auth_events dynamic GROUP BY), `translations-dal` `jsonb_object_agg` | D2: `repo.aggregate()` |
-| Infra | `index.ts` `SELECT 1`/`version()` health+banner | `dal.ping()`/`serverVersion()` |
-
-### US raw usage
-
-- `ai/telemetry-repository` ×3 `pool.query` — GROUP BY/FILTER aggregates
-  on `ai.ai_telemetry` (own schema — raw only because DSL lacks
-  aggregate support).
-- `ai/conversation-repository`, `feedback-repository` — `withClient` +
-  `new Repository(client)` + manual BEGIN/COMMIT/ROLLBACK — *correct*
-  tx usage; only tx-control statements are raw → `dal.transaction`.
-- `ai/docs-kb-repository` TRUNCATE via withClient → `dal.truncate`.
-- `job-handler/actions-route` — `date_trunc`+`FILTER`+`GROUP BY`
-  histogram on `job.job_runs` (own schema; aggregate gap).
-- `emailsender/auth-ports-adapter` `SELECT … FROM public.api_keys` —
-  **cross-schema violation**, fixed in `schema-sovereignty.md` via
-  `NatsApiKeyPort` (webhook already proves the pattern).
-- Health-check adapters ×4 (`SELECT 1`), `pgServerBanner` → `dal.ping()`.
-- Test helpers (emailsender `setup.ts` DDL/TRUNCATE) — keep a
-  test-owned `pg.Pool`: test infra, not service code.
-
-### Required DAL additions before `getPool()` can be private (task 5b)
-
-| New API | Replaces | Status |
-|---|---|---|
-| `dal.entityService(cfg)` / `dal.tableAuditPort()` — DAL-owned factories (gateway injects its private `this.repo`) | `dal.repository()` accessor + `new Repository(getDal().getPool())` in `entity-repo.ts`/`repository-factory.ts` | ✅ done (2026-10-16): `repository()` REMOVED — consumers can no longer hold the engine; inversion via gateway factories |
-| `dal.serverVersion()` (health+version, ONE probe — `ping()` removed, no `SELECT 1`) | health-check adapters, `pgServerBanner`, `index.ts` boot check | ✅ done (2026-10-15) |
-| `dal.transaction(fn: (txRepo: Repository) => Promise<T>, {timeoutMs})` — managed BEGIN/COMMIT/ROLLBACK, `SET LOCAL` tx-scoped | `withClient`+manual tx in ai repos + `entityWrite` tx paths | ✅ done (2026-10-15) |
-| `repo.truncate(entity)` + `dal.truncate` proxy — entity-resolved, domain-guarded | docs-kb wipe, test helpers | ✅ done (2026-10-15) |
-| `groupBy` over expression nodes (`{expr}`) + `Sort` on expr/projection-alias | job histogram `date_trunc`, dispatch `auth_events` GROUP BY — D2 | ⏳ pending — DSL extensions only; `repo.aggregate()` VETOED by user (no generic dashboard API) |
-| `find(ua_prefix LIKE 'pkg/%')`→`add`\|`update(version)` in service | conditional `ON CONFLICT … WHERE` ×2 — D3 | ⏳ pending — upsert VETOED (bypasses optimistic lock; `version` in ua_prefix = duplicate-row bug — match on pkg_name) |
-
-Internal-only (stay inside dal-pg, use `getPool`/`withClient` directly):
-migrations engine, `checkDrift`, partition maintenance, snapshot tooling.
-
-### Open decisions (user answer required)
-
-- ~~**D1**: `withClient` fully package-internal~~ — **CLOSED**: `private` (done)
-- ~~**D2**: `repo.aggregate()` vs `dal.adminSql()`~~ — **CLOSED**: neither —
-  DSL extensions only (`groupBy:{expr}`, `Sort` by alias/expr)
-- ~~**D3**: conditional upsert~~ — **CLOSED**: banned — find→add/update,
-  match on pkg_name (version-trap)
-- **D5 — `last_seen_at`** (OPEN): auditable entity + heartbeat column
-  conflict — options below
-- **D6 — fluent deferred tx** (OPEN): `beginTransaction()` buffering
-  repo → `commitTransaction()` — analysis below
-
----
-
-## Fluent deferred-execution transaction — analysis (task 5l)
-
-**User's proposal**: `beginTransaction()` returns a repo whose `add`/
-`update`/… don't execute — they append statements to a buffer;
-`commitTransaction()` executes everything at once with rollback logic.
-
-**Protocol constraint (hard fact)**: PostgreSQL's extended query protocol
-runs ONE statement per round-trip; the simple protocol accepts
-`BEGIN; s1; s2; COMMIT` in one call **but forbids bound parameters**.
-So "append N statements, send once" is only reachable by compiling the
-buffer into a **single data-modifying CTE chain** — which is also the
-PG-native way to get atomicity for free (one statement = implicit tx,
-no BEGIN/COMMIT/ROLLBACK needed at all, rollback = statement failure).
-
-**The design converges**: each buffered op → one CTE branch
-(`s0 AS (INSERT … RETURNING *), s1 AS (UPDATE … WHERE …)`); a final
-`SELECT json_agg` per branch returns all rows in one payload; guards
-(ERR01/ERR10 checks) embed as `CASE … pg_raise` branches — the same
-pattern `updateMany`/`deleteMany` already use internally.
-
-**Open design points to decide**:
-1. **Deferred handles** — `tx.add(E, data)` can't return the row
-   (nothing ran yet). It must return a `Deferred<T>` with
-   `.ref("field")` → renders `(SELECT field FROM sN)` scalar subquery
-   for later ops (parent→child id piping). Without refs, ops are
-   independent.
-2. **Reads inside the buffer** — a `find` whose result must drive TS
-   branching is impossible (result unseen until commit). Guard
-   conditions must be expressed in SQL (`WHERE EXISTS(SELECT…FROM sN)`).
-   Intrinsically-conditional flows keep `transaction(fn)` — the rule
-   becomes "deferred by default, callback only when TS must decide on
-   DB results".
-3. **Return values** — `commit()` materializes each `Deferred`
-   (`.rows`/`.value`). An op's `RETURNING` clause is configurable.
-4. **Rollback** — free: single-statement failure undoes everything;
-   no explicit rollback code exists (user's "mette le logiche di
-   rollback se serve" → the statement IS the rollback unit).
-5. **Footgun**: `await tx.add(...)` returning a Deferred that looks
-   like a row — type-level it must be `Deferred<T>`, not `T`, so
-   misuse fails compile.
-
-**Alternatives considered**:
-- `writeBatch(ops[])` declarative array — same compiler, uglier API
-  (new "way of writing") — user: last resort only.
-- Stored procedures — pushes business logic into DB; rejected.
-- Multi-statement simple-protocol — no bound params; rejected.
-- EF Core SaveChanges / SQLAlchemy UnitOfWork / Marten session —
-  precedent for deferred-write-buffer pattern (same shape).
-
-**Evidence the 3 current tx sites compile to CTE**: insertMessage
-(add→stamp), insertFeedback (add→stamp conditional on TS input —
-static shape, OK), deleteConversation (find→loop-delete children→
-delete parent — CTE-expressible via DELETE branches on
-`conversation_uuid`; the per-child version fetch is unnecessary —
-the parent's version guard is the real lock).
-
----
-
-## `last_seen_at` — the auditable-watermark conflict (task 5k, D5)
-
-Verified: `ai_conversations` IS legitimately auditable — FE-facing
-entity (rename, delete via API) → optimistic lock + audit trail are
-real. `last_seen_at` is BOTH the partition key (`@PartitionField`,
-monthly, 6-month retention — "idle time", not "create time") AND the
-conversation-list sort key AND stamped per child event.
-
-The conflict the user identified: a heartbeat write on an auditable
-row must carry `version` — but bumping `version` on every message
-invalidates the version the FE holds for real edits (rename/delete).
-`touch` was the workaround; it's deleted. Current interim state:
-`stampConversationActivity` does versioned find→update in the same
-tx — honest but bumps version per message.
-
-**Options**:
-- **A — accept version bump** (CURRENT): heartbeat IS an edit —
-  `updated_at`/`updated_by`/`version` stamped truthfully. FE must
-  re-read `version` before mutation (already required on ERR01).
-  Consequence: editing a title during an active stream hits ERR01 →
-  re-read → retry. Semantically honest; UX cost small (renames rare).
-- **B — move watermark to non-auditable side table**
-  `ai.conversation_activity(conversation_uuid PK, last_seen_at)`:
-  heartbeat writes need no version (entity non-auditable) — but the
-  partition key must live ON the partitioned table → redesign:
-  partition conversations by `created_at` (retention = age, semantic
-  change) OR keep parent unpartitioned + partition activity. Also
-  upsert-style write (add-or-update) needed for the activity row —
-  banned pattern returns (find→add|update + unique-violation retry).
-  Cost: migration + partman rework + join for list ordering.
-- **C — drop the column entirely**: ordering via
-  `MAX(messages.created_at)` aggregate at read; partition by
-  `created_at`; retention = creation-age OR set-based purge by
-  maintenance job (`NOT EXISTS` recent messages). Cheapest schema,
-  changes retention semantics ("created >6mo" kills long-lived active
-  chats unless purge is activity-aware — which can't use partition
-  drop).
-- PG note: updating a RANGE partition key physically moves the row
-  between partitions (delete+insert) — already true today via touch;
-  not a new cost.
-
-### Deep analysis per call site (2026-10-14, answers for D1–D3)
-
-**D1 — `withClient`**: checks out one dedicated `PoolClient`, optional
-per-connection `statement_timeout`, releases it. Exists because
-transactions need a *pinned* connection (`BEGIN`/`COMMIT` on the same
-client — `pool.query` would scatter statements), per-call timeouts, and
-the tx-scoped `new Repository(client)` pattern. Consumers: `ai`
-conversation/feedback repos (correct-but-verbose manual BEGIN/COMMIT —
-the cascade delete IS the referential integrity, no FK on partitioned
-parent), `ai` docs-kb TRUNCATE (uses it only to get a client — not a
-tx), DAL internals (partitionMaintenance, migrations). Public exposure
-hands out `client.query()` = total raw hole. Resolution: public
-`dal.transaction(fn: (repo) => T)` + `dal.truncate(entity)`;
-`withClient` → package-internal (tooling — `primebrick-db` CLI — lives
-inside the DAL repo, can use internals).
-
-**D2 — aggregates**: the DSL already covers most of it — `Project.expr`,
-`groupBy`, `having`, `Filter.expr` parameterized, `IN`/`BETWEEN`; proven
-in `docs-index-status`, `feedback-repository`, `audit-query-helper`,
-`entity-service` E.3a. Per site:
-- `ai/telemetry` ×3 → expressible TODAY (ungrouped expr aggregates,
-  `repo.add`, `findAll`+sort) — gap is a *missing `AiTelemetryEntity`*,
-  not DSL.
-- `translations-dal` `jsonb_object_agg` → expressible TODAY — module→
-  entity map already exists; site just unmigrated.
-- `job-handler` histogram → `Filter.expr` covers interval+IN; needs
-  **`groupBy` over expressions** (`date_trunc` isn't an entity field).
-- `dispatchBeAggregate` (MCP tool) → generic engine by contract:
-  dynamic agg/field/group_by/filters/sort/page + **sort-by-alias** +
-  **count-of-groups subquery**. The only site where `repo.aggregate()`
-  is a genuine feature (dashboard-as-a-service).
-- DSL micro-extensions needed regardless: `groupBy` accepting
-  `FieldRef | {expr}`, `Sort` by projection alias/expr.
-- `repo.aggregate()` is NOT required to migrate 3/4 sites.
-
-**D3 — conditional upsert**: `client_registry` auto-enrollment,
-`ON CONFLICT (ua_prefix) DO UPDATE … WHERE source='registry'` — the
-WHERE guards admin-owned `source='manual'` rows from overwrite. Raw
-because **the DAL has no upsert**: single `upsert` was removed
-("workaround that eluded the system"), `upsertMany` commented out
-pending guarded/unguarded decision. Same INSERT duplicated in
-`service-lifecycle-subscriber` AND `client-registry-repo`
-(`backend-identity` caller) — subscriber should call the repo.
-Options: service-level find→insert/update/skip (existing API, honest),
-or DSL `conflictWhere` on the future upsert redesign.
-
-**Legality classification**: raw SQL is not "illegal" (no error) — it's
-*invisible* to the schema-domain guard. Categories: (a) cross-schema
-violation → fixed (emailsender api_keys); (b) own-schema/in-domain
-intent, wrong vehicle → migrate to entities+DSL (telemetry, histogram,
-i18n dict, tx cascades, ~16 `user_profiles` lookups missing
-`UserProfileRepo.getIdByUuid`); (c) non-entity infrastructure →
-`dal.ping`/`serverVersion`/`truncate`/`transaction`; (d) generic
-dynamic feature → DSL ext or aggregate (D2); (e) ownership-guarded
-write → D3; (f) BE second pool `db/pool.ts` → **illegal**, parallel
-driver stack, delete + repoint 34 imports to `dal.repo()`; (g)
-`new Repository(pool)` ~21 sites → `dal.repo()`; (h) DAL internals
-(migrations/drift/partitions) → stay internal; (i) test helpers → own
-test pool.
+> **Continues in `dal-pgvector-repository-part2.md`** (raw-SQL census, fluent-tx analysis, last_seen_at watermark conflict).
