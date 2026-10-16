@@ -1,0 +1,12 @@
+{
+  "name": "primebrick-workspace",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "pnpm": {
+    "overrides": {
+      "@primebrick/decimal": "link:../primebrick-decimal",
+      "@primebrick/dal-pg": "link:../primebrick-dal-v3",
+      "@primebrick/sdk": "link:../primebrick-v3-sdk"
+    }
+  }
+}

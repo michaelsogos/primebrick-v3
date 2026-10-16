@@ -4,7 +4,14 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@primebrick/decimal': link:../primebrick-decimal
+  '@primebrick/dal-pg': link:../primebrick-dal-v3
+  '@primebrick/sdk': link:../primebrick-v3-sdk
+
 importers:
+
+  .: {}
 
   ../primebrick-be-v3:
     dependencies:
@@ -18,10 +25,10 @@ importers:
         specifier: 2.0.0-beta.4
         version: 2.0.0-beta.4
       '@primebrick/dal-pg':
-        specifier: file:../primebrick-dal-v3
+        specifier: link:../primebrick-dal-v3
         version: link:../primebrick-dal-v3
       '@primebrick/sdk':
-        specifier: workspace:*
+        specifier: link:../primebrick-v3-sdk
         version: link:../primebrick-v3-sdk
       casdoor-nodejs-sdk:
         specifier: 1.34.0
@@ -100,7 +107,7 @@ importers:
   ../primebrick-dal-v3:
     dependencies:
       '@primebrick/decimal':
-        specifier: workspace:*
+        specifier: link:../primebrick-decimal
         version: link:../primebrick-decimal
       pg:
         specifier: 8.22.0
@@ -134,7 +141,23 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
 
-  ../primebrick-decimal: {}
+  ../primebrick-decimal:
+    devDependencies:
+      '@types/node':
+        specifier: 24.13.3
+        version: 24.13.3
+      typedoc:
+        specifier: 0.28.20
+        version: 0.28.20(typescript@6.0.3)
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vite:
+        specifier: 8.1.5
+        version: 8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0)
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
 
   ../primebrick-fe-v3:
     dependencies:
@@ -374,10 +397,10 @@ importers:
         specifier: 4.2.0
         version: 4.2.0
       '@primebrick/dal-pg':
-        specifier: workspace:*
+        specifier: link:../../primebrick-dal-v3
         version: link:../../primebrick-dal-v3
       '@primebrick/sdk':
-        specifier: workspace:*
+        specifier: link:../../primebrick-v3-sdk
         version: link:../../primebrick-v3-sdk
       ai:
         specifier: 7.0.30
@@ -420,10 +443,10 @@ importers:
   ../primebrick-us-v3/emailsender:
     dependencies:
       '@primebrick/dal-pg':
-        specifier: workspace:*
+        specifier: link:../../primebrick-dal-v3
         version: link:../../primebrick-dal-v3
       '@primebrick/sdk':
-        specifier: workspace:*
+        specifier: link:../../primebrick-v3-sdk
         version: link:../../primebrick-v3-sdk
       dotenv:
         specifier: 17.4.2
@@ -460,10 +483,10 @@ importers:
   ../primebrick-us-v3/job-handler:
     dependencies:
       '@primebrick/dal-pg':
-        specifier: workspace:*
+        specifier: link:../../primebrick-dal-v3
         version: link:../../primebrick-dal-v3
       '@primebrick/sdk':
-        specifier: workspace:*
+        specifier: link:../../primebrick-v3-sdk
         version: link:../../primebrick-v3-sdk
       dotenv:
         specifier: 17.4.2
@@ -500,10 +523,10 @@ importers:
   ../primebrick-us-v3/webhook:
     dependencies:
       '@primebrick/dal-pg':
-        specifier: workspace:*
+        specifier: link:../../primebrick-dal-v3
         version: link:../../primebrick-dal-v3
       '@primebrick/sdk':
-        specifier: workspace:*
+        specifier: link:../../primebrick-v3-sdk
         version: link:../../primebrick-v3-sdk
       dotenv:
         specifier: 17.4.2
@@ -13057,7 +13080,7 @@ snapshots:
       obug: 2.1.3
       std-env: 4.2.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
+      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
 
   '@vitest/expect@4.1.10':
     dependencies:
@@ -13111,7 +13134,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
+      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
 
   '@vitest/utils@4.1.10':
     dependencies:
