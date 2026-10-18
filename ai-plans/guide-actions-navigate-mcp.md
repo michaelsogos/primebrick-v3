@@ -16,7 +16,7 @@
 | 5 | `navigate` executor → reuse `invokeClientTool` (goto, no new tab) | ✅ done | 2026-10-01 | `registerBuiltinClientTools()` + registry |
 | 6 | MCP `tools/call` REST shim on BE (controller → service → dispatch.ts) | ✅ done | 2026-10-01 | `invokeGenericTool` shares the SAME 12 handlers with MCP — zero duplication |
 | 7 | FE `callMcpTool` in api.ts + confirm dialog (meta-driven form, entity-resolution card + `_blank` edit link) | ✅ done | 2026-10-01 | resolve phase → entity card → editable/read-only args per tool kind |
-| 8 | i18n keys ×6 + EN fallback; svelte-check + lint + manual E2E | ⏳ partial | 2026-10-01 | 84 keys seeded + Redis invalidated; svelte-check 0 err, eslint clean; **manual E2E pending** |
+| 8 | i18n keys ×6 + EN fallback; svelte-check + lint + E2E | ✅ done | 2026-10-18 | 84 keys seeded; svelte-check 0 err. **Live E2E green**: `ai-guide-action-cta.spec.ts` 2/2 in one run — navigate chip → same-tab goto `/system/settings/users`; `list_entities` → immediate exec + result appended; `create_entity` → confirm dialog → editable args → POST verified → done state; `delete_entity` cancel → zero destructive calls; plus live `client_registry` admin smoke. BE shim boundary test `mcp-call.router.test.ts` 7/7. Fixed real bug found by E2E: nested `Dialog.Root` left confirm dialog unmountable. NOTE: the agentic loop emits navigate-only by design — model actions are never trusted (S4 census selection); tool path is dormant infra w/o a producer |
 | 9 | (optional) ingest entity/API catalog doc into docs_kb | ⏳ not done | — | improves tool-arg grounding; not blocking — dialog fetches `get_entity_meta` |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
@@ -197,6 +197,14 @@ Under `sources` chips, render `message.actions`:
   model proposing wrong field names often.
 
 ## Acceptance criteria
+
+> 2026-10-18 note — the agentic-loop rework superseded the ````action`-block
+> contract: the system prompt now mandates `"actions":[]` (actions are
+> attached by the S4 census-selection stage, never by the model) and S4
+> emits **navigate only**. The tool-CTA criterion below is therefore
+> verified at the machinery level (`ai-guide-action-cta.spec.ts` injects
+> tool actions into the real chips/dialog/`callMcpTool` path) — turning the
+> Guide into a tool-action producer is `guide-agentic-tool-loop` scope.
 
 - [ ] "come rendo admin un utente" → answer + `Vai a Utenti` chip → goto
       `/system/settings/users` same tab
