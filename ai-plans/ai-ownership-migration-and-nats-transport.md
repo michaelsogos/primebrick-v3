@@ -18,7 +18,7 @@
 > depends on predictable HTTP paths, no perf loss.
 > Continuation of `guide-docs-runtime-pipeline.md` (tasks 5-8 fold into A).
 
-Status: 🟡PARTIALLY DONE — Plan date: 2026-10-09 / updated 2026-10-15 (A3,B2,B4,B5,B6,B17,B19 verified done empirically; B11 done: admin CRUD + key rotation (B14) + settings UI; residual: live E2E only)
+Status: �DONE — Plan date: 2026-10-09 / closed 2026-10-18 (all tasks done; B11/B14 live-verified: unauthorized→401/403, valid key→200, grace previous-key→200, stale→401, admin UI renders live registry)
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|

@@ -10,7 +10,7 @@
 > Closing the hole requires DAL-native vector support first, then removing
 > the raw repositories.
 
-## Status: � DONE — Plan date: 2026-10-12 · closed 2026-10-18 (5/5d/5g/5n/6 verified DONE empirically — check-standards clean everywhere; only open item = D6 deferred-tx implementation, awaiting user go/no-go — design delivered in part2 §fluent-tx)
+## Status: � DONE — Plan date: 2026-10-12 · closed 2026-10-18 (5/5d/5g/5n/6 verified DONE empirically — check-standards clean everywhere; D6 deferred-tx IMPLEMENTED 2026-10-16 — `DeferredTransaction` CTE-chain live in ai `conversation-repository`)
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
