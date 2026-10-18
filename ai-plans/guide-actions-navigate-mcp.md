@@ -5,7 +5,7 @@
 > adds two interaction capabilities: **navigate CTA** (go to the page, no
 > new tab) and **action CTA** (execute an MCP-mapped action).
 
-## Status: 🟡PARTIALLY DONE — Plan date: 2026-10-01 02:30 UTC / 02:30 +02:00
+## Status: �DONE — Plan date: 2026-10-01 02:30 UTC / 02:30 +02:00
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -17,7 +17,7 @@
 | 6 | MCP `tools/call` REST shim on BE (controller → service → dispatch.ts) | ✅ done | 2026-10-01 | `invokeGenericTool` shares the SAME 12 handlers with MCP — zero duplication |
 | 7 | FE `callMcpTool` in api.ts + confirm dialog (meta-driven form, entity-resolution card + `_blank` edit link) | ✅ done | 2026-10-01 | resolve phase → entity card → editable/read-only args per tool kind |
 | 8 | i18n keys ×6 + EN fallback; svelte-check + lint + E2E | ✅ done | 2026-10-18 | 84 keys seeded; svelte-check 0 err. **Live E2E green**: `ai-guide-action-cta.spec.ts` 2/2 in one run — navigate chip → same-tab goto `/system/settings/users`; `list_entities` → immediate exec + result appended; `create_entity` → confirm dialog → editable args → POST verified → done state; `delete_entity` cancel → zero destructive calls; plus live `client_registry` admin smoke. BE shim boundary test `mcp-call.router.test.ts` 7/7. Fixed real bug found by E2E: nested `Dialog.Root` left confirm dialog unmountable. NOTE: the agentic loop emits navigate-only by design — model actions are never trusted (S4 census selection); tool path is dormant infra w/o a producer |
-| 9 | (optional) ingest entity/API catalog doc into docs_kb | ⏳ not done | — | improves tool-arg grounding; not blocking — dialog fetches `get_entity_meta` |
+| 9 | ingest entity/API catalog doc into docs_kb | ✅ done | 2026-10-18 | `entity-api-catalog.mdx` → docs pack → `ai.docs_kb` (7 chunks verified); also fixed stale meta shape in generator |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->
