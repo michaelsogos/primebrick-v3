@@ -12,7 +12,7 @@
 | 2 | Inventory: options written by `AiCerebellumPanel` | ✅ done | 2026-10-12 | |
 | 3 | Inventory: options CONSUMED at runtime (guide loop + assistants) | ✅ done | 2026-10-12 | `guide-loop.ts`, `use-guide-ai`, `use-ai-assistant` |
 | 4 | Gap analysis: consumed-but-not-editable vs editable-but-dead | ✅ done | 2026-10-12 | below |
-| 5 | Decision: which options to expose, which to retire, which to simplify | ⏳ not done | — | needs user sign-off |
+| 5 | Decision: which options to expose / scope / simplify | ⏳ not done | — | needs user sign-off. 2026-10-18: retire candidates disproven (all alive); open question unchanged — full ~26 knobs vs curated subset + advanced JSON |
 | 6 | Design: typed `ExecutionConfig` schema (discriminated per assistant?) | ⏳ not done | — | |
 | 7 | Implement panel changes + typed schema + seed defaults | ⏳ not done | — | |
 | 8 | E2E: cerebellum create/edit round-trip + guide honors overrides | ⏳ not done | — | |
@@ -68,19 +68,24 @@ Plus ORT-level keys typed in `api-types.ts` but NOT editable anywhere: `ort_sess
 
 ## C. Gap analysis
 
-### C1. Editable-but-possibly-dead (verify before retiring)
+### C1. Editable-but-possibly-dead — VERIFIED 2026-10-18: all three ALIVE
 
-| Option | Question |
-|---|---|
-| `kv_cache_reuse` | consumed by the worker or legacy? Verify in `ai-worker.ts` — if dead post-B3, retire from panels. |
-| `intent_detection` | consumed anywhere post-MCP-removal? grep showed no reader in guide loop. Likely legacy. |
-| `max_history_turns` | reader? |
+| Option | Reader (verified) | Verdict |
+|---|---|---|
+| `kv_cache_reuse` | `ai-worker.ts` (~15 sites) via `use-ai-assistant:610` — real KV-cache reuse perf feature | keep |
+| `max_history_turns` | `use-ai-assistant.svelte.ts:919` — chat history window | keep |
+| `intent_detection` | `use-regex-ai.svelte.ts:152` — consumed by the **smart-regex** pipeline, NOT the guide loop | keep, but **out of place** — it's regex-scoped, show only for regex cerebellums |
 
-### C2. Consumed-but-not-editable (the real gap)
+Nothing to retire — the real issue is **scoping**: `intent_detection` is regex-only, shown globally.
 
-- **Guide loop budgets** (15 keys): only tunable by hand-editing JSONB — invisible to users. These are THE cerebellum knobs for the Guide today.
-- **`agent_dialect` / `answer_mode`**: model-compatibility switches (Coder needs classic, Qwen3-Instruct wants tool_call; fp32 models need separate_prompt) — currently undiscoverable.
-- **`ort_session_options` / `ort_num_threads`**: fp32 dtype workaround knobs, typed but not editable.
+### C2. Consumed-but-not-editable (the real gap) — verified 2026-10-18
+
+- **Guide loop budgets** (15 keys, `LOOP_DEFAULTS` in `guide-loop.ts:73-89`): `max_context_chunks`(4) `max_chunk_chars`(1500) `inspect_chunk_chars`(350) `max_retrieval_iterations`(2) `max_actions`(3) `preflight_temperature`(0) `preflight_max_tokens`(384) `max_queries`(3) `max_keywords`(8) `inspect_digest_size`(6) `max_searches`(3) `agent_max_tokens`(512) `max_agent_turns`(4) `max_agent_calls`(6) `max_block_chars`(6000 — WebGPU anti-OOM ceiling).
+- **Search tuning** forwarded to `searchDocs` (`guide-loop:542-546`): `keyword_boost`, `lexical_boost`, `lex_match_min`, `oversample`, `graph_max_paths`.
+- **`agent_dialect`** (`guide-loop:670`): `react_classic` (default) vs `qwen_tool_call` — model tool-call format compatibility.
+- **`answer_mode`** (`guide-loop:981`): `in_context` (delta-prefill, ~8-10s/turn saved) vs `separate_prompt` — required for models without KV-reuse.
+- **`min_similarity`**: `use-guide-ai` → `searchDocs` cosine floor.
+- **`ort_session_options` / `ort_num_threads`**: fp32 dtype workaround knobs, typed (`api-types.ts:206-208`) but not editable.
 
 ### C3. Structural issue
 
@@ -96,7 +101,7 @@ Plus ORT-level keys typed in `api-types.ts` but NOT editable anywhere: `ort_sess
    - `budget` — max_block_chars, preflight_temperature, preflight_max_tokens, max_queries, max_retrieval_iterations
 2. **Panel**: assistant-conditional fieldsets — `agent`/`retrieval`/`budget` shown only when `assistant_key='guide'`; sane defaults + "inherit/reset" per group.
 3. **Typed schema**: single `GuideLoopConfig`-aligned type shared FE↔contract; reject unknown keys in DTO (or warn) — kills silent drift.
-4. **Retire candidates**: intent_detection, kv_cache_reuse, max_history_turns — confirm readers first.
+4. ~~**Retire candidates**~~ — RESOLVED 2026-10-18: all three keys are alive (see C1); no retirement. `intent_detection` is regex-scoped → gate by assistant, don't remove.
 5. Import panel stays minimal (it's the model catalog row); guide tuning lives only in cerebellum — no duplication.
 
 Open question for you: expose all ~20 guide knobs (full control, dense UI) or a curated subset (min_similarity, agent_dialect, answer_mode, max_agent_turns/calls, max_chunk_chars) with the rest as "advanced" JSON editor?
