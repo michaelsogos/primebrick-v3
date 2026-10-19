@@ -34,7 +34,7 @@
 | 15 | Migrate jobs page (4 `useEntityList` instances + cell snippet + no row actions) | ⏳ not done | — | checklist E.6 |
 | 16 | Delete dead code surfaced by migration (D-list) + `pnpm check` + smoke | ✅ done | 2026-10-19 | verified-inventory cleanup — see "Task 16 dead-code ledger"; `useFilterPersistence` deleted (v2 owns persistence — F.7 closed by reimplementation); svelte-check 0/0 |
 | 17 | Update `.devin/rules/entity-list-pages.md` + `docs/ai/patterns.md` + `entity-metadata.mdx` with the `EntityTablePage` canonical pattern | ✅ done | 2026-10-20 | all audiences covered — agent rules (`entity-list-pages.md`, `entity-meta-schema.md` BE), dev-guide (`entity-list-table.mdx`, `entity-metadata.mdx`, `composables.mdx`, `patterns.md`, `components/index`, `settings`, `ui-patterns`, `component-provenance`), BE dev-guide (`api-conventions`, `entity-crud-pipeline` + `deleted_records` param); extraction rerun (`components.json`, ETP 32 props); `api-reference.mdx` stale rows removed — rendered blocks regenerate at docs build; user-guide untouched (behavior unchanged) |
-| 18 | `RemotePageMount` loader component: `import(/* @vite-ignore */ component_url)` + loading/error/404 states + CSS `<link>` injection + optional sha256 integrity check | ⏳ not done | — | validated by spike — Part I |
+| 18 | `RemotePageMount` loader component: `import(/* @vite-ignore */ component_url)` + loading/error/404 states + CSS `<link>` injection + optional sha256 integrity check. **Graceful-only failures: shell stays, in-content PageError panel (never full-page system 404/400)** — distinguish network fail (retryable) / asset 404-400 / integrity mismatch / mount throw | ⏳ not done | — | validated by spike — Part I; graceful-load decision 2026-10-19 |
 | 19 | Extend `PageRouteDeclaration` with `component_url` / `component_format: 'esm-mount'` / `integrity`; component resolution = FE registry key OR remote URL | ⏳ not done | — | no `Decl` abbreviations |
 | 20 | Jobs page remote pilot: `fe/` sources in the `job` service → vite lib chunk → served via `/ws/job/api/v1/module-assets/…` → route decl → FE renders it | ⏳ not done | — | jobs is wrongly a core page today (`/system/jobs`); it becomes the first module-owned page — Part I.6 |
 | 21 | Decide cell/snippet cross-boundary mechanism (host registry key vs remote component prop) — follow-up spike only if remote-inside-host rendering is wanted | ⏳ not done | — | runes can't cross bundle boundary — Part I.4 |
@@ -462,6 +462,18 @@ remains a separate unproven case — task 21.
 
 CSS: predictable `cssFileName`, manifest lists it, host injects `<link>`
 (alternative: `vite-plugin-css-injected-by-js` — evaluate).
+
+**Chunk economics (clarified 2026-10-19)**: chunks are **self-contained** —
+rollup inlines ALL imports incl. svelte runtime and module-only libs; no
+`external` for svelte/ui (bare specifiers can't resolve in-browser without
+an import map). Weight measured: 36.8 kB / 11.6 gzip baseline page; expect
+40–80 kB raw per real page. Loading: (a) route-level split for free —
+chunk fetched only on navigation; (b) dynamic `import()` inside the module
+source stays dynamic → hash-named sub-chunks fetched on-demand, resolved
+relative to the chunk's own `/ws/` URL; (c) CSS `<link>` injected
+immediately → CSS+JS travel in parallel. Content-hashed names ⇒
+`Cache-Control: immutable` on `module-assets`; optional future
+`modulepreload` on nav-hover.
 
 ### I.5 Delivery paths (both coexist)
 
