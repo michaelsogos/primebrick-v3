@@ -6,7 +6,9 @@
     "overrides": {
       "@primebrick/decimal": "link:../primebrick-decimal",
       "@primebrick/dal-pg": "link:../primebrick-dal-v3",
-      "@primebrick/sdk": "link:../primebrick-v3-sdk"
+      "@primebrick/sdk": "link:../primebrick-v3-sdk",
+      "@primebrick/core": "link:../primebrick-v3-core",
+      "@primebrick/ui": "link:../primebrick-v3-ui"
     }
   }
 }

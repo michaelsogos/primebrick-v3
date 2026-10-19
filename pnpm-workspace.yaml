@@ -9,4 +9,6 @@ packages:
   - "../primebrick-dal-v3"
   - "../primebrick-decimal"
   - "../primebrick-v3-sdk"
+  - "../primebrick-v3-core"
+  - "../primebrick-v3-ui"
   - "../primebrick-v3-docs"
