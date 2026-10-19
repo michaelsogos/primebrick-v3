@@ -9,7 +9,7 @@
 > Naming: `PageRouteDeclaration` / `ModuleRouteDeclaration` (no `Decl`
 > abbreviations — user decision 2026-10-19).
 
-## Status: 🟡 PARTIALLY DONE — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST (last update 2026-10-19 ~22:00 CEST — tasks 16+17+22+23 done; nats/dotenv/MCP milestones committed on `feature/table-pages-merge` + `develop`)
+## Status: 🟡 PARTIALLY DONE — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST (last update 2026-10-19 ~23:20 CEST — task 23 runtime verification closed: rpc-router method-dispatch fix, e2e rot cleaned, job-handler manifest signed, BigInt run-recorder fix, BE drift-check clean, all services green on nats v3)
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
