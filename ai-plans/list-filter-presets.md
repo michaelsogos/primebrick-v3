@@ -316,3 +316,33 @@ All 16 tasks done and verified live (FE :5173 + BE :3001 + job :3006):
 
 Deviations from the plan: none structural — `RemoteMountSlot` kept as the
 generic remote-content-in-host primitive (documented, unused by jobs now).
+
+## Post-implementation correction (2026-10-21 evening — user review)
+
+The first cut left the jobs page as a custom remote surface under
+`/system/*` — wrong on three counts the user caught immediately. Fixed:
+
+- **`/jobs` is now a standard `EntityTablePage`** (kind:"list",
+  `entity:"job_schedule") — ONE table, preset toolbar + builtin sparkline
+  as designed. The remote chunk survives ONLY for the module's genuinely
+  custom surface: manual schedule creation at **`/jobs/new`** (kind:"page"
+  esm-mount — the form composes subject/target, not a plain entity form).
+- **`job_run` and `job_rule` got their own standard list pages** at
+  `/jobs/runs` and `/jobs/rules` — every entity its own /list, nav has 3
+  links. Remote `JobsPage.svelte` + `remote-list.svelte.ts` deleted.
+- **Routes moved off `/system`** — job declares `route_prefixes:["/jobs"]`
+  (like crm's `/crm`); `/system/jobs*` now 307-redirects to `/jobs*`.
+- **Breadcrumb fixed** — new generic `moduleMenuSegment` helper
+  (`src/lib/breadcrumb/module-breadcrumb.ts`) renders the owning module's
+  nav menu (label = module display name), replacing the copy-pasted
+  settings segment. Usable by any module page.
+- **Sidebar single-active fixed** — `isLinkActive` is now longest-match
+  among ALL declared nav hrefs (a prefix-sibling never shares active);
+  parent groups also light when a child is active.
+- **E2E rewritten** (`jobs-pages.spec.ts`, 10/10): one-table assertion,
+  preset wire behavior, sparkline, runs/rules pages, exactly-one-active
+  nav, job-module breadcrumb, ownership, remote `/jobs/new` mount +
+  asset-failure recovery. `module-ownership.spec.ts` 4/4 (+ hardened a
+  DynamicIcon lazy-load flake).
+- New patch `0009_job_nav_runs.sql` (nav_runs, 7 langs) — signed+applied.
+- Icon `history` does not exist in the installed lucide set → `play`.
