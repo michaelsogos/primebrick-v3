@@ -6,6 +6,7 @@ packages:
   - "../primebrick-us-v3/webhook"
   - "../primebrick-us-v3/ai"
   - "../primebrick-us-v3/job-handler"
+  - "../primebrick-us-v3/crm"
   - "../primebrick-dal-v3"
   - "../primebrick-decimal"
   - "../primebrick-v3-sdk"
