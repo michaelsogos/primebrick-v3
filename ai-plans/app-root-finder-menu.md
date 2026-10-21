@@ -113,3 +113,44 @@ code stays the URL's second segment under every root. FE semantics:
   `syncModuleFromRoute`).
 - pt-PT + "Applicazione" labels visible.
 - svelte-check 0/0 · eslint clean · E2E green incl. updated ownership spec.
+
+---
+
+## Follow-up (2026-10-21 late): `label_key` unification + "Vai a"
+
+Status: 🟢 DONE — verified E2E 20/20.
+
+User-approved option (a): `service_registry.label_key` as the single
+localized module-name source, consumed by EVERY surface.
+
+- **DB**: `service_registry.label_key VARCHAR(255)` (patch
+  `20261021030000` — backfill settings→`system.settings.title`,
+  job→`job.module.name`, crm→`crm.module.name`); `app.nav.goTo` seeded
+  in all 7 languages (patch `20261021031000` — "Vai a"/"Go to"/…).
+- **BE**: entity + `ServiceRegistryEntry` + FULL_PROJECTION + register
+  payload field (`registerFields.label_key`) + `/modules` and
+  `/modules/:code/meta` emit + admin `PUT /services` zod whitelist.
+- **SDK**: `labelKey` option on `createMicroservice`/`ServiceRegistrarConfig`
+  → `label_key` in service.register.
+- **US**: job declares `job.module.name`, crm declares `crm.module.name`;
+  both keys seeded in the service-owned `*.translations` schemas.
+- **FE**: `resolveModuleLabel(m, t)` in `$lib/shell/module-label` —
+  `t(label_key)` with `name` as the only fallback (unresolved key ⇒ miss).
+  Consumers: launcher trigger + Modules column, `moduleMenuSegment`
+  (breadcrumb), settings modules admin list + `[code]` detail breadcrumb
+  and h1. CTA aria-labels + keyboard footer moved to `app.nav.goTo`;
+  `app.nav.open` kept on the sidebar open-trigger (literal action there).
+- **E2E**: launcher rows expose `data-app-root`/`data-module-id`
+  (label-agnostic selection); contract asserts the LOCALIZED label via
+  `expectedModuleLabel` (same dict endpoint the shell uses).
+
+### Incident note — degraded latch
+
+While landing this, the job service went DEGRADED: a `bun --hot` reload
+fired between writing `0013_job_module_label.sql` and signing its
+MANIFEST (~90s window) → fail-closed "not in MANIFEST" at boot →
+degraded latch (domain routes 503) until remediation. Diagnosed via
+`/db-migration/status` (`last_error`), recovered by a plain hot reload
+once the manifest was valid. Lesson: **sign the manifest immediately
+after writing a patch** — the file is live the moment it lands in
+`db-meta/patches/` on a hot-reloaded service.
