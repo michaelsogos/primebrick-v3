@@ -4,16 +4,16 @@
 > diventa "Micha" + avatar viola, mentre `user_profiles` resta "Prime Admin"/PA/#0AB681.
 > Il DB non è mai stato toccato — è un conflitto fra due fonti di verità nell'FE.
 
-## Status: ⚪ TODO — Plan date: 2026-10-21 02:30 UTC / 04:30 CEST
+## Status: 🟢 DONE — Plan date: 2026-10-21 02:30 UTC / 04:30 CEST
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
-| 1 | `userProfileStore.setSession(user)` — scrive SOLO campi sessione (`username`, `idp_code`, `expires_at`, `roles`, `organization`); se `idp_code` diverso da quello in store → reset dei campi identity (account diverso) | ⏳ not done | — | `user-profile-store.svelte.ts` |
-| 2 | `PasskeyButton.svelte` / `LoginForm.svelte` / `MfaChallenge.svelte` → `setSession(data.user)` al posto di `set(data.user)` | ⏳ not done | — | 3 call-site identici |
-| 3 | `session-check.ts` `refreshAccessToken` → `userProfileStore.setSession(data.user)` al posto di `sessionStorage.setItem` diretto (oggi: replace totale, bypassa merge + `$state`) | ⏳ not done | — | rimuove seconda divergenza |
-| 4 | BE `buildUserFromClaims` → emette anche `idp_code` (= `claims.sub`) — serve a `hasLocalSession()` e al check "account diverso" del punto 1 | ⏳ not done | — | `auth-session.service.ts` |
-| 5 | Verifica: svelte-check 0/0, tsc BE pulito, login flow E2E esistente verde (`e2e-user-creation-login-passkey` se pertinente) | ⏳ not done | — | |
-| 6 | Commit FE + BE (trailer SWE-2 Max) | ⏳ not done | — | |
+| 1 | `userProfileStore.setSession(user)` — scrive SOLO campi sessione (`username`, `idp_code`, `expires_at`, `roles`, `organization`); se `idp_code` diverso da quello in store → reset dei campi identity (account diverso) | ✅ done | 2026-10-21 | `user-profile-store.svelte.ts` |
+| 2 | `PasskeyButton.svelte` / `LoginForm.svelte` / `MfaChallenge.svelte` → `setSession(data.user)` al posto di `set(data.user)` | ✅ done | 2026-10-21 | 3 call-site identici |
+| 3 | `session-check.ts` `refreshAccessToken` → `userProfileStore.setSession(data.user)` al posto di `sessionStorage.setItem` diretto (oggi: replace totale, bypassa merge + `$state`) | ✅ done | 2026-10-21 | rimuove seconda divergenza |
+| 4 | BE `buildUserFromClaims` → emette anche `idp_code` (= `claims.sub`) — serve a `hasLocalSession()` e al check "account diverso" del punto 1 | ✅ done | 2026-10-21 | `auth-session.service.ts` |
+| 5 | Verifica: svelte-check 0/0, tsc BE pulito, login flow E2E esistente verde (`e2e-user-creation-login-passkey` se pertinente) | ✅ done | 2026-10-21 | |
+| 6 | Commit FE + BE (trailer SWE-2 Max) | ✅ done | 2026-10-21 | |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->
