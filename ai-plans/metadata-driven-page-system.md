@@ -44,8 +44,8 @@
 | 23 | Census↔implementation consistency check (build/test): declared `entity` routes must resolve a live `/meta`; catches drift like the `templates` mock declaring `entity: 'template'` | ⏳ not done | — | silent drift already observed once |
 | 24 | Decide presence transport for `/ws/` entities (BE-only presence today — module entities have none) | ⏳ not done | — | open design question; gateway proxy vs per-service implementation |
 | 25 | Update rules + docs: `entity-meta-schema.md` (new sections), `entity-list-pages.md` (page-type policy), `docs/dev-guide/entity-metadata.mdx`, `patterns.md`, ai-plans cross-refs; write `entity-validation-autoderive.md` or mark absorbed | ⏳ not done | — | closed-schema rule: extend types first, then consume |
-| 26 | Create `@primebrick/core` package — env-agnostic shared code (EntityMeta family, `PageRouteDeclaration`/`ModuleRouteDeclaration`, presence types, config vocab + validators, write envelope, STANDARD_OPS/permission/sentinel constants, RFC7807, snake_case helpers) | ⏳ not done | — | kills the 3-copy EntityMeta (BE/FE/job.meta.ts) + mirrored validators — Part I |
-| 27 | Create `@primebrick/ui` package (`@sveltejs/package`): components, composables, non-rune utils, `ModulePageHost` + `mountPage` helper + base stylesheet | ⏳ not done | — | FE + module `fe/` sources consume it identically — Part I |
+| 26 | Create `@primebrick/core` package — env-agnostic shared code (EntityMeta family, `PageRouteDeclaration`/`ModuleRouteDeclaration`, presence types, config vocab + validators, write envelope, STANDARD_OPS/permission/sentinel constants, RFC7807, snake_case helpers) | ⏳ partial | — | kills the 3-copy EntityMeta (BE/FE/job.meta.ts) + mirrored validators — Part I |
+| 27 | Create `@primebrick/ui` package (`@sveltejs/package`): components, composables, non-rune utils, `ModulePageHost` + `mountPage` helper + base stylesheet | ⏳ partial | — | FE + module `fe/` sources consume it identically — Part I |
 | 28 | Extraction waves + publish wiring (GitFlow release → npm, same train as dal/sdk): types→core first, validators/helpers→core, components/composables→ui as they stabilize | ⏳ not done | — | EntityListPage + useEntityList are the first ui citizens (jobs remote pilot consumes them) |
 | 29 | Entity-sync channels v2 — **decision A+B taken 2026-10-19**: structured local BroadcastChannel + unified `useEntitySync` surface; **extract a dedicated sub-plan from Part J** | ⏳ not done | — | Part J; replaces per-family `useSyncChannel` names; collaboration SSE plugs into same surface later |
 | 30 | `EntityAction.endpoint` extension (BE+FE closed-schema): emit method+path per op from the route scan incl. `metaExtraScans` → FE write dispatch uses declared endpoints | ⏳ not done | — | discovered 2026-10-19 — fixes latent users-page 404 (writes under `/api/v1/auth/users`); kills `ENTITY_SERVICE_MAP`; entity-level meta — Part J |
@@ -686,3 +686,41 @@ automatic `{entity}`-scoped subscription.**
 | D1 | **Access-grant management UI** — `access.{app}.{module}.{page}` grants are today assignable only via `role_mappings` rows / raw SQL (see `feature-access-axis-and-module-discovery-consolidation.md`). Needs an admin surface in Settings to grant/revoke per module/page. | The access axis is enforced server-side but has no operable UI — unusable in production without it. | ⏳ deferred |
 | D2 | **User-guide docs pipeline is stale** — `docs/user-guide` generated entity manuals (e.g. `customers.mdx`) carry pre-migration paths (`/system/customers/*` vs real `/crm/*`). The generator that produces them has not run since the route/ownership migrations; locate it, fix route sourcing (must read declared routes/nav, not hardcoded settings paths), re-run, and wire it into the release/docs train. | User-facing docs silently diverge from shipped routes — detected empirically, no gate exists today. | ⏳ deferred |
 | D3 | **Job service 502 flakiness under parallel E2E load** — `ApiUnreachableError` on `/ws/job/*` during Playwright suites (bun `--hot` service / proxy). Isolated as flake (single re-runs green) but it poisons jobs-pages/ownership/access-filtering runs at random. | Blocks trusting E2E as regression signal; needs root-cause (bun hot-reload stability vs http-proxy timeouts). | ⏳ deferred |
+
+---
+
+## Part I.2 — Extraction audit 2026-10-21 (empirical — verified in code)
+
+Reality vs tasks 26-28: the packages **exist** (`core`: entity-meta, page-route,
+list wire, filter-presets, search-gate, list-filter-params, ext-json,
+translation-keys, columns, decimal; `ui`: SparklineBars + cn + re-export of
+core). FE `entity-list/types.ts` is already a re-export shim; BE `ModuleRouteDecl`
+aliases the sdk→core type; the job `remote-list.svelte.ts` mirror is deleted.
+What remains is a concrete extraction backlog:
+
+### Wave-1 — move to `@primebrick/core` now (small, pure, duplicated verbatim)
+
+| # | Duplicate today | Locations | Action |
+|---|-----------------|-----------|--------|
+| E1 | **Access evaluator** — `isAccessGranted` (sdk `auth/access.ts`) vs FE `hasAccess` (permissions.svelte.ts — explicit "local mirror") | sdk + fe | evaluator + `ADMIN_INHERITED_ACCESS` + `isAccessKey`/`accessGrantCovers` → core; sdk re-exports (callers untouched); FE imports via ui |
+| E2 | **Permission wildcard matching** — sdk `wildcardToRegex`/`permissionMatches` vs FE `isPermissionGranted`/`accessGrantCovers` | sdk `auth/permissions.ts` + fe | unify matcher in core; both sides import |
+| E3 | **Route contract** — `entityPaths` + `validateNavDeclaration` (R1/R2/R3) | sdk `service/nav-declaration.ts` | → core; sdk re-exports. `pluralize` is isomorphic — acceptable core dep |
+| E4 | **Config vocab** — `TYPE_CAPABILITIES`/`TypeCapabilities` ("canonical in @primebrick/sdk" per fe api-types.ts:178 — doc-mirror) | sdk + fe api-types.ts:185-198 | vocab + validators → core |
+| E5 | **Module wire types** — fe-local `ModuleNavLink`/`ModuleNav`/`ModuleInfo` vs core `ModuleNavDeclaration`/`ModuleNavLink` | fe api-types.ts:54-79 | alias to core types |
+| E6 | **List-wire helpers** — `ApiListError`, `readApiErrorDetails`, `isBackendGatewayUnreachable`, `backendOfflineTags`, `isAbortError`, `findActionEndpoint`, `fillActionPath` | fe `entity-list/` | → core (remote lists/forms need them — the deleted job mirror proves it) |
+| E7 | **RFC7807** — no canonical `ProblemDetails` type anywhere; sdk emits and fe parses ad-hoc shapes | sdk rpc-router + fe api.ts | type + `isProblemDetails` guard → core |
+
+### Wave-2 → `@primebrick/ui` (remote-page UX kit — needed by AI pages, D4)
+
+`useEntityList` v2 · `EntityTablePage`/`EntityListTable` suite (largest lift) ·
+`DeleteDialog`/`DeletionFilterToggle` · `ModelCacheSection`/`ModelCachePanel` +
+`StorageBreakdownBar` · `ScoreGauge`/`ModelIcon`/`cerebellum-recommendation-badge`
+· `formatDatetimeCellDisplay` (cell helper — borderline core/ui).
+
+### Wave-3 — module wire contracts
+
+Per-service wire types (`AiModel`, `AiCerebellum`, `JobSchedule`…) live in
+`fe/api-types.ts` today — namespace drift. Target: each service exports its
+contract types (shared subpath or bundled into its remote chunk's
+`host-contract`), FE imports from the owning module — not a central copy.
+`component_key` registry for host-rendered custom pages stays task 14.
