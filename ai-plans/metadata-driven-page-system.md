@@ -673,3 +673,16 @@ automatic `{entity}`-scoped subscription.**
 4. Presence for `/ws/` entities: gateway proxy vs per-service SDK port?
 5. Kanban write-back: is drag→PATCH the only write on the board, or also
    in-column reorder persistence (`order_field`)?
+
+---
+
+## Deferred follow-ups (parked 2026-10-21 — sub-plans to be extracted)
+
+> Surfaced during the `table-pages-merge` stream; deliberately parked here —
+> the root plan — so they stay visible until each gets its own sub-plan.
+
+| # | Item | Why it matters | Status |
+|---|------|----------------|--------|
+| D1 | **Access-grant management UI** — `access.{app}.{module}.{page}` grants are today assignable only via `role_mappings` rows / raw SQL (see `feature-access-axis-and-module-discovery-consolidation.md`). Needs an admin surface in Settings to grant/revoke per module/page. | The access axis is enforced server-side but has no operable UI — unusable in production without it. | ⏳ deferred |
+| D2 | **User-guide docs pipeline is stale** — `docs/user-guide` generated entity manuals (e.g. `customers.mdx`) carry pre-migration paths (`/system/customers/*` vs real `/crm/*`). The generator that produces them has not run since the route/ownership migrations; locate it, fix route sourcing (must read declared routes/nav, not hardcoded settings paths), re-run, and wire it into the release/docs train. | User-facing docs silently diverge from shipped routes — detected empirically, no gate exists today. | ⏳ deferred |
+| D3 | **Job service 502 flakiness under parallel E2E load** — `ApiUnreachableError` on `/ws/job/*` during Playwright suites (bun `--hot` service / proxy). Isolated as flake (single re-runs green) but it poisons jobs-pages/ownership/access-filtering runs at random. | Blocks trusting E2E as regression signal; needs root-cause (bun hot-reload stability vs http-proxy timeouts). | ⏳ deferred |
