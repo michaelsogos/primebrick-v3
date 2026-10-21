@@ -243,3 +243,26 @@ Chunk manifest (served next to the chunk or inside route decl):
   `vendor_requires` handshake (core types + remote-loader), `layout.sections`
   decl (core `PageRouteDeclaration.page_props`), `RemoteMountSlot` export
   dispatch, spike on job chunk (D13).
+
+### F.8 Security & XSS threat model (asked 2026-10-21)
+
+**Remote code is not sandboxed** — a chunk runs in the host realm with full
+DOM/session access. The trust model is *first-party*: only services that
+completed shielded `service.register` may publish declarations; `component_url`
+comes from the authenticated `service_registry` payload, never from user input;
+the asset itself is served same-origin through `/ws/<code>` behind
+`AUTHENTICATED_USER` + client-shield.
+
+| Vector | Mitigation (status) |
+|---|---|
+| Tampered asset in transit/CDN | `integrity` (sha256) on the decl — loader probe-fetches, hashes, imports verified bytes via blob URL (already implemented in remote-loader) |
+| Rogue URL in decl | loader only imports `component_url` from census decl — no arbitrary import path exists |
+| Malicious import map | map is emitted by server-rendered `app.html` (host-owned, closed specifier list) — injecting a hostile map requires document injection = full XSS already; first-registered mapping wins |
+| Hostile `bare specifier` smuggled into a chunk | check-standards scan: emitted chunk must contain zero bare imports outside the vendor allowlist → build fails |
+| XSS inside remote DOM | same realm as host components — Svelte escaping applies; `{@html}` is banned by standards; no new injection class |
+| Cross-chunk interference | vendor instance shared among remotes — first-party trust applies; a hostile remote could touch shared module state (accepted for same-owner modules) |
+| Untrusted/marketplace modules (future) | **this model is insufficient** — requires a real sandbox (iframe/worker realm); different architecture, explicitly out of scope |
+
+CSP notes: chunk import uses blob URL → `script-src` must allow `blob:`;
+inline importmap needs a CSP hash or nonce (keep it server-rendered in
+app.html). `module-assets` traversal guard already exists (job-handler).
