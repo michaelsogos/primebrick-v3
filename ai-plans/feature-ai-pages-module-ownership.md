@@ -266,3 +266,12 @@ the asset itself is served same-origin through `/ws/<code>` behind
 CSP notes: chunk import uses blob URL → `script-src` must allow `blob:`;
 inline importmap needs a CSP hash or nonce (keep it server-rendered in
 app.html). `module-assets` traversal guard already exists (job-handler).
+
+### F.9 Decisions taken 2026-10-21 (user)
+
+| # | Decision | Outcome |
+|---|---|---|
+| D10 | Vendor resolution | **import map in app.html** — accepted as the standard mechanism (W3C spec, same technique as microfrontend ecosystems), not a workaround |
+| D11 | Granularity | **section-mount as primitive** — a page decl carries `layout.sections`; 1..N sections per page, each an independent remote `mount*` OR host-registered component. A single-section page = today's page-mount as the degenerate case. /ai may be 3 sections or 1 — layout decl chooses |
+| D12 | Vendor set | **includes `@huggingface/transformers`** — the user's original intent: remote code imports it from its own node_modules at dev time (real types, full DX); at runtime the import map resolves it to the HOST's vendored copy → ONE instance, shared model-cache state. **Constraint discovered**: for a lib whose *instance* must be shared (transformers/runtime state), the HOST build must also externalize it — its own code resolves through the same vendor URL, otherwise host keeps a private copy and the cache splits. Two vendor classes: `shared` (host externalizes too: transformers) vs `remote-only` (svelte internals, ui — deliberate isolation) |
+| D-layout | **NO layout changes on `/ai`** (hard constraint, user-stated twice) | the page keeps its exact current UX — gauges, asymmetric model cards/lists, cache UI. Correction to earlier plan text: `ai_model` surface does NOT become `EntityTablePage` — **LISTE ≠ TABELLE**; `kind:"list"` today is a misnomer (it renders the table archetype); the real List archetype is root-plan task 9. The models section ships as remote-owned custom list sections, not a host table |
