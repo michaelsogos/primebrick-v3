@@ -6,7 +6,7 @@
 > `access.{app}.{module}.{page}` grant grammar — same permission pipeline as
 > entity RBAC, separate vocabulary, `is_admin` inherits `access.system.*` only.
 
-## Status: 🟡 PARTIALLY DONE — Plan date: 2026-10-21 01:47 UTC / 03:47 CEST · updated 04:35 UTC
+## Status: � DONE — Plan date: 2026-10-21 01:47 UTC / 03:47 CEST · updated 04:40 UTC
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -23,7 +23,7 @@
 | 11 | SDK/validators: `access` field accepted on register payload nav/routes (service-declared) | ✅ done | 2026-10-21 | core `PageRouteDeclaration`/`ModuleNavLink`/`ModuleNavDeclaration` carry `access?`; register path preserves `endpoints.nav` verbatim |
 | 12 | E2E: normal-user role (`test-role`) sees only granted modules; admin sees system via inheritance; module dropdown switches module | ✅ done | 2026-10-21 | `access-filtering.spec.ts` 5/5 green; ephemeral `e2e_user` actor minted in globalSetup (+Redis role-mapping cache bust) |
 | 13 | Docs sync: module-navigation.mdx + app-page-breadcrumb.mdx (access grammar + module dropdown + single endpoint) | ✅ done | 2026-10-21 | module-navigation.mdx (access axis + consumers), app-shell.mdx (consolidated payload + launcher semantics), sdk authentication.mdx (`isAccessGranted`), api-reference regenerated (sdk + core) |
-| 14 | Commits | ⏳ not done | — | BE repo forbids auto-commits (AGENTS.md) — awaiting user approval; FE/SDK/Core also uncommitted |
+| 14 | Commits | done | 2026-10-21 | core `e901b39` . sdk `f5cc093` . be `ce1e616` . fe `fe5ecaa` . workspace `c94d86d` |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->
