@@ -126,3 +126,120 @@ Settings `MODULE_NAV` loses `ai`, `docs-index` nav links + their `kind:"page"` r
 9. Tests: US decl test, FE census/ownership unit tests, repoint E2E specs, new `system-ai-*.spec.ts`
 10. Live verify: ai service re-register accepted; pages render; access filter behaves (admin vs test user)
 11. Docs + commit (stream branch `feature/table-pages-merge`, all repos)
+
+---
+
+## Part F — Delivery economics: how remote pages stay thin (verified 2026-10-21)
+
+### F.0 The problem (measured)
+
+`job-handler/fe/dist/jobs-page.js` = **102 KB raw / ~30.5 KB gz** for just 2
+form pages — the bundle is ~fully self-contained (zero external imports:
+rolldown inlines svelte runtime + `@primebrick/ui` + icons + page code). Per the
+vite config comment: *"NO external: every import is bundled — bare specifiers
+would fail in the browser (no import map)"*.
+
+Scaling that to AI (a 721-LOC composite page with Dialog/Checkbox/Toolbar/
+composables/icons, plus `@huggingface/transformers@4.3.1` — an FE dep measured
+in MBs) → a naive remote chunk is **300-500 KB+**, and worse: heavy product
+runtime (WebLLM/transformers cache manager) would be *duplicated*, not shared.
+
+The user directive: find the mechanism BEFORE moving AI — the AI page is the
+inverse of jobs (jobs was retrofitted to the arch; AI is natively custom).
+
+### F.1 Three delivery planes + one policy
+
+| Plane | What it ships | Who owns it | Granularity |
+|---|---|---|---|
+| **Vendor plane** (import map) | by-design libraries: `svelte`, `svelte/internal/client`, `@primebrick/core`, `@primebrick/ui`, `@lucide/svelte` | FE host, versioned once | shared by ALL remote chunks |
+| **Module chunk** | module-authored components + module-only small libs | the service | per-module `fe/` build |
+| **Host registry** | host-owned section components + scaffold | FE bundle | zero download |
+| **Capability bridge** | heavy product libs already in host (`@huggingface/transformers` → model cache manager) — remote calls `ctx.components.*` handles, never imports the lib | host | function handles |
+
+### F.2 Vendor plane — mechanics (recommended: import map, no rewrite plugin)
+
+- FE build emits `/vendor/<name>.<contenthash>.js` ESM prebundles +
+  `vendor-manifest.json` `{name: {url, version}}` — a dedicated `vite vendor`
+  build in fe-v3.
+- `app.html` (or boot) carries a static `<script type="importmap">` mapping the
+  closed specifier list → those URLs. Import maps are native (Chrome 89+/FF
+  108+/Safari 16.4+) — no loader framework, no runtime wiring.
+- Module `fe/` vite config: `build.rollupOptions.external` for the by-design
+  specifier list → rollup leaves bare imports; browser resolves them via the
+  map. Compiled Svelte imports `* as $ from 'svelte/internal/client'` —
+  namespace import, so the vendor bundle is a plain `export *` re-export.
+- **Isolation stays deliberate**: the vendor svelte is a THIRD instance —
+  host keeps its private bundled runtime (unchanged), remote chunks share the
+  vendor one among themselves. The cross-bundle snippet ban still holds
+  host↔remote; remote↔remote roots can interop for free.
+- Version handshake: chunk manifest / route decl carries `vendor_requires`
+  (semver per vendor name) → `RemotePageMount` checks against
+  `vendor-manifest.json` before `import()` → mismatch = graceful panel
+  (existing error-panel infra). No silent ABI drift — `svelte/internal/*` is
+  NOT a stable API across versions, so pinning is mandatory, not optional.
+- Weight math (estimate, to be confirmed by the F.5 spike): svelte internals +
+  primebrick/ui ≈ 60-80 KB of the 102 KB chunk → externalized job chunk ≈
+  **15-30 KB**; AI page ≈ **40-80 KB** vs 300-500 KB bundled.
+
+### F.3 Section-level mounting — "compile only the frame we care about"
+
+`RemoteMountSlot` already exists (`remote-page/RemoteMountSlot.svelte`) — a
+remote root inside host DOM, proven primitive. Extend from page-granular to
+section-granular:
+
+- Chunk exports named mounts beyond `mountPage` — e.g.
+  `mountModelCache(el, ctx)`, `mountCerebellumPanel(el, ctx)`.
+- Route decl gains a section layout (fits `page_props` on the existing
+  `PageRouteDeclaration` — closed-schema extension):
+
+  ```ts
+  { route: "/system/ai/models", kind: "page",
+    page_props: { sections: [
+      { component: "host:model_cache" },        // host registry
+      { component: "remote:models_panel" }      // chunk export
+    ] } }
+  ```
+- Host renders scaffold + sections in order; `remote:` sections mount via
+  `RemoteMountSlot` + `components.remote[export_name]`. **The page frame is
+  never in the chunk** — scaffold, breadcrumb, page chrome stay host.
+
+### F.4 Descriptor-only pages — zero-download custom
+
+A `kind:"page"` decl whose `sections` are ALL `host:` renders with **no chunk
+at all** — the declaration IS the page (the "instructions for how to mount at
+runtime" option). This is also the answer to root-plan task 14
+(`component_key` registry): the registry becomes section-level — pages compose
+registered sections instead of registering whole pages.
+
+### F.5 Third-party policy (non-design libs)
+
+| Lib class | Rule | Enforcement |
+|---|---|---|
+| by-design (closed list: svelte, core, ui, lucide) | import-map vendor — never in chunk | `check-standards` on `fe/` builds: grep bundled marker |
+| heavy product lib already hosted (`@huggingface/transformers`) | vendor entry OR `ctx.components.<capability>` handles — NEVER duplicated | shared-deps manifest check |
+| module-only small lib | may bundle into chunk | module's weight budget |
+
+Chunk manifest (served next to the chunk or inside route decl):
+`{ vendor_requires: {...}, shared_deps: {name: semver}, exports: ["mountPage", ...] }`.
+
+### F.6 Additional decisions for the user
+
+| # | Decision | Options | Recommendation |
+|---|---|---|---|
+| D10 | Vendor resolution | a) static importmap in app.html b) URL-rewrite plugin at module build (bare→`/vendor/x.hash.js`) | a — native, no plugin coupling; b only if map support becomes an issue |
+| D11 | Remote granularity | a) page-mount only b) section-mount standard (`layout.sections`) | b — the AI page is literally a section list; smallest custom surface |
+| D12 | Initial vendor set | `svelte`, `svelte/internal/client`, `core`, `ui`, `@lucide/svelte` + `@huggingface/transformers`? | include transformers — host already loads it; remote sharing its instance kills the duplication problem AND the cache-manager split |
+| D13 | Spike before AI move | rebuild `jobs-page.js` with externals → measure → mount via importmap | yes — validates F.2 end-to-end on the smallest existing chunk before AI depends on it |
+
+### F.7 What this changes in the AI plan
+
+- D2/D3 resolved direction changes: the AI page decomposes into sections;
+  `ai_model` list = host `EntityTablePage` (already decided); custom sections
+  ship as SMALL remote mounts (not a 721-LOC monolith page).
+- `ModelCacheSection` choice (D4) gains a fourth option: host-registered
+  section (`host:model_cache`) — the sheet panel keeps working because the
+  component never leaves the host.
+- New implementation tasks precede the move: vendor build + importmap (FE),
+  `vendor_requires` handshake (core types + remote-loader), `layout.sections`
+  decl (core `PageRouteDeclaration.page_props`), `RemoteMountSlot` export
+  dispatch, spike on job chunk (D13).
