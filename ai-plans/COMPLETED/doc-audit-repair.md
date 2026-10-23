@@ -5,7 +5,7 @@
 > doc↔doc and doc↔code. Executed in tranches of ~10 items per session.
 > **Nothing here touches product code except where explicitly marked.**
 
-## Status: � DONE (all 50 tasks done — incl. tranche 5 (43/44) + NATS test debt closed) — Plan date: 2026-10-22 19:00 UTC / 2026-10-22 21:00 CET — Updated: 2026-10-23
+## Status: 🟢 DONE (all 50 tasks done — incl. tranche 5 (43/44) + NATS test debt closed) — Plan date: 2026-10-22 19:00 UTC / 2026-10-22 21:00 CET — Updated: 2026-10-23
 
 | # | Task (detail level) | Status | When | Notes |
 |---|---------------------|--------|------|-------|

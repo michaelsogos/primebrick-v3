@@ -9,7 +9,7 @@
 > Naming: `PageRouteDeclaration` / `ModuleRouteDeclaration` (no `Decl`
 > abbreviations — user decision 2026-10-19).
 
-## Status: � DONE — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST (last update 2026-10-23 — task 22 residual moved to `feature-ui-component-migration.md`; prior update 2026-10-20 ~23:30 CEST — task 24 done: **jobs hardening round** — icon-only preset toolbar standard enforced + documented, job audit tables shipped (0010–0012 signed+applied), `/jobs/rules/new` remote create page, `effect_orphan` diagnosed as stale Vite optimizer state, `typeOperator` doc-render glitch fixed; jobs-pages E2E **13/13**)
+## Status: 🟢 DONE — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST (last update 2026-10-23 — task 22 residual moved to `feature-ui-component-migration.md`; prior update 2026-10-20 ~23:30 CEST — task 24 done: **jobs hardening round** — icon-only preset toolbar standard enforced + documented, job audit tables shipped (0010–0012 signed+applied), `/jobs/rules/new` remote create page, `effect_orphan` diagnosed as stale Vite optimizer state, `typeOperator` doc-render glitch fixed; jobs-pages E2E **13/13**)
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
