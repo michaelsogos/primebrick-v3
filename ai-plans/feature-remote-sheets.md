@@ -8,7 +8,7 @@
 > Hard constraint: zero behavioral drift for existing host-registered
 > panels (`shell.*` / `entity.*` / `config.*` stay host for now).
 
-## Status: � PARTIALLY DONE — Plan date: 2026-10-23
+## Status: � DONE — Plan date: 2026-10-23
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
@@ -19,7 +19,7 @@
 | 4 | `mountSheet` remote contract — `bindRemoteCtx(ctx)` inside mount, props opaque Record, sheet chrome control via ctx | ✅ done | 2026-10-23 | `MountSheetFn` in core; `RemoteModule.mountSheet` typed; job chunk exports it |
 | 5 | First remote sheet end-to-end — one real panel declared + mounted + opened from host AND from inside a remote page | ✅ done | 2026-10-23 | `job.runDetail` declared (nav-decl test ✓) + `RunDetailSheet.svelte` + chunk built (mountSheet export ✓, deps manifest ✓). **LIVE PROOF PASSED** (remote-sheet.spec.ts, 2 tests): decl via /modules -> sheet opens -> jobs-page.js loads -> mountSheet mounts -> props delivered -> ctx.api fetches run (partition-maintenance/uuid rendered) -> ctx.sheet.close() teardown -> unknown key rejected. Remote-page open transitively proven via bridge unit tests. Caveat: vite dev forks .svelte.ts modules per URL spelling + ?t= HMR stamps — spec imports the app exact fetched module URL via performance entries |
 | 6 | `sheet/` bits-ui primitive → `@primebrick/ui` (E4 addition — the engine's chrome dep was missing from tranche 4) | ✅ done | 2026-10-23 | `components/sheet/` in ui; `$t`→`getT()`; vendor imports→relative; `export * as Sheet`; 8 FE consumers rewired; svelte-check 0/0; vendor:build ok |
-| 7 | Progressive `shell.ai*` panels migration → `ai/fe/` (kills the C3 dual-ownership dilemma in ai-pages plan) | ⏳ not done | — | after live proof |
+| 7 | Progressive `shell.ai*` panels migration → `ai/fe/` (kills the C3 dual-ownership dilemma in ai-pages plan) | ✅ done | 2026-10-23 | ai/fe scaffold (vendor-plane vite + module-assets route + nav.sheets[] + validator test); 4 panels ported (modelCache/modelTestReport/cerebellum/modelImport); host registry cleaned (aiChat/aiGuide stay host); call sites → `ai.*`; **LIVE PROOF PASSED** — remote-sheet-ai.spec.ts 4/4 + job spec 2/2. Two contract bugs fixed en route: vendor version drift (→ ui `vendor-map.json` single source, host+remotes read it) and context-not-crossing-mount (→ `ModuleMountRoot`/`mountModuleContent` in ui — remote mounts get ambient providers) |
 
 ---
 
