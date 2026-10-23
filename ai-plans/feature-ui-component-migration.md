@@ -12,11 +12,11 @@
 > already uses it. A component is "done" only after live verification, not
 > after type-check.
 
-## Status: ⚪ TODO — Plan date: 2026-10-21
+## Status: 🟠 WIP — Plan date: 2026-10-21 — Updated: 2026-10-23 (E0 done + empirically verified; design decisions: i18n bridge = Readable (A), remote binds via single `bindRemoteCtx(ctx)` entrypoint)
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
-| 0 | Foundations — ui deps (bits-ui/tv/lucide), bridges (i18n/sheet/service-api), host-Api ctx bridge, `@source` for ui in app.css, `.svelte.ts` packaging proof | ⏳ not done | — | blocks EVERYTHING — tailwind classes in ui dist are invisible to the FE scan without `@source` (silent unstyled drift) |
+| 0 | Foundations — ui deps (bits-ui/tv/lucide), bridges (i18n/sheet/service-api), host-Api ctx bridge, `@source` for ui in app.css, `.svelte.ts` packaging proof | ✅ done | 2026-10-23 | deps+types already existed. Added: `bridges.ts` (bindI18n Readable → `$t` preserved · bindSheet/bindStepUp · bindServiceApi 'host'/'self'/name · `bindRemoteCtx(ctx)` remote entrypoint — unbound throws), `ctx.components.hostApi` (core `HostApiFn` + host-bridges `??=` apiFetch), FE `host-bindings.ts` boot-imported in +layout, `@source "../../primebrick-v3-ui/src"` in app.css, `ssr.noExternal` += ui+core (SSR 500 root cause), `.svelte.ts` proof = real `useSelection` moved (2 consumers rewired). Verified live via throwaway BridgeProbe+e2e spec (styled+translated+/ws/ai 200), removed after |
 | 1 | Leaf libs — ai types, test-scores, cerebellum, etag-store, resumable-fetch, badge colors, format-bytes | ⏳ not done | — | pure; enables E2–E5 |
 | 2 | Leaf AI components — ScoreGauge, ModelIcon(+8), RankMeter, StorageBreakdownBar | ⏳ not done | — | first i18n consumers (StorageBreakdownBar) prove `bindI18n` |
 | 3 | Composables — useSelection, useAiModels, useAiCerebellum, useModelCache, useConfigEntries | ⏳ not done | — | service-api binding; `useModelCache` is the heavy verification |
