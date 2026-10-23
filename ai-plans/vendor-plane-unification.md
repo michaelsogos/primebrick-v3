@@ -8,7 +8,7 @@
 > subpath = one vendor bundle. Collisions become structurally impossible and
 > remote modules fetch only the plane slices they declare.
 
-## Status: � DONE — Plan date: 2026-10-22 21:00 UTC / 23:00 CEST — Updated: 2026-10-22 23:45 CEST (task 14 resta opzionale/non eseguito)
+## Status: 🟢 DONE — Plan date: 2026-10-22 21:00 UTC / 23:00 CEST — Updated: 2026-10-23 (task 14 eseguito come move, non alias; D4 reversal confermata dall'utente)
 
 | # | Task (detail level) | Status | When | Notes |
 |---|---------------------|--------|------|-------|
@@ -19,13 +19,13 @@
 | 5 | host-env shims — **superseded by better**: vendor re-exports REMOVED entirely (dead surface — remote code hits `mode:'bare'` → importmap); `host-env-bits.ts` DELETED; `runtime-source-loader` drops lucide/bits-ui/icon-proxy branches and now THROWS on `VENDOR_BLOCKED_PACKAGES` raw imports (dev loader mirrors the remote-build contract) | ✅ done | 23:20 | |
 | 6 | Codemod lucide: 176 icon imports → `import { Pascal } from '@primebrick/ui/vendor/lucide'` across the repo | ✅ done | 23:20 | |
 | 7 | Codemod tailwind-variants + clsx + tailwind-merge + bits-ui: all `src/` files — specifier swap only | ✅ done | 23:20 | |
-| 8 | **D4 REVERSED in execution** — vendored `components/ui/` internals WERE migrated to the sanctioned subpath: keeping raw imports would (a) reopen a lint hole, (b) keep a second bits-ui instance inside the host realm. Diff noise = one import line per file; upstream re-syncs that restore raw imports get flagged by eslint → rerun codemod | ✅ done | 23:20 | awaiting user confirmation of the reversal |
+| 8 | **D4 REVERSED in execution — CONFIRMED by user 2026-10-23** — vendored `components/ui/` internals WERE migrated to the sanctioned subpath: keeping raw imports would (a) reopen a lint hole, (b) keep a second bits-ui instance inside the host realm. User doctrine: future shadcn/registry syncs are manual ops anyway (most components are wrapped/customized), done point-in-time with the import adjustments needed — diffability is not a goal | ✅ done | 23:20 | user-confirmed; D4 superseded |
 | 9 | `cn` consolidation: implementazioni identiche verificate — `$lib/utils.ts` ora re-exporta `cn` + i 4 utility types da `@primebrick/ui` (barrel/alias; path `$lib/utils` preservato per consumer e vendored components); canonical vive solo in ui | ✅ done | 23:30 | `pnpm check` FE 0 errori |
 | 10 | Enforcement: eslint `no-restricted-imports` — `paths` exact-name ban + `patterns` subpath ban for the 6 packages (gitignore name-matching required the split — bare-name patterns would also match the sanctioned specifier's last segment); verified empirically: 4/4 raw forms rejected, sanctioned subpath clean; `vendor/` exempt from `svelte/no-svelte-internal` (internals are its job) | ✅ done | 23:22 | mirrors `resolveVendorSpecifier` remote-side |
 | 11 | FE deps on the 5 packages STAY — `DynamicIcon.svelte` physically globs `/node_modules/@lucide/svelte/dist/icons/*` (Vite-only host component, already `VITE_ONLY`-flagged); document so nobody removes them | ✅ done | — | documented here; flag for future DynamicIcon review |
 | 12 | Docs: `docs/ai/icon-conventions.md` + `.devin/rules/icon-conventions.md` + `docs/ai/sheets.md` updated to sanctioned subpath; core contract comment updated (svelte multi-file exception) | ✅ done | 23:23 | dev-guide mdx refresh rides on the next extraction |
 | 13 | Verification: `vendor:build` clean ✓; `check` fe+ui+core 0 errors ✓; FE vitest 463/463 ✓; core vitest 26/26 ✓; eslint enforcement probe ✓; **`/dev/rc` browser verification DONE** — dev server esistente riusato (PID 90028, porta 5173): probe trivial `MOUNTED ✓` (`@primebrick/ui/vendor/lucide` → import map), ScoreGauge `MOUNTED ✓`, **real `/ai` +page.svelte: 38 moduli compilati a runtime, `MOUNTED ✓`** — grafo reale risolve `vendor/lucide`, `vendor/tailwind-variants`, `vendor/bits-ui` via import map; console: zero errori moduli/import-map (solo 401 sessione + 503 backend noti + 404 speculativi `.svelte.ts` del source loader, by design) | ✅ done | 23:45 | server non killato/riavviato per dev-server rule |
-| 14 | OPTIONAL — transformers alias | ⏳ not done | — | unchanged |
+| 14 | Transformers aligned under `./vendor/` — **MOVE, not alias** (user: root specifier was a refactoring leftover): ui export `./transformers`→`./vendor/transformers` + wrapper file → `src/lib/vendor/`; core specifier + test; FE vendor entry + emitted `vendor-transformers.js` + importmap + consumers (ai-worker, semantic-scorer) + eslint msgs + smart-components rule. Root specifier deleted — one spelling | ✅ done | 2026-10-23 | ui `9cae4f3` · core `f7385cd` · fe `0f0e075`; core 9/9, check 0 err, vendor:build clean |
 
 ---
 
@@ -102,8 +102,9 @@ import { Ellipsis as BitsEllipsis } from '@primebrick/ui/vendor/bits-ui';
 - **D1** Per-lib subpaths (above).
 - **D2** Subpath naming: `./vendor/<lib>` — prefix marks the vendor-plane
   boundary and avoids clashing with future component subpaths.
-  `./transformers` stays at root (shipped contract); optional alias =
-  task 14.
+  `./transformers` initially stayed at root (shipped contract); **superseded
+  2026-10-23 — moved to `./vendor/transformers`, root spelling deleted**
+  (task 14, user: one uniform surface, no alias).
 - **D3** `vendor.ts`/`vendor-bits.ts` deleted — replaced, not kept as
   aggregates (an aggregate re-importing the per-lib files re-creates the
   collision problem it solved).
