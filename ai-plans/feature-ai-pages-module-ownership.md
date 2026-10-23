@@ -7,28 +7,56 @@
 > Scope is **AI pages only** — `email-providers`/`templates`/`migrations` and
 > other settings pages are out (same pattern, later sub-plans).
 
-## Status: 🟠 WIP — Plan date: 2026-10-21 (inventory verified live; F.10 spike DONE; vendor plane complete — tasks 12/13/14/15 DONE; **D1–D9 ALL DECIDED 2026-10-21** — migration executing)
+## Status: � PARTIALLY DONE — Plan date: 2026-10-23 (page migration executed end-to-end: decl+pages+shells+config+preload all landed; **2 env blockers**: patch 0008 unsigned — dev-micha keyfile missing; FE dev server (PID 93920) holds a stale `@primebrick/ui` exports map — needs user restart before e2e)
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
 | 1 | Decision gate — user resolves D1–D9 (Part D) | ✅ done | 2026-10-21 | see "D1–D9 decisions taken" below — D8/D9 resolved to the JOB precedent (no access field, hard route cut) |
 | 1b | Vendor-plane spike (D13) — host bundles + importmap + externalized job chunk + live mount proof | ✅ done | 2026-10-21 | Part F.10 — 102 KB → 14.34 KB; blob+importmap resolution proven live in browser |
-| 1c | ctx extensions: `components.mfaStepUp` (D5) + `components.openSheet` (D6) | ⏳ not done | — | core `ModulePageHost` contract + FE host-bound wiring; precedent for ALL future modules |
-| 1d | D4 — promote multi-use parts to `@primebrick/ui` | ⏳ not done | — | **executed by sub-plan `feature-ui-component-migration.md`** (user direction 2026-10-21: one component at a time, empirically verified on 2-3 real contexts, fix drift, next). Includes the widget-primitive subset /ai needs (Popover/Button/ComboSelect/…) — the FE-local `$lib/components/ui` lib is unreachable to remotes. Single-use stays FE for now |
-| 2 | `ai/src/nav-declaration.ts` — `entityPaths`-derived routes + nav links | ⏳ not done | — | same file shape as `job-handler/src/nav-declaration.ts`; NO `access` field (D8 = JOB precedent: open to authenticated users) |
-| 3 | Wire decl into `createMicroservice({ nav })` in `ai/src/index.ts` | ⏳ not done | — | `partOf:"system"` already set (index.ts:31); nav absence is why the module is invisible in dropdowns today |
-| 4 | `ai/fe/` remote-chunk scaffold (vite lib build + `module-assets` route) | ⏳ not done | — | clone job-handler `fe/` layout + its module-assets controller |
-| 5 | Migrate the AI console page surface — `layout.sections` remote mounts | ⏳ not done | — | 721 LOC today — see Part C inventory; 3 sections (capabilities/models/cache) or 1 `mountPage` — decl chooses |
-| 6 | Migrate `/system/settings/docs-index` page → `/system/ai/docs-index` (D7) | ⏳ not done | — | all data endpoints already `/ws/ai/*`; 324 LOC |
-| 7 | FE route moves — **HARD CUT (D9)**: delete `settings/ai/` + `settings/docs-index/` dirs; no redirects (JOB precedent: zero legacy dirs under `settings/`) | ⏳ not done | — | breaking change accepted — no backward compat |
-| 8 | i18n: `system.settings.tabs.ai`/`docsIndex` + `system.settings.ai.*` → `ai.*` module dict + signed db patch | ⏳ not done | — | job patch `0014_job_schedules_page_label` precedent |
-| 9 | ~~Access namespace migration~~ | 🚫 dropped | 2026-10-21 | D8 resolved: same as JOB — NO `access` field on `AI_NAV`; module open to authenticated users; NO DB patch needed |
-| 10 | Tests: decl validator test (US) + census/ownership unit (FE) + E2E | ⏳ not done | — | reuse `nav-declaration.test.ts` shape; E2E must exercise real pages (empirical — unit/type checks alone proved insufficient twice) |
-| 11 | Docs sync (module-navigation, app-shell, ai docs) + commit | ⏳ not done | — | `make-docs` skill per repo |
+| 1c | ctx extensions: `components.mfaStepUp` (D5) + `components.openSheet` (D6) | ✅ done | 2026-10-21 | `MfaStepUpFn`/`OpenSheetFn`/`HostApiFn` built-ins in core `ModuleHostComponents` + `bindStepUp`/`getOpenSheet`/`getServiceApi('host')` bridges in ui (remote-sheets tranche) |
+| 1d | D4 — promote multi-use parts to `@primebrick/ui` | ✅ done | 2026-10-23 | page-surface landed: toolbar/, button-group/, separator/, stat-card/, number-ticker/, entity-list/ (entities-ns-context+EntityConfirmQuestion+DeleteDialog+DeletionFilterToggle), composables/useMachineCapabilities + ai/service-api docs-index+config fetchers; new `./cache` + `./bridges` leaf subpaths (test-env barrel cost) |
+| 2 | `ai/src/nav-declaration.ts` — routes + nav links + access | ✅ done | 2026-10-23 | `route_prefixes:['/system/ai']`, `access:'access.system.ai'` (module-level gate), `nav[]` 2 links (`ai.nav`/`ai.nav.docs_index`), `routes[]` 2×`kind:'page'`→`ai-pages.js` esm-mount; validator+6/6 unit tests |
+| 3 | Wire decl into `createMicroservice({ nav })` in `ai/src/index.ts` | ✅ done | 2026-10-21 | wired with sheets decl (task 7); `partOf:"system"` already set |
+| 4 | `ai/fe/` remote-chunk scaffold (vite lib build + `module-assets` route) | ✅ done | 2026-10-21 | task 7 tranche — vite lib build, module-assets route, `ai-sheets.js` entry |
+| 4b | `ai-pages.js` second chunk entry | ✅ done | 2026-10-23 | multi-entry vite config + per-chunk deps.json; `pages.ts` `mountPage` dispatch on `ctx.nav.route` → `mountModuleContent` (ambient providers) |
+| 5 | Migrate the AI console page surface — single `mountPage` remote page | ✅ done | 2026-10-23 | `AiSettingsPage.svelte` + `ai-model-test-report`/`machine-capabilities-section`/`gpu-vendor-icon` in ai/fe; host breadcrumb via `ctx.mount_host(AppPageBreadcrumb)` + `moduleBreadcrumbSegments` |
+| 5b | Config domain move — `ai_assistant_model`: `public` → `ai.config_entries` | ⏳ partial | — | `controllers/http/config-route.ts` (emailsender pattern + secret masking) exposes `/entities/config_entry/*`; host chrome rewired (`ai-chat-panel`→`fetchModuleConfig('ai')`); **patch 0008 written but UNSIGNED — dev-micha keyfile missing (user input needed)** |
+| 5c | `entities_ns:'ai'` on ai_model + ai_cerebellum metas | ✅ done | 2026-10-23 | `entities_ns` added to `EntityMeta` type + both metas; `system.entities.ai_*`→`ai.entities.ai_*` moved by patch 0008 |
+| 6 | Migrate `/system/settings/docs-index` page → `/system/ai/docs-index` (D7) | ✅ done | 2026-10-23 | `DocsIndexPage.svelte` via `fetchDocsIndexStatus`/`reindexDocsPacks` (ui ai service-api, `ctx.api`-bound) |
+| 7 | FE route moves — **HARD CUT (D9)** | ✅ done | 2026-10-23 | `settings/ai`+`settings/docs-index` deleted; thin shells `/system/ai` + `/system/ai/docs-index` (job precedent, RemotePageErrorPanel on resolution failure); `module-nav-meta` −2 nav/−2 routes (7/7 BE tests); e2e/dev-rc repointed; dead code removed (`hf-model-search`, smart-ai page trio, FE useMachineCapabilities, api.ts ai/docs fetchers) |
+| 8 | i18n: `system.settings.*`/`system.entities.ai_*` → `ai.*` module dict + signed db patch | ⏳ partial | — | patch 0008 performs full INSERT…SELECT moves (all locales) + `ai.translations` table + `ai.module.name` + `ai.nav*` + `ai.config.*`; **unsigned — same key blocker**; host chrome `ai-model-details-popover` repointed to `ai.entities.ai_model.*` |
+| 8b | Remote-chunk preload — `warmRemoteModules` | ✅ done | 2026-10-23 | `Map<url,Promise>` cache in remote-loader + `warmRemoteModules` post-`fetchModules()` idle prefetch of every decl `component_url` (sheets+pages); mounts reuse the cached pipeline |
+| 9 | Access namespace — `access:'access.system.ai'` module-level | ✅ done | 2026-10-23 | on `AI_NAV`; validator-approved ns derived from `partOf:'system'`; admins inherit via `access.system` |
+| 10 | Tests: decl validator (US) + unit (FE) + E2E | ⏳ partial | — | US 16/16 + decl 6/6; BE nav 7/7; FE unit 467/467 (matchMedia stub + leaf subpath imports + i18n bridge bound in vitest-setup); **live e2e pending dev-server restart** |
+| 11 | Docs sync (module-navigation, app-shell, ai docs) + commit | ⏳ not done | — | `make-docs` skill per repo; commits per repo with model trailer |
 | 12 | `vendor_requires` runtime handshake — remote-loader fetches `<chunk>.deps.json`, compares vs `vendor-manifest.json`, graceful panel on mismatch | ✅ done | 2026-10-21 | `verifyVendorDeps` in remote-loader before chunk fetch; `diffVendorRequirements` (exact-match) + `RemoteDepsManifest`/`VendorManifest` types in core vendor-plane (FE via ui, us via sdk); new `vendor` error kind + i18n; 404 deps = self-contained chunk proceeds |
 | 13 | Serve `<chunk>.deps.json` via `module-assets` (job + ai) | ✅ done | 2026-10-21 | **already satisfied** — route is generic (any file under `fe/dist`, traversal-protected, `.json`→`application/json`, `no-cache` for unhashed names); added enforcement tests proving deps.json resolves + revalidates |
 | 14 | `layout.sections` decl + grid container + `remote:`/`host:` dispatch (D11) | ✅ done | 2026-10-21 | ONE layout archetype: CSS grid (user correction — stack/split/tabs were over-engineering; stack = grid 1-col). `page_props.layout` in core, `PageSectionSlot` per-cell isolation + error panel, host registry in FE, `validatePageLayout` in sdk. Chunkless all-`host:` descriptor pages supported |
 | 15 | `@huggingface/transformers` vendor entry — resolved via `@primebrick/ui/transformers` subpath (D12) | ✅ done | 2026-10-21 | ui owns dep `4.3.1` + `./transformers` export; FE migrated; direct `@huggingface/transformers` import = `reject` via `VENDOR_BLOCKED_PACKAGES`; vendor = prebuilt `transformers.web.min.js` 454KB + ort sibling; host main-thread never imports it (worker realm keeps own copy) → no app-build externalization needed |
+
+---
+
+## Part G — Execution decisions (user-confirmed 2026-10-21, second round)
+
+| # | Decision | Confirmed choice |
+|---|---|---|
+| E1 | Entity label namespace | `entities_ns:'ai'` on `ai_model`+`ai_cerebellum` metas; keys `system.entities.ai_*` → `ai.entities.ai_*` (hard cut — dead keys die, job precedent) |
+| E2 | Access | `access:'access.system.ai'` module-level on `AI_NAV` — ns derived via `accessNamespace(code, partOf)`, enforced at enrollment; admins inherit via `access.system`; no DB seed (access keys are grant tokens, NOT seeded entities). Rejected: `access.system.settings` reuse (outside ns → validator rejects) |
+| E3 | Routes | `/system/ai` (console) + `/system/ai/docs-index` — JH shape: thin FE shells → decl census → `RemotePageMount`; settings links/routes cut from `module-nav-meta.ts` |
+| E4 | Config ownership | module configs are module-owned per schema (`ai.config_entries` — ALREADY exists+seeded). `ai_assistant_model` moves `public.config_entries` → `ai.config_entries` via single signed patch (INSERT…SELECT + DELETE). `config_entry` decl added to ai entities-route. Host chrome reads via `getServiceApi('ai')` (`fetchModuleConfig`/`updateModuleConfigKey` already exist). `useConfigEntries` does NOT migrate — page uses `ctx.api` |
+| E5 | Chunks + preload | TWO chunks: `ai-sheets.js` (existing) + `ai-pages.js` (new) → parallel background download. `warmRemoteModules(modules)` in remote-loader: post-`fetchModules()` idle prefetch of every decl `component_url` through the full `loadRemoteModule` pipeline → `Map<url, Promise>` cache → mounts instant, zero loading flash; silent failures evicted |
+
+### Execution order (confirmed)
+
+1. `ai/db-meta` patch — config move + `entities_ns` metas + `ai.*`/`ai.entities.*`/`ai.config.*` translations (signed)
+2. ai `entities-route` — `config_entry` decl
+3. `@primebrick/ui` — remaining components/composables/api helpers (task 1d list)
+4. `ai/fe` — pages + components + `ai-pages.js` entry
+5. `ai/src/nav-declaration.ts` — routes/nav/access (task 2 completion)
+6. `remote-loader` — `warmRemoteModules` + promise cache
+7. FE — shells + hard cut + `module-nav-meta` + host chrome config rewire + residue cleanup
+8. BE — `system.settings.ai*`/`docsIndex*`/`ai entities` key removal patch
+9. Tests + docs + commits
 
 ---
 
