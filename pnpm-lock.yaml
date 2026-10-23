@@ -4,13 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@primebrick/decimal': link:../primebrick-decimal
-  '@primebrick/dal-pg': link:../primebrick-dal-v3
-  '@primebrick/sdk': link:../primebrick-v3-sdk
-  '@primebrick/core': link:../primebrick-v3-core
-  '@primebrick/ui': link:../primebrick-v3-ui
-
 importers:
 
   .: {}
@@ -33,10 +26,10 @@ importers:
         specifier: 3.4.0
         version: 3.4.0
       '@primebrick/dal-pg':
-        specifier: link:../primebrick-dal-v3
+        specifier: workspace:*
         version: link:../primebrick-dal-v3
       '@primebrick/sdk':
-        specifier: link:../primebrick-v3-sdk
+        specifier: workspace:*
         version: link:../primebrick-v3-sdk
       casdoor-nodejs-sdk:
         specifier: 1.36.2
@@ -112,7 +105,7 @@ importers:
   ../primebrick-dal-v3:
     dependencies:
       '@primebrick/core':
-        specifier: link:../primebrick-v3-core
+        specifier: workspace:*
         version: link:../primebrick-v3-core
       pg:
         specifier: 8.23.1
@@ -194,7 +187,7 @@ importers:
         specifier: 2.0.1
         version: 2.0.1
       '@primebrick/ui':
-        specifier: link:../primebrick-v3-ui
+        specifier: workspace:*
         version: link:../primebrick-v3-ui
       class-variance-authority:
         specifier: 0.7.1
@@ -230,8 +223,8 @@ importers:
         specifier: 18.1.1
         version: 18.1.1
       mermaid:
-        specifier: ^12.1.0
-        version: 12.2.0
+        specifier: 12.1.0
+        version: 12.1.0
       shiki:
         specifier: 4.5.0
         version: 4.5.0
@@ -411,10 +404,10 @@ importers:
         specifier: 3.4.0
         version: 3.4.0
       '@primebrick/dal-pg':
-        specifier: link:../../primebrick-dal-v3
+        specifier: workspace:*
         version: link:../../primebrick-dal-v3
       '@primebrick/sdk':
-        specifier: link:../../primebrick-v3-sdk
+        specifier: workspace:*
         version: link:../../primebrick-v3-sdk
       ai:
         specifier: 7.0.144
@@ -454,10 +447,10 @@ importers:
   ../primebrick-us-v3/crm:
     dependencies:
       '@primebrick/dal-pg':
-        specifier: link:../../primebrick-dal-v3
+        specifier: workspace:*
         version: link:../../primebrick-dal-v3
       '@primebrick/sdk':
-        specifier: link:../../primebrick-v3-sdk
+        specifier: workspace:*
         version: link:../../primebrick-v3-sdk
       dotenv:
         specifier: 18.0.8
@@ -494,10 +487,10 @@ importers:
         specifier: 3.4.0
         version: 3.4.0
       '@primebrick/dal-pg':
-        specifier: link:../../primebrick-dal-v3
+        specifier: workspace:*
         version: link:../../primebrick-dal-v3
       '@primebrick/sdk':
-        specifier: link:../../primebrick-v3-sdk
+        specifier: workspace:*
         version: link:../../primebrick-v3-sdk
       dotenv:
         specifier: 18.0.8
@@ -537,10 +530,10 @@ importers:
         specifier: 3.4.0
         version: 3.4.0
       '@primebrick/dal-pg':
-        specifier: link:../../primebrick-dal-v3
+        specifier: workspace:*
         version: link:../../primebrick-dal-v3
       '@primebrick/sdk':
-        specifier: link:../../primebrick-v3-sdk
+        specifier: workspace:*
         version: link:../../primebrick-v3-sdk
       dotenv:
         specifier: 18.0.8
@@ -556,7 +549,7 @@ importers:
         version: 4.6.7
     devDependencies:
       '@primebrick/ui':
-        specifier: link:../../primebrick-v3-ui
+        specifier: workspace:*
         version: link:../../primebrick-v3-ui
       '@sveltejs/vite-plugin-svelte':
         specifier: 7.3.1
@@ -592,10 +585,10 @@ importers:
         specifier: 3.4.0
         version: 3.4.0
       '@primebrick/dal-pg':
-        specifier: link:../../primebrick-dal-v3
+        specifier: workspace:*
         version: link:../../primebrick-dal-v3
       '@primebrick/sdk':
-        specifier: link:../../primebrick-v3-sdk
+        specifier: workspace:*
         version: link:../../primebrick-v3-sdk
       dotenv:
         specifier: 18.0.8
@@ -626,7 +619,7 @@ importers:
   ../primebrick-v3-core:
     dependencies:
       '@primebrick/decimal':
-        specifier: link:../primebrick-decimal
+        specifier: workspace:*
         version: link:../primebrick-decimal
       json-bigint:
         specifier: 1.0.0
@@ -739,7 +732,7 @@ importers:
         specifier: 1.43.0
         version: 1.43.0
       '@primebrick/core':
-        specifier: link:../primebrick-v3-core
+        specifier: workspace:*
         version: link:../primebrick-v3-core
       countries-list:
         specifier: 3.4.1
@@ -797,7 +790,7 @@ importers:
         specifier: 1.59.0
         version: 1.59.0(svelte@5.57.2(@typescript-eslint/types@8.72.0))
       '@primebrick/core':
-        specifier: link:../primebrick-v3-core
+        specifier: workspace:*
         version: link:../primebrick-v3-core
       bits-ui:
         specifier: 2.19.5
@@ -832,7 +825,7 @@ importers:
         version: 5.57.2(@typescript-eslint/types@8.72.0)
       svelte-check:
         specifier: 4.7.7
-        version: 4.7.7(picomatch@4.0.5)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3)
+        version: 4.7.7(picomatch@4.0.7)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3)
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -5519,10 +5512,6 @@ packages:
   comma-separated-tokens@2.0.3:
     resolution: {integrity: sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==}
 
-  commander@15.0.0:
-    resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
-    engines: {node: '>=22.12.0'}
-
   commander@7.2.0:
     resolution: {integrity: sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==}
     engines: {node: '>= 10'}
@@ -6926,10 +6915,6 @@ packages:
     resolution: {integrity: sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==}
     hasBin: true
 
-  katex@0.18.10:
-    resolution: {integrity: sha512-/B6p9eY9DX7aHBfpkHdpirDTZ5QH9xTwL9y837PWuzuv41O5jFdqNQwVQEQsimY0/iVNkwBY4+4hMfhQ7d4Dbw==}
-    hasBin: true
-
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
@@ -7360,8 +7345,8 @@ packages:
   mermaid@11.16.0:
     resolution: {integrity: sha512-Zvm3kbstgdpvIJPPItlL7fppIZ3kibvc1oZIGxdvk9t6UFz6flv+Jw7FtRGKwfcI8OckmH04LqG6LlS6X4B1pA==}
 
-  mermaid@12.2.0:
-    resolution: {integrity: sha512-w7nr/SFrLO7BaVTs3dQTvYSV6nYSBj0Yy9DjBhsIJtAcHqRzXSq4Pg32ujHZ/AdWsAMNEvvhbm5dt9E2tOiHzw==}
+  mermaid@12.1.0:
+    resolution: {integrity: sha512-wlVCp+8eTupfCeeFvoZNNiTuHrvag0P2jz/ILgb/f/6jkVokUefOcujefi8qUe/j2asHiSePncVsz/xzzA80LQ==}
     engines: {node: '>=22.12.0'}
 
   meros@1.3.2:
@@ -13691,7 +13676,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.3.4(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
+      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
 
   '@vitest/expect@4.1.10':
     dependencies:
@@ -13745,7 +13730,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.17
       tinyrainbow: 3.2.0
-      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.3.4(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
+      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
 
   '@vitest/utils@4.1.10':
     dependencies:
@@ -14279,8 +14264,6 @@ snapshots:
       delayed-stream: 1.0.0
 
   comma-separated-tokens@2.0.3: {}
-
-  commander@15.0.0: {}
 
   commander@7.2.0: {}
 
@@ -15990,10 +15973,6 @@ snapshots:
     dependencies:
       commander: 8.3.0
 
-  katex@0.18.10:
-    dependencies:
-      commander: 15.0.0
-
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
@@ -16509,7 +16488,7 @@ snapshots:
       ts-dedent: 2.3.0
       uuid: 14.0.1
 
-  mermaid@12.2.0:
+  mermaid@12.1.0:
     dependencies:
       '@braintree/sanitize-url': 7.1.2
       '@iconify/utils': 3.1.4
@@ -16527,7 +16506,7 @@ snapshots:
       dompurify: 3.4.17
       elkjs: 0.9.3
       es-toolkit: 1.49.0
-      katex: 0.18.10
+      katex: 0.16.47
       khroma: 2.1.0
       marked: 16.4.2
       roughjs: 4.6.6
@@ -18264,19 +18243,6 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.31
       chokidar: 4.0.3
       fdir: 6.5.0(picomatch@4.0.7)
-      picocolors: 1.1.1
-      sade: 1.8.1
-      svelte: 5.57.2(@typescript-eslint/types@8.72.0)
-      typescript: 6.0.3
-    transitivePeerDependencies:
-      - picomatch
-
-  svelte-check@4.7.7(picomatch@4.0.5)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3):
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.31
-      '@sveltejs/load-config': 0.2.3
-      chokidar: 4.0.3
-      fdir: 6.5.0(picomatch@4.0.5)
       picocolors: 1.1.1
       sade: 1.8.1
       svelte: 5.57.2(@typescript-eslint/types@8.72.0)
