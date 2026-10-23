@@ -8,7 +8,7 @@
 > Hard constraint: zero behavioral drift for existing host-registered
 > panels (`shell.*` / `entity.*` / `config.*` stay host for now).
 
-## Status: 🟠 WIP — Plan date: 2026-10-23
+## Status: � PARTIALLY DONE — Plan date: 2026-10-23
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
@@ -17,7 +17,7 @@
 | 2 | FE resolver — `openSheet` resolves: host registry → remote decls → unknown notification; `remoteSheetDecls` map from discovered modules | ✅ done | 2026-10-23 | validation MOVED into the engine (`isSheetPanelKnown`); `resolveRemoteSheetDecl` in modules-shell; `default_options` merge under caller options; typed overloads keep host props safety; `sheet-manager.test.ts` 6 tests |
 | 3 | `RemoteSheetMount.svelte` — loadRemoteModule + SRI + deps handshake + `mountSheet` named export + sheet-ctx build (api ws-bound from component_url) | ✅ done | 2026-10-23 | props-change → remount (replace semantics); error panel + retry; mfaStepUp dialog included |
 | 4 | `mountSheet` remote contract — `bindRemoteCtx(ctx)` inside mount, props opaque Record, sheet chrome control via ctx | ✅ done | 2026-10-23 | `MountSheetFn` in core; `RemoteModule.mountSheet` typed; job chunk exports it |
-| 5 | First remote sheet end-to-end — one real panel declared + mounted + opened from host AND from inside a remote page | ⏳ partial | 2026-10-23 | `job.runDetail` declared (nav-decl test ✓) + `RunDetailSheet.svelte` + chunk built (mountSheet export ✓, deps manifest ✓). **LIVE verify pending: job-handler US not running (:3006)** |
+| 5 | First remote sheet end-to-end — one real panel declared + mounted + opened from host AND from inside a remote page | ✅ done | 2026-10-23 | `job.runDetail` declared (nav-decl test ✓) + `RunDetailSheet.svelte` + chunk built (mountSheet export ✓, deps manifest ✓). **LIVE PROOF PASSED** (remote-sheet.spec.ts, 2 tests): decl via /modules -> sheet opens -> jobs-page.js loads -> mountSheet mounts -> props delivered -> ctx.api fetches run (partition-maintenance/uuid rendered) -> ctx.sheet.close() teardown -> unknown key rejected. Remote-page open transitively proven via bridge unit tests. Caveat: vite dev forks .svelte.ts modules per URL spelling + ?t= HMR stamps — spec imports the app exact fetched module URL via performance entries |
 | 6 | `sheet/` bits-ui primitive → `@primebrick/ui` (E4 addition — the engine's chrome dep was missing from tranche 4) | ✅ done | 2026-10-23 | `components/sheet/` in ui; `$t`→`getT()`; vendor imports→relative; `export * as Sheet`; 8 FE consumers rewired; svelte-check 0/0; vendor:build ok |
 | 7 | Progressive `shell.ai*` panels migration → `ai/fe/` (kills the C3 dual-ownership dilemma in ai-pages plan) | ⏳ not done | — | after live proof |
 
