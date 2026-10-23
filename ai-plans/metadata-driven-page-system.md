@@ -15,7 +15,7 @@
 > capability) + module page delivery mechanism incl. the jobs pilot
 > (remote-chunk spike verified in a real browser 2026-10-19).
 
-## Status: ⚪ TODO — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST
+## Status: ⚪ TODO — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST · updated 2026-10-23
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -686,6 +686,7 @@ automatic `{entity}`-scoped subscription.**
 | D1 | **Access-grant management UI** — `access.{app}.{module}.{page}` grants are today assignable only via `role_mappings` rows / raw SQL (see `feature-access-axis-and-module-discovery-consolidation.md`). Needs an admin surface in Settings to grant/revoke per module/page. | The access axis is enforced server-side but has no operable UI — unusable in production without it. | ⏳ deferred |
 | D2 | **User-guide docs pipeline is stale** — `docs/user-guide` generated entity manuals (e.g. `customers.mdx`) carry pre-migration paths (`/system/customers/*` vs real `/crm/*`). The generator that produces them has not run since the route/ownership migrations; locate it, fix route sourcing (must read declared routes/nav, not hardcoded settings paths), re-run, and wire it into the release/docs train. | User-facing docs silently diverge from shipped routes — detected empirically, no gate exists today. | ⏳ deferred |
 | D3 | **Job service 502 flakiness under parallel E2E load** — `ApiUnreachableError` on `/ws/job/*` during Playwright suites (bun `--hot` service / proxy). Isolated as flake (single re-runs green) but it poisons jobs-pages/ownership/access-filtering runs at random. | Blocks trusting E2E as regression signal; needs root-cause (bun hot-reload stability vs http-proxy timeouts). | ⏳ deferred |
+| D4 | **Per-service page-doc render** — `docs-render.ts` (ai/scripts) renders entity user-guide pages only for entities the running service owns (meta/router scan of its own `src/`). job-handler entities (`job_schedule`/`job_rule`/`job_run`) are correctly skipped by the BE render but have NO render of their own: needs the same extractor+renderer parameterized per service (`META_DIR`, `ROUTER_DIR`, `OUT_DIR=<svc>/docs/user-guide/generated`), `EntityRouteDecl` perms-resolution (`readPerms`/`writePerms` identifiers, not `Permission.X` literals), `RemotePageMount` page facts from `nav-declaration.ts` route→`component_url` → `<svc>/fe/src/*.svelte`, and its own `generate:docs` wiring so the pages ship in the job-handler docs pack. | Without it, every module-owned page produces zero user-guide docs — the assistant's KB silently lacks module pages (detected 2026-10-23 via coverage warnings). Isolation stays per-service; NO cross-repo aggregation. | ⏳ not done |
 
 ---
 
