@@ -7,21 +7,28 @@
 > Scope is **AI pages only** — `email-providers`/`templates`/`migrations` and
 > other settings pages are out (same pattern, later sub-plans).
 
-## Status: ⚪ TODO — Plan date: 2026-10-21 (inventory verified live in code)
+## Status: 🟠 WIP — Plan date: 2026-10-21 (inventory verified live; F.10 spike DONE; vendor plane complete — tasks 12/13/14/15 DONE; **D1–D9 ALL DECIDED 2026-10-21** — migration executing)
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
-| 1 | Decision gate — user resolves D1–D9 (Part D) | ⏳ not done | — | **blocking**: route names, delivery mode, component ownership |
-| 2 | `ai/src/nav-declaration.ts` — `entityPaths`-derived routes + nav links + `access.system.ai.*` decls | ⏳ not done | — | same file shape as `job-handler/src/nav-declaration.ts` |
-| 3 | Wire decl into `createMicroservice({ nav })` in `ai/src/index.ts` | ⏳ not done | — | `partOf:"system"` already set (index.ts:31) |
+| 1 | Decision gate — user resolves D1–D9 (Part D) | ✅ done | 2026-10-21 | see "D1–D9 decisions taken" below — D8/D9 resolved to the JOB precedent (no access field, hard route cut) |
+| 1b | Vendor-plane spike (D13) — host bundles + importmap + externalized job chunk + live mount proof | ✅ done | 2026-10-21 | Part F.10 — 102 KB → 14.34 KB; blob+importmap resolution proven live in browser |
+| 1c | ctx extensions: `components.mfaStepUp` (D5) + `components.openSheet` (D6) | ⏳ not done | — | core `ModulePageHost` contract + FE host-bound wiring; precedent for ALL future modules |
+| 1d | D4 — promote multi-use parts to `@primebrick/ui` | ⏳ not done | — | **executed by sub-plan `feature-ui-component-migration.md`** (user direction 2026-10-21: one component at a time, empirically verified on 2-3 real contexts, fix drift, next). Includes the widget-primitive subset /ai needs (Popover/Button/ComboSelect/…) — the FE-local `$lib/components/ui` lib is unreachable to remotes. Single-use stays FE for now |
+| 2 | `ai/src/nav-declaration.ts` — `entityPaths`-derived routes + nav links | ⏳ not done | — | same file shape as `job-handler/src/nav-declaration.ts`; NO `access` field (D8 = JOB precedent: open to authenticated users) |
+| 3 | Wire decl into `createMicroservice({ nav })` in `ai/src/index.ts` | ⏳ not done | — | `partOf:"system"` already set (index.ts:31); nav absence is why the module is invisible in dropdowns today |
 | 4 | `ai/fe/` remote-chunk scaffold (vite lib build + `module-assets` route) | ⏳ not done | — | clone job-handler `fe/` layout + its module-assets controller |
-| 5 | Migrate the AI console page surface (per D2/D3) | ⏳ not done | — | 721 LOC today — see Part C inventory of host deps |
-| 6 | Migrate `/system/settings/docs-index` page (per D7) | ⏳ not done | — | all data endpoints already `/ws/ai/*` |
-| 7 | FE route moves + compatibility redirects | ⏳ not done | — | `/system/settings/ai` → redirect (job `/system/job` precedent) |
-| 8 | i18n: `system.settings.tabs.ai`/`docsIndex` → `ai.*` module dict + signed db patch | ⏳ not done | — | job patch `0014_job_schedules_page_label` precedent |
-| 9 | Access namespace migration `access.system.ai.*` (per D8) | ⏳ not done | — | grant surface changes for non-admins |
-| 10 | Tests: decl validator test (US) + census/ownership unit (FE) + E2E | ⏳ not done | — | reuse `nav-declaration.test.ts` shape |
+| 5 | Migrate the AI console page surface — `layout.sections` remote mounts | ⏳ not done | — | 721 LOC today — see Part C inventory; 3 sections (capabilities/models/cache) or 1 `mountPage` — decl chooses |
+| 6 | Migrate `/system/settings/docs-index` page → `/system/ai/docs-index` (D7) | ⏳ not done | — | all data endpoints already `/ws/ai/*`; 324 LOC |
+| 7 | FE route moves — **HARD CUT (D9)**: delete `settings/ai/` + `settings/docs-index/` dirs; no redirects (JOB precedent: zero legacy dirs under `settings/`) | ⏳ not done | — | breaking change accepted — no backward compat |
+| 8 | i18n: `system.settings.tabs.ai`/`docsIndex` + `system.settings.ai.*` → `ai.*` module dict + signed db patch | ⏳ not done | — | job patch `0014_job_schedules_page_label` precedent |
+| 9 | ~~Access namespace migration~~ | 🚫 dropped | 2026-10-21 | D8 resolved: same as JOB — NO `access` field on `AI_NAV`; module open to authenticated users; NO DB patch needed |
+| 10 | Tests: decl validator test (US) + census/ownership unit (FE) + E2E | ⏳ not done | — | reuse `nav-declaration.test.ts` shape; E2E must exercise real pages (empirical — unit/type checks alone proved insufficient twice) |
 | 11 | Docs sync (module-navigation, app-shell, ai docs) + commit | ⏳ not done | — | `make-docs` skill per repo |
+| 12 | `vendor_requires` runtime handshake — remote-loader fetches `<chunk>.deps.json`, compares vs `vendor-manifest.json`, graceful panel on mismatch | ✅ done | 2026-10-21 | `verifyVendorDeps` in remote-loader before chunk fetch; `diffVendorRequirements` (exact-match) + `RemoteDepsManifest`/`VendorManifest` types in core vendor-plane (FE via ui, us via sdk); new `vendor` error kind + i18n; 404 deps = self-contained chunk proceeds |
+| 13 | Serve `<chunk>.deps.json` via `module-assets` (job + ai) | ✅ done | 2026-10-21 | **already satisfied** — route is generic (any file under `fe/dist`, traversal-protected, `.json`→`application/json`, `no-cache` for unhashed names); added enforcement tests proving deps.json resolves + revalidates |
+| 14 | `layout.sections` decl + grid container + `remote:`/`host:` dispatch (D11) | ✅ done | 2026-10-21 | ONE layout archetype: CSS grid (user correction — stack/split/tabs were over-engineering; stack = grid 1-col). `page_props.layout` in core, `PageSectionSlot` per-cell isolation + error panel, host registry in FE, `validatePageLayout` in sdk. Chunkless all-`host:` descriptor pages supported |
+| 15 | `@huggingface/transformers` vendor entry — resolved via `@primebrick/ui/transformers` subpath (D12) | ✅ done | 2026-10-21 | ui owns dep `4.3.1` + `./transformers` export; FE migrated; direct `@huggingface/transformers` import = `reject` via `VENDOR_BLOCKED_PACKAGES`; vendor = prebuilt `transformers.web.min.js` 454KB + ort sibling; host main-thread never imports it (worker realm keeps own copy) → no app-build externalization needed |
 
 ---
 
@@ -272,6 +279,100 @@ app.html). `module-assets` traversal guard already exists (job-handler).
 | # | Decision | Outcome |
 |---|---|---|
 | D10 | Vendor resolution | **import map in app.html** — accepted as the standard mechanism (W3C spec, same technique as microfrontend ecosystems), not a workaround |
-| D11 | Granularity | **section-mount as primitive** — a page decl carries `layout.sections`; 1..N sections per page, each an independent remote `mount*` OR host-registered component. A single-section page = today's page-mount as the degenerate case. /ai may be 3 sections or 1 — layout decl chooses |
-| D12 | Vendor set | **includes `@huggingface/transformers`** — the user's original intent: remote code imports it from its own node_modules at dev time (real types, full DX); at runtime the import map resolves it to the HOST's vendored copy → ONE instance, shared model-cache state. **Constraint discovered**: for a lib whose *instance* must be shared (transformers/runtime state), the HOST build must also externalize it — its own code resolves through the same vendor URL, otherwise host keeps a private copy and the cache splits. Two vendor classes: `shared` (host externalizes too: transformers) vs `remote-only` (svelte internals, ui — deliberate isolation) |
+| D11 | Granularity | **section-mount as primitive** — a page decl carries `layout.sections`; 1..N sections per page, each an independent remote `mount*` OR host-registered component. A single-section page = today's page-mount as the degenerate case. /ai may be 3 sections or 1 — layout decl chooses. **Placement is metadata**: `layout` IS the grid descriptor (one archetype — `columns`/`rows`/`gap` + per-section `span`/`col`/`row`); no layout enum — stack = `columns:"1fr"` auto-flow, split = `columns:"280px 1fr"`. User correction: stack/split/tabs as separate kinds conflated layout with page-archetype and UI widgets |
+| D12 | Vendor set | **includes transformers — resolved via `@primebrick/ui/transformers` subpath** (user direction: "si installa come dep di UI"). UI owns `@huggingface/transformers@4.3.1` as its dep and re-exports the full API + types through the `./transformers` subpath — module devs `import { pipeline, env } from '@primebrick/ui/transformers'` with real DX, no HF install in their package. `VENDOR_BLOCKED_PACKAGES` makes direct `@huggingface/transformers` imports a build `reject`. Vendor asset = HF's own prebuilt `transformers.web.min.js` copied verbatim + `ort-wasm-simd-threaded.jsep.mjs` sibling. **Empirical correction to the "shared-class" constraint**: FE main-thread imports transformers NOWHERE (only the Web Worker — separate realm, bundles its own copy by design — and a Node E2E helper). So no host app-build externalization is needed: the vendored copy IS the single main-thread instance; worker cache still shared at browser level (Cache API/IndexedDB) |
 | D-layout | **NO layout changes on `/ai`** (hard constraint, user-stated twice) | the page keeps its exact current UX — gauges, asymmetric model cards/lists, cache UI. Correction to earlier plan text: `ai_model` surface does NOT become `EntityTablePage` — **LISTE ≠ TABELLE**; `kind:"list"` today is a misnomer (it renders the table archetype); the real List archetype is root-plan task 9. The models section ships as remote-owned custom list sections, not a host table |
+
+### F.10 Spike results — D13 executed (2026-10-21, verified live)
+
+**Outcome: mechanism works end-to-end.** Implementation:
+
+| Piece | Where | What |
+|---|---|---|
+| Closed allowlist | `@primebrick/core` `src/vendor-plane.ts` | `VENDOR_SPECIFIERS` (5 specifiers) + `resolveVendorSpecifier()` → `external`/`reject`/`bundle` — single source for host AND module builds |
+| Host vendor build | `primebrick-fe-v3/vendor/vite.vendor.config.ts` | `pnpm vendor:build` → `static/vendor/{svelte,primebrick-core,primebrick-ui}.js` + `vendor-manifest.json` (specifier→{url,version}) |
+| Union-per-package | `vendor/entries/svelte.ts` | `export * from 'svelte'` + `export * from 'svelte/internal/client'` + `import 'svelte/internal/disclose-version'` → ONE file, 215 exports, `mount`/`onMount`/`effect`/`template_effect`/`component`/`createRawSnippet`/`hydrate` all present |
+| Import map | `src/app.html` | all 3 svelte specifiers → `/vendor/svelte.js` (browser dedupes by URL → single runtime instance); core/ui → own files |
+| Lifecycle | `package.json` | `dev`/`build` run `vendor:build` first; `static/vendor/` gitignored (generated, deterministic) |
+| Chunk externals | `job-handler/fe/vite.config.ts` | `vendorPlane()` plugin: allowlist→`external`, vendor-pkg non-allowlisted→**build error**, else bundle + `generateBundle` emit-gate (any non-allowlisted bare specifier in output = error) + `jobs-page.deps.json` `vendor_requires` {specifier: version} |
+| FE↔core layering | `vite.vendor.config.ts` | **NO `@primebrick/core` package dep on FE** (hard rule: FE→ui, US→sdk). Vendor config imports the contract via sibling-repo `../primebrick-v3-core/dist` file path + `resolve.alias` maps `@primebrick/core`→`../primebrick-v3-core` for physical bundling — build-tool wiring, not a package dependency |
+
+**Measured:**
+
+- `jobs-page.js`: **102 KB → 14.34 KB** (30.5 → 3.49 KB gz) — the estimate held
+- emitted bare imports (complete list): `svelte`, `svelte/internal/client`,
+  `svelte/internal/disclose-version`, `@primebrick/ui` — all allowlisted
+- vendor bundle sizes: `svelte.js` 131.6 KB (38.4 gz) · `primebrick-core.js` 47.3 KB · `primebrick-ui.js` 41.5 KB — fetched once, cached, shared by every future chunk
+
+**Live browser proof** (playwright on the real `:5173` app — dev server serves `static/vendor` + the importmap with no restart needed):
+
+- all 4 specifiers resolve through the document importmap — including from a **blob: URL** (the integrity path: fetch→sha256→import verified bytes) — `mount`/`untrack`/`effect`/`template_effect`/`component`/`extJsonStringify` all `function`
+- `import('svelte') === import('svelte/internal/client')` → **dedup proved** — one svelte instance
+- `window.__svelte.v = ["5"]` → disclose-version ran inside the vendored copy
+- console clean; the only errors were the unrelated unauthenticated refresh-token probe on /login
+
+**Build-time discoveries worth recording:**
+
+- Vite **app-mode drops entry export signatures** (entries are script roots) —
+  vendor bundles must build in `lib` mode or the `export *` facades emit empty
+- pnpm `.pnpm/` paths contain **two** `/node_modules/` segments — the
+  importer→package attribution regex must match the LAST segment
+- `@primebrick/core` must NOT be an FE package dep (layering rule: FE consumes
+  core only via `@primebrick/ui` re-export). A first attempt adding a `link:`
+  dep was user-rejected. Correct approach: sibling-path import of the contract
+  file + `resolve.alias` for bundling (config-time only)
+- rolldown `preserveEntrySignatures` is not a valid key in vite 8 — moot in lib mode
+- **`workspace:*` hazard found (70 svelte-check errors)**: ui/sdk/dal declared
+  `"@primebrick/core": "3.0.0"` and core `"@primebrick/decimal": "3.0.1"` —
+  plain semver. Running `pnpm install` inside one repo dir re-resolved it from
+  npm → the published 3.0.0 (stale, missing filter_presets/sparkline/vendor-plane)
+  replaced the workspace link → ui's `export * from '@primebrick/core'` d.ts
+  resolved the stale copy → 70 missing-export errors in FE. Fix: all four
+  converted to `workspace:*` (the us-v3/be convention — links locally, pnpm
+  rewrites to real version at publish). Never install inside a single repo dir;
+  run `pnpm install` at `primebrick-workspace/` root |
+
+**Wired since:** task 12 — loader-side `verifyVendorDeps` handshake
+(`<chunk>.deps.json` → `diffVendorRequirements` exact-match vs host
+`vendor-manifest.json` → `vendor` error kind + graceful panel; 404 deps =
+self-contained chunk, legal); task 13 — deps serving needed no change
+(`module-assets` route is generic + traversal-safe; enforcement tests added);
+task 15 — transformers vendor entry; task 14 — `layout.sections` section
+composition: ONE grid archetype (`page_props.layout` in core,
+`PageSectionSlot` per-cell error isolation, `host:` registry in FE,
+`validatePageLayout` in sdk; chunkless descriptor pages supported). **Vendor
+plane + section composition complete — AI migration unblocked pending
+D1–D9 decisions.**
+
+## Part G — D1–D9 decisions taken (2026-10-21, user)
+
+| # | Decision | Outcome |
+|---|---|---|
+| D1 | Route leaf | **`/system/ai/models`** — leaf plural conforming to R1 (the models catalog is the page's primary content); `/system/ai` root → 307 → `/system/ai/models` (job `/system/job` → `/system/job/job-schedules` precedent) |
+| D2/D3 | Delivery + decomposition | already resolved by D11 + D-layout: remote `esm-mount` chunk, `layout.sections`; `ai_model` surface stays remote-owned custom list sections — NOT `EntityTablePage` (LISTE ≠ TABELLE) |
+| D4 | Shared components | **used-by-≥2 rule**: everything consumed by ≥2 call sites promotes to `@primebrick/ui` NOW (incl. `useModelCache`/`useAiModels`/`useSelection`/`useAiCerebellum` composables — vendored ui module is the shared singleton across host+remotes; api/i18n deps injected, no `$lib` imports inside ui). Single-use/non-common (`MachineCapabilitiesSection`, `useMachineCapabilities`, `GpuVendorIcon`) stays FE-local — deferred |
+| D5 | MFA step-up | **`ctx.components.mfaStepUp(requestFn, {action, target_resource}) → Promise<Response>`** — host-bound fn mirroring `useMfaStepUp.executeWithToken`; dialog rendered host-side (own root, no rune state crosses) |
+| D6 | Sheets | **`ctx.components.openSheet(panelKey, props)`** — host-bound fn delegating to the real `openSheet`; panels stay host-owned; props are plain values (+ callback fns, which cross) |
+| D7 | docs-index | **in scope** → `/system/ai/docs-index`. User correction: the whole point is that AI pages are in the WRONG place — wrong route, wrong nav, wrong visibility. `partOf:"system"` is already correct in `index.ts`; the invisible module is caused by the missing `endpoints.nav` decl (job registers `JOB_NAV`; ai registers nothing) — task 3 fixes it |
+| D8 | Access namespace | **JOB precedent — NO `access` field** on `AI_NAV` (verified: `JOB_NAV`/`CRM_NAV` declare none); module visible to any authenticated user; NO DB patch, NO `access.system.ai.*` grants |
+| D9 | Legacy routes | **HARD CUT — JOB precedent** (verified: zero `job` dirs remain under `settings/`): delete `settings/ai/` + `settings/docs-index/` dirs + their BE `MODULE_NAV.settings` entries; NO redirect pages — breaking change accepted |
+
+**D4 move list (verified call-site counts):**
+
+| Piece | Consumers | → ui |
+|---|---|---|
+| `ModelIcon` + Qwen/Meta/Microsoft/Nvidia/IBM/Gemma/DeepSeek/HF icons | page, AiModelImportPanel | ✅ |
+| `ScoreGauge` + `gaugeColor` | MachineCapabilitiesSection, AiModelTestReport | ✅ |
+| `CerebellumRecommendationBadge` | page, AiCerebellumPanel | ✅ |
+| `AiModelTestReport` | page, AiModelTestReportPanel | ✅ |
+| `RankMeter` | AiModelOption, ModelCachePanel, ModelCacheSection, AiModelImportPanel | ✅ |
+| `StorageBreakdownBar` | ModelCacheSection, ModelCachePanel | ✅ |
+| `ModelCacheSection` | page, `shell.aiModelCache` sheet content | ✅ |
+| `AiModelOption` | ai-model-selector, AiCerebellumPanel | ✅ |
+| `ai-model-test-scores.ts`, `ai-cerebellum.ts`, `modelVariantKey` + AiModel/AiCerebellum/ExecutionConfig types | page + panels (type boundary must be importable by the chunk → ui re-export) | ✅ |
+| `useModelCache` (445 LOC) | ModelCacheSection, ModelCachePanel, ai-chat-panel, ai-model-details-popover | ✅ |
+| `useAiModels` (200 LOC) | page, ModelCacheSection, ModelCachePanel, ai-chat-panel, use-ai-assistant, useAiCerebellum | ✅ |
+| `useSelection` | ModelCacheSection, ConfigList | ✅ |
+| `useAiCerebellum` | ai-chat-panel, use-ai-assistant | ✅ |
+| `MachineCapabilitiesSection`, `useMachineCapabilities`, `GpuVendorIcon` | AI page only | ⏸ deferred |
+| `useConfigEntries`, `NumberTicker`, `resumable-fetch` | generic infra — moved only if pulled in by a moved dep | case-by-case |
