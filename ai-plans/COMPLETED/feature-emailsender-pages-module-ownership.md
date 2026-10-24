@@ -19,7 +19,7 @@
 > The emailsender nav decl lands on the FINAL contract (providers leaf +
 > `default` flag), not the interim one.
 
-## Status: � WIP — Plan date: 2026-10-24 — UNBLOCKED: `feature-access-axis-redesign.md` DONE (moved to COMPLETED). Tasks 1–3 absorbed by it; the decl lands on the FINAL contract (`default` leaf, derived keys, no item access)
+## Status: � DONE — Plan date: 2026-10-24 — all tasks landed + live-verified in browser. Task 17 docs regen SKIPPED per explicit user instruction; commits landed on `feature/table-pages-merge` in sdk/be/us/fe/workspace
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
@@ -47,7 +47,7 @@
 | 15 | Live: list via proxy, create→remote form, edit→remote form (uuid param), delete via standard dialog; dict `emailsender` resolves from route_prefix | ✅ done | 2026-10-24 | browser-verified (e2e_verify_admin, deleted after): list/create/edit/delete full cycle; list masks api_key (absent), get preserves it; `/system/emailsender`→`/providers` default-leaf redirect; legacy `email-providers` URL → 404 |
 | 16 | Tests: svelte-check 0/0, FE unit, US decl tests (new access rule), BE nav 7/7, lint new rule green | ✅ done | 2026-10-24 | svelte-check 0/0, FE 474/474, BE modules 274/274, emailsender 31/31, check:standards green |
 | 16a | FIX landed during verify: `ssr = false` on ALL module-root shims (settings/job/ai/crm/emailsender) — apiFetch doesn't forward cookies in SSR; + `editPath` census-derived on providers list (`[uuid]`→`:uuid`) | ✅ done | 2026-10-24 | defect of the access-axis shim sweep, surfaced by emailsender live verify |
-| 17 | Docs (`pnpm build` regen artifacts; settings.mdx surgical update) + commits per repo + plan table | ⏳ not done | — | never commit without explicit instruction |
+| 17 | Commits per repo (sdk `fc943da`, be `279027b`, us `15d2ea5`, fe `dbee2ea`, workspace) — docs regen SKIPPED per explicit user instruction | ✅ done | 2026-10-24 | docs defer to a future docs pass |
 
 ---
 
