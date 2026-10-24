@@ -445,7 +445,7 @@ importers:
         version: 5.57.2(@typescript-eslint/types@8.72.0)
       svelte-check:
         specifier: 4.3.4
-        version: 4.3.4(picomatch@4.0.5)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3)
+        version: 4.3.4(picomatch@4.0.7)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3)
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -517,12 +517,24 @@ importers:
         specifier: 0.2.2
         version: 0.2.2
     devDependencies:
+      '@primebrick/ui':
+        specifier: workspace:*
+        version: link:../../primebrick-v3-ui
+      '@sveltejs/vite-plugin-svelte':
+        specifier: 7.3.1
+        version: 7.3.1(svelte@5.57.2(@typescript-eslint/types@8.72.0))(vite@8.3.4(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
       '@types/pg':
         specifier: 8.23.1
         version: 8.23.1
+      svelte:
+        specifier: 5.57.2
+        version: 5.57.2(@typescript-eslint/types@8.72.0)
+      svelte-check:
+        specifier: 4.3.4
+        version: 4.3.4(picomatch@4.0.7)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3)
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -669,7 +681,7 @@ importers:
         version: 19.3.1(react@19.3.1)
       zudoku:
         specifier: 0.82.3
-        version: 0.82.3(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.223.0(@opentelemetry/api@1.9.1))(@types/json-schema@7.0.15)(@types/node@22.20.1)(acorn@8.17.0)(jiti@2.7.0)(lightningcss@1.33.0)(mermaid@11.16.0)(oxc-parser@0.134.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.14)(rollup@4.62.2)(tsx@4.23.15)(typescript@7.0.2)(use-sync-external-store@1.6.0(react@19.3.1))
+        version: 0.82.3(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.223.0(@opentelemetry/api@1.9.1))(@types/json-schema@7.0.15)(@types/node@22.20.1)(acorn@8.19.0)(jiti@2.7.0)(lightningcss@1.33.0)(mermaid@11.16.0)(oxc-parser@0.134.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.14)(rollup@4.62.2)(tsx@4.23.15)(typescript@7.0.2)(use-sync-external-store@1.6.0(react@19.3.1))
     devDependencies:
       '@types/node':
         specifier: 22.20.1
@@ -843,7 +855,7 @@ importers:
         version: 5.57.2(@typescript-eslint/types@8.72.0)
       svelte-check:
         specifier: 4.7.7
-        version: 4.7.7(picomatch@4.0.5)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3)
+        version: 4.7.7(picomatch@4.0.7)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3)
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -10532,7 +10544,7 @@ snapshots:
 
   '@marijn/find-cluster-break@1.0.4': {}
 
-  '@mdx-js/mdx@3.1.0(acorn@8.17.0)':
+  '@mdx-js/mdx@3.1.0(acorn@8.19.0)':
     dependencies:
       '@types/estree': 1.0.9
       '@types/estree-jsx': 1.0.5
@@ -10546,7 +10558,7 @@ snapshots:
       hast-util-to-jsx-runtime: 2.3.6
       markdown-extensions: 2.0.0
       recma-build-jsx: 1.0.0
-      recma-jsx: 1.0.1(acorn@8.17.0)
+      recma-jsx: 1.0.1(acorn@8.19.0)
       recma-stringify: 1.0.0
       rehype-recma: 1.0.0
       remark-mdx: 3.1.1
@@ -10568,9 +10580,9 @@ snapshots:
       '@types/react': 19.2.17
       react: 19.3.1
 
-  '@mdx-js/rollup@3.1.1(acorn@8.17.0)(rollup@4.62.2)':
+  '@mdx-js/rollup@3.1.1(acorn@8.19.0)(rollup@4.62.2)':
     dependencies:
-      '@mdx-js/mdx': 3.1.0(acorn@8.17.0)
+      '@mdx-js/mdx': 3.1.0(acorn@8.19.0)
       '@rollup/pluginutils': 5.4.0(rollup@4.62.2)
       rollup: 4.62.2
       source-map: 0.7.6
@@ -13694,7 +13706,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.3.4(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
+      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
 
   '@vitest/expect@4.1.10':
     dependencies:
@@ -13748,7 +13760,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.17
       tinyrainbow: 3.2.0
-      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.3.4(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
+      vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@25.0.1)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
 
   '@vitest/utils@4.1.10':
     dependencies:
@@ -16674,8 +16686,8 @@ snapshots:
 
   micromark-extension-mdxjs@3.0.0:
     dependencies:
-      acorn: 8.17.0
-      acorn-jsx: 5.3.2(acorn@8.17.0)
+      acorn: 8.19.0
+      acorn-jsx: 5.3.2(acorn@8.19.0)
       micromark-extension-mdx-expression: 3.0.1
       micromark-extension-mdx-jsx: 3.0.2
       micromark-extension-mdx-md: 2.0.0
@@ -16882,7 +16894,7 @@ snapshots:
 
   mlly@1.8.2:
     dependencies:
-      acorn: 8.17.0
+      acorn: 8.19.0
       pathe: 2.0.3
       pkg-types: 1.3.1
       ufo: 1.6.4
@@ -17550,10 +17562,10 @@ snapshots:
       estree-util-build-jsx: 3.0.1
       vfile: 6.0.3
 
-  recma-jsx@1.0.1(acorn@8.17.0):
+  recma-jsx@1.0.1(acorn@8.19.0):
     dependencies:
-      acorn: 8.17.0
-      acorn-jsx: 5.3.2(acorn@8.17.0)
+      acorn: 8.19.0
+      acorn-jsx: 5.3.2(acorn@8.19.0)
       estree-util-to-js: 2.0.0
       recma-parse: 1.0.0
       recma-stringify: 1.0.0
@@ -18256,36 +18268,11 @@ snapshots:
 
   sveld@0.36.0: {}
 
-  svelte-check@4.3.4(picomatch@4.0.5)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3):
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.31
-      chokidar: 4.0.3
-      fdir: 6.5.0(picomatch@4.0.5)
-      picocolors: 1.1.1
-      sade: 1.8.1
-      svelte: 5.57.2(@typescript-eslint/types@8.72.0)
-      typescript: 6.0.3
-    transitivePeerDependencies:
-      - picomatch
-
   svelte-check@4.3.4(picomatch@4.0.7)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       chokidar: 4.0.3
       fdir: 6.5.0(picomatch@4.0.7)
-      picocolors: 1.1.1
-      sade: 1.8.1
-      svelte: 5.57.2(@typescript-eslint/types@8.72.0)
-      typescript: 6.0.3
-    transitivePeerDependencies:
-      - picomatch
-
-  svelte-check@4.7.7(picomatch@4.0.5)(svelte@5.57.2(@typescript-eslint/types@8.72.0))(typescript@6.0.3):
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.31
-      '@sveltejs/load-config': 0.2.3
-      chokidar: 4.0.3
-      fdir: 6.5.0(picomatch@4.0.5)
       picocolors: 1.1.1
       sade: 1.8.1
       svelte: 5.57.2(@typescript-eslint/types@8.72.0)
@@ -19113,7 +19100,7 @@ snapshots:
 
   zod@4.6.7: {}
 
-  zudoku@0.82.3(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.223.0(@opentelemetry/api@1.9.1))(@types/json-schema@7.0.15)(@types/node@22.20.1)(acorn@8.17.0)(jiti@2.7.0)(lightningcss@1.33.0)(mermaid@11.16.0)(oxc-parser@0.134.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.14)(rollup@4.62.2)(tsx@4.23.15)(typescript@7.0.2)(use-sync-external-store@1.6.0(react@19.3.1)):
+  zudoku@0.82.3(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.223.0(@opentelemetry/api@1.9.1))(@types/json-schema@7.0.15)(@types/node@22.20.1)(acorn@8.19.0)(jiti@2.7.0)(lightningcss@1.33.0)(mermaid@11.16.0)(oxc-parser@0.134.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.14)(rollup@4.62.2)(tsx@4.23.15)(typescript@7.0.2)(use-sync-external-store@1.6.0(react@19.3.1)):
     dependencies:
       '@apidevtools/json-schema-ref-parser': 15.3.5(@types/json-schema@7.0.15)
       '@base-ui/react': 1.6.0(@types/react@19.2.17)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -19122,9 +19109,9 @@ snapshots:
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.14.0)
       '@hono/node-server': 2.0.8(hono@4.12.27)
       '@lekoarts/rehype-meta-as-attributes': 3.0.3
-      '@mdx-js/mdx': 3.1.0(acorn@8.17.0)
+      '@mdx-js/mdx': 3.1.0(acorn@8.19.0)
       '@mdx-js/react': 3.1.1(@types/react@19.2.17)(react@19.3.1)
-      '@mdx-js/rollup': 3.1.1(acorn@8.17.0)(rollup@4.62.2)
+      '@mdx-js/rollup': 3.1.1(acorn@8.19.0)(rollup@4.62.2)
       '@pothos/core': 4.12.0(graphql@16.14.0)
       '@radix-ui/react-accordion': 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@radix-ui/react-alert-dialog': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
