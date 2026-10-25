@@ -14,7 +14,7 @@
 | 1 | `previewLeaf` state (col3 focus) + reset in `selectApp`/`selectModulePreview`/`handleOpenChange` | ✅ | 2026-10-25 | terzo anello della chain |
 | 2 | `aria-selected` + gradient seguono SOLO la preview chain esplicita o la route — mai i fallback di contenuto (col0 `activeApp`, col1 `selModuleId`, col2 `selLeafId`) | ✅ | 2026-10-25 | fix: no auto-select di default module/leaf — solo preview/route/diverged-dot |
 | 3 | Route marker: puntino `bg-primary` dopo label sulle righe route-context quando divergono dal preview | ✅ | 2026-10-25 | col0/col1/col2 |
-| 4 | Header strip: label path `A › B › C` + href target (identico al goto di Enter) | ✅ | 2026-10-25 | live-update |
+| 4 | Header strip: path 1-1 con la selezione (root→`/root`, modulo→`route_prefix`, leaf→`href`) + hover preview testuale (display-only, zero effetto su selezione/navigazione) | ✅ | 2026-10-25 | NO fallback nel path — solo selezione composta |
 | 5 | svelte-check 0/0 + E2E | ✅ | 2026-10-25 | vedi sotto |
 | 6 | Commit FE | ✅ | 2026-10-25 | |
 
@@ -32,7 +32,12 @@
   `/system/settings/profile` nell'header (target risolto di Enter),
   Impostazioni SEL, CRM dot, col2 senza selezione finché non si
   previewa una leaf.
-- Enter su riga modulo → naviga all'href dell'header.
+- Hover root "Sistema" → `Sistema` + `/system`; hover modulo →
+  `Sistema › Impostazioni` + `/system/settings` (prefix, non leaf);
+  hover leaf → path completo + suo href. mouseleave → torna la
+  selezione. Hover mai tocca selezione/navigazione.
+- Path label = solo livelli selezionati/composti — il fallback di
+  default-leaf serve solo al goto (Enter), non alla breadcrumb.
 - svelte-check 0 errors / 0 warnings.
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
