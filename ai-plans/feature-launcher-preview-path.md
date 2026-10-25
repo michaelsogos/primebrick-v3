@@ -12,7 +12,7 @@
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
 | 1 | `previewLeaf` state (col3 focus) + reset in `selectApp`/`selectModulePreview`/`handleOpenChange` | ✅ | 2026-10-25 | terzo anello della chain |
-| 2 | `aria-selected` + gradient seguono la preview chain (col0 `activeApp`, col1 `activeModuleId`, col2 `effectiveLeafId`) | ✅ | 2026-10-25 | model A |
+| 2 | `aria-selected` + gradient seguono SOLO la preview chain esplicita o la route — mai i fallback di contenuto (col0 `activeApp`, col1 `selModuleId`, col2 `selLeafId`) | ✅ | 2026-10-25 | fix: no auto-select di default module/leaf — solo preview/route/diverged-dot |
 | 3 | Route marker: puntino `bg-primary` dopo label sulle righe route-context quando divergono dal preview | ✅ | 2026-10-25 | col0/col1/col2 |
 | 4 | Header strip: label path `A › B › C` + href target (identico al goto di Enter) | ✅ | 2026-10-25 | live-update |
 | 5 | svelte-check 0/0 + E2E | ✅ | 2026-10-25 | vedi sotto |
@@ -24,10 +24,14 @@
 
 - `/crm/customers` + open: header `CRM › CRM › Clienti` + `/crm/customers`,
   catena intera selezionata (route == preview).
-- Click "Sistema": gradiente → Sistema + modulo previewato; puntino su
-  CRM in col0. Click "Impostazioni": `Sistema › Impostazioni › Profilo`
-  + `/system/settings/profile`, puntino su CRM in col1, Profilo
-  selezionato in col2.
+- Click "Sistema": gradiente solo su Sistema; puntino su CRM in col0
+  E in col1 (route marker), col2 mostra i contenuti del modulo
+  previewato SENZA selezione (nessun auto-select di default module/leaf
+  — selezione = solo righe previewate o route chain).
+- Click "Impostazioni": `Sistema › Impostazioni › Profilo` +
+  `/system/settings/profile` nell'header (target risolto di Enter),
+  Impostazioni SEL, CRM dot, col2 senza selezione finché non si
+  previewa una leaf.
 - Enter su riga modulo → naviga all'href dell'header.
 - svelte-check 0 errors / 0 warnings.
 
