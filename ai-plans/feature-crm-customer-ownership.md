@@ -8,7 +8,7 @@
 > violation (its `entityRegistry` registers only `config_entry`).
 > All paths/claims below verified empirically 2026-10-26.
 
-## Status: 🟢 CODE COMPLETE — Session 3 (2026-10-26): full verification green — e2e 6/6 lifecycle + 8/8 module-ownership, BE 366/367 (1 pre-existing), DAL 488/488, CRM 4/4 + svelte-check 0, FE svelte-check 0 — DOCS TASK REMAINS
+## Status: 🟢 DONE — Session 3 (2026-10-26): all 14 tasks complete — code + docs + verification green (e2e 6/6 lifecycle + 8/8 module-ownership, BE 366/367 pre-existing fail, DAL 488/488, svelte-check 0 everywhere)
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
