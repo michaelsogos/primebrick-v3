@@ -51,6 +51,58 @@ Status: �DONE — Plan date: 2026-10-09 / closed 2026-10-18 (all tasks done; B
 | B26 | Rotating Secret Engine — gateway_secret auto-generated/rotated in Redis (TTL=lifecycle), served via shielded `secret.get` correlation + `secret.rotated` broadcast; scoped ref design (global/<service>) for B14 shield-key rotation; current+previous-in-grace wire model | ✅ done | 2026-10-10 | SDK `secrets/rotating-secret.ts` (engine+SecretProvider+startSecretProvider) + `auth/gateway-secret.ts` slot; verifyGatewaySecret accepts current+previous(grace 5m); serializer stamps slot.current; BE `modules/secrets/secret-engine.ts` owner + allowlist; createMicroservice provisions at boot; 60m/5m params; DB gateway_secret rows deleted everywhere; patch values scrubbed `__ROTATED_BY_SECRET_ENGINE__` + sha256 re-registered; verified live (get, TTL, self-heal on key delete); GitGuardian incident #38085402 root cause remediated |
 | B24 | Hot-reload subscription/listener leak (`bun --hot`: N reload → N sub + N SIGINT handler) | ✅ done | 2026-10-10 | `lifecycle/process-registry.ts` su `globalThis`: `NatsClient.subscribe`/`subscribeRequest` deduplicano per `subject::queue` (replace, non stack); `GracefulShutdown.install` rimuove i listener precedenti via `process.off`. Osservato live: 24 re-register per evento → 1 |
 
+### Da investigare — future improvements (note emerse nel piano, promosse 2026-10-24)
+
+Due punti nati come "optional future" dentro task completati — non fanno parte
+del piano (che resta DONE), ma meritano un'indagine dedicata quando si tornerà
+su queste aree.
+
+#### I1 — Guard DB sul prefisso delle chiavi `translations`
+
+**Origine** (fix B10, vedi "Translations drift" sotto): audit row-by-row trovò
+11 chiavi nella tabella `translations` **sbagliata** — `app.*` finite in
+`system.translations` e `system.*` finite in `public.translations`, colpa di
+fire-and-forget script che insertirono nella tabella errata. Fixato spostando
+le righe (`INSERT INTO <right> SELECT ... FROM <wrong>` + `DELETE`, una
+transazione). La deriva era **silenziosa**: nessun errore, solo chiavi
+risolte dallo scope sbagliato.
+
+**Proposta**: CHECK constraint (o trigger) sulle due tabelle del BE che renda
+impossibile l'insert sbagliato a write time:
+`public.translations.key LIKE 'app.%'`, `system.translations.key LIKE 'system.%'`.
+
+**Da investigare**:
+- le tabelle `translations` esistono **per-schema**: `public`, `system`, e una
+  per modulo (`ai`, `crm`, `custom`, `emailsender`, `job`) — definire quale
+  prefisso è legale in ciascuna tabella modulo (es. `app.<module>.*`?
+  `<module>.*`?) prima di imporre il CHECK anche lì;
+- CHECK **positiva** (`LIKE 'app.%'`) vs **negativa** (`NOT LIKE 'system.%'`)
+  su `public` — dipende da quali altri prefissi legittimi esistono
+  (`app.smart.*` confermato);
+- CHECK vs trigger: la CHECK è declarativa e più semplice, un trigger darebbe
+  messaggi d'errore più chiari ("key X belongs to table Y").
+
+#### I2 — Schemi OpenAPI derivati da zod (`zod → JSON Schema`)
+
+**Origine** (B17, task table): `buildOpenApiSpec`/`entityCrudSpec`/`rpcSpec`
+(SDK `http/openapi.ts`, BE `src/openapi/openapi.ts`) generano lo spec dai
+metadati di rotta, ma gli schema request/response sono **dichiarati a mano o
+ad-hoc** (inline `{type:"string"}` o `$ref` a components) — duplicazione
+rispetto ai validatori zod già obbligatori su ogni rotta (B2: middleware zod
+mandatory).
+
+**Proposta**: derivare gli schema OpenAPI dai validatori zod dichiarati
+(`zod-to-json-schema`) — single source of truth: il contratto pubblicato
+riflette esattamente la validazione runtime (required, enum, format, min/max,
+pattern) senza doppia scrittura.
+
+**Da investigare**:
+- coverage: quali rotte hanno già validatori zod (`makeEntityRouter` li impone;
+  le `RpcRoute` dipendono dalla dichiarazione) e quali no;
+- versione zod in uso vs compatibilità `zod-to-json-schema`;
+- allineamento col catalogo tool MCP (`get_entity_meta` espone già field meta
+  ai tool — stessa sorgente zod o canale diverso?).
+
 ### BE proxied API — full pipeline (verified 2026-10-09, `proxy-service.ts` + `proxy.router.ts`)
 
 Route: `router.all("/ws/:serviceCode/*", rbacHandler([AUTHENTICATED_USER]), proxyRequest)`
