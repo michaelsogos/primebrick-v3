@@ -680,6 +680,12 @@ automatic `{entity}`-scoped subscription.**
 
 > Surfaced during the `table-pages-merge` stream; deliberately parked here —
 > the root plan — so they stay visible until each gets its own sub-plan.
+>
+> **Extraction status 2026-10-26**: D2 + D4 + D5 → sub-plan
+> `docs-generation-per-service-split.md` (per-service repo-local generation,
+> declared-census route sourcing, byte-parity gate vs `dbd2eb2`) — 🔴 BLOCKED
+> on this plan: doc facts for create/edit pages come from the archetype/form
+> metadata this plan produces.
 
 | # | Item | Why it matters | Status |
 |---|------|----------------|--------|
