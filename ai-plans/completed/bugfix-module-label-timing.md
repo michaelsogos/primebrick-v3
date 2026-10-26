@@ -25,7 +25,7 @@
 | 6 | Rename end-user ×7 lingue: ai/emailsender/job/system patch firmate + `serviceDisplayName` | ✅ done | 2026-10-25 | 4 patch `20261025210000_*` applicate |
 | 7 | Launcher colonne auto-width min→max 300px | ✅ done | 2026-10-25 | `SidebarAppLauncher.svelte` |
 | 8 | Verify: vitest BE 17/17, FE 36+5, svelte-check 0/0, E2E live | ✅ done | 2026-10-25 | vedi sotto |
-| 9 | Commit per repo | ⏳ not done | — | |
+| 9 | Commit per repo | ✅ done | 2026-10-25 | BE `b143c4f`, FE `59413a1`, US `5eb3ee6`, workspace `2fca630` |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 
