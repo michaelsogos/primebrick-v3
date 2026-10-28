@@ -1,8 +1,31 @@
 # Visual Collaboration & Dynamic Merge — Architecture Plan
 
-> Status: DRAFT — awaiting user approval (keyword: `PROCEED`)
+> Status: 🟠 PARTIALLY LANDED — backend chain implemented; FE consumer side pending
 > Scope: cross-repo feature spanning `primebrick-dal-v3`, `primebrick-v3-sdk`, `primebrick-be-v3`, `primebrick-fe-v3`, `primebrick-v3-docs`.
 > Mode: PLAN. No source code modified during planning. All claims empirically verified.
+>
+> **Revision 2026-10-28 (implementation audit):** The backend chain (phases F1–F9)
+> landed outside this plan's tracking: DAL optimistic lock (`error-codes.ts`
+> ERR01/ERR02/ERR03, `extractVersion`, PG `RAISE` in `repository.ts`), SDK
+> `src/presence/` (types, `PresencePort`, `RedisPresencePort`, NATS subjects —
+> exported `index.ts:389-393`), BE `src/modules/collaboration/` (router, service,
+> bus-registry, presence-store-holder, keyspace-listener — mounted
+> `modules/index.ts:37`, lifecycle in `index.ts`), ERR01→HTTP via shared SDK
+> `mapDalError` (`http/error-handler.ts:30`). **FE side is untouched**: no
+> `usePresenceChannel`, `useCollaborativeForm`, `PresenceAvatars`,
+> `CollaborationPanel`, no ERR01 consumer. The `page-header-presence` slot exists
+> empty at `PageHeader.svelte:157` (delivered by `root-page-skeleton`, E2E-pinned
+> by `page-chrome-enforcement.spec.ts`).
+>
+> **Dependencies:** FE presence needs (a) `PresenceAvatars` mounted into
+> `page-header-presence` (not `FormPageLayout.headerExtras` — superseded by the
+> root header) and (b) per-entity `collaboration.enabled` meta — check whether
+> the meta auto-inject (§5.6) landed with the BE module.
+>
+> **Inverse dependencies:** `metadata-driven-page-system` tasks 15–16
+> (`usePresence`, collab write-path contracts in `EntityFormPage`) consume this
+> plan's FE half; `root-page-skeleton` acceptance item "presence area exists"
+> is slot-only — the consumer is this plan's F10.
 >
 > **Revision 2026-07-22 (post-verification):** Empirically verified that SSE infrastructure already exists and is reusable — SDK `src/sse/` (`createSseWriter`/`createSseEventBus`/`bridgeNatsToSse`, exported `src/index.ts:114-125`, documented `docs/user-guide/sse-standard.mdx`); BE consumes it for service lifecycle (`src/modules/system/services-events-route.ts`); FE has `@microsoft/fetch-event-source@2.0.1` installed (`package.json:74`) plus reusable `createSseConnection` (`src/lib/sse/create-sse-connection.ts`). The plan now **reuses** these primitives instead of reinventing them. DAL optimistic lock and presence/collaboration modules remain to be built (verified absent). See facts F14-F17 and decisions D6/D6b.
 

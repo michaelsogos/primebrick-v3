@@ -14,6 +14,14 @@
 > lands would build throwaway extraction machinery. Completable after that
 > plan; too early to execute now.
 >
+> **Dependency chain refined 2026-10-28:** concretely, task 5 waits on the
+> `page_props.form`/`FormPageDecl` contract reaching coverage parity — piloted
+> for `job_rule` create (`entity-form-archetype-pilot.md` ✅) but not yet
+> generalized across entities (`metadata-driven-page-system` tasks 3, 8, 18
+> still open). The `description_key` route-level contract (task 2 input) is
+> already live census-side via `root-page-skeleton`. Nothing else in this
+> plan blocks other work — it is a leaf consumer.
+>
 > **Decisions 2026-10-26** (all five resolved):
 > Q1 → wait for `metadata-driven-page-system` — form facts come from the
 > archetype metadata it produces; no interim extractor.

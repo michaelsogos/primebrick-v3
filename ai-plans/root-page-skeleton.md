@@ -49,7 +49,7 @@
 | 18 | `SidebarAppLauncher`: "Preferiti" pseudo-root as FIRST row of Apps column (amber-gradient star icon); selecting it fills the Pages column with favorite routes resolved via census (label_key+icon+kind — create pages allowed) | ✅ done | 2026-10-28 | Preferiti pseudo-root first row; census-resolved labels |
 | 19 | i18n: `app.nav.favorites` + star a11y labels ×7 langs (public.translations patch + sign) | ✅ done | 2026-10-28 | app.favorites.{title,add,remove,empty} ×7 seeded public.translations |
 | 20 | i18n: add `description_key` on job rules list/create decls (job-handler nav-declaration.ts) as first consumers | ✅ done | 2026-10-28 | description_key on ai console/docs + job schedule/rules decls |
-| 21 | E2E: header anatomy per surface (list/create/remote/custom) + star toggle roundtrip + favorites in launcher + rules create regression; svelte-check + lint 0/0 | 🟡 partial | 2026-10-28 | svelte-check 0/0 + eslint routes at baseline; playwright specs not written — extend lifecycle + jobs-pages specs |
+| 21 | E2E: header anatomy per surface (list/create/remote/custom) + star toggle roundtrip + favorites in launcher + rules create regression; svelte-check + lint 0/0 | ✅ done | 2026-10-28 | `page-chrome-enforcement.spec.ts` (5 pass + 1 vacuous skip — no decl uses `chrome:'remote'` today) + `host-chrome-favorites` (3/3) + `job-rule-form-lifecycle` (2/2) + `jobs-pages` (13/13) — all green serial; 12-worker parallelism causes dev-server hydration contention (infra flake, not regression) |
 | 22 | Docs: anatomy/pre-implementation docs updates for mandatory header + preferences contract | ⏳ not done | — | pending user approval — propose first |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->

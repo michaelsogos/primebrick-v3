@@ -27,6 +27,23 @@
 
 ## Status: ⚪ TODO — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST · updated 2026-10-23
 
+> **Drift reconciliation 2026-10-28:** parts of this plan already landed via
+> `entity-form-archetype-pilot.md`, `root-page-skeleton.md` and the package
+> extractions — task 1 (`PageRouteDeclaration` + `description_key` + `chrome`,
+> rename to `Declaration`) done; task 2 (`withColumnConstraints`, authored
+> props, `page_props.form` domain model) done per pilot; task 8
+> (`EntityFormPage` renderer) done for the create-pilot — full field/widget
+> coverage per `form-pages-anatomy-audit.md` still open; tasks 26–27
+> (`@primebrick/core`, `@primebrick/ui`) shipped; task 20 (nav decls via
+> `service.register` → census) live. **Presence status corrected:** task 15
+> note "BE is 100% implemented; FE has zero consumers" is accurate —
+> `collaboration-visual-merge.md` backend (DAL lock, SDK presence, BE module +
+> meta inject + audit hook) landed; FE side (F10–F13: `usePresenceChannel`,
+> `useCollaborativeForm`, `PresenceAvatars`, `CollaborationPanel`) is the open
+> dependency for tasks 15–16 here. Inverse: `docs-generation-per-service-split`
+> task 5 is blocked on this plan's form-meta maturity; `page-chrome-enforcement.spec.ts`
+> now pins the mandatory-header contract for whatever dispatches pages (task 21).
+
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
 | 1 | Extend `ModuleRouteDecl` → `PageRouteDeclaration` (`page_type`, `entity`, `page_props`, `component_key`) in BE `module-nav-types.ts` + FE mirror | ⏳ not done | — | vocabulary already exists: `kind: list\|detail\|create\|page`; also rename `ModuleRouteDecl` → `ModuleRouteDeclaration` — no `Decl` abbreviations |
