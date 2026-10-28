@@ -14,14 +14,24 @@
 > (merge the 5 EntityListTable pages into `EntityListPage` without losing
 > capability) + module page delivery mechanism incl. the jobs pilot
 > (remote-chunk spike verified in a real browser 2026-10-19).
+> `form-pages-anatomy-audit.md` — empirical audit of EVERY form surface
+> (host + remote + sheets) delivering the P0 evidence base for tasks 2–3:
+> widget/validation/label-wiring conformance matrix, remote capability gap
+> (input family not in `@primebrick/ui`), page-vs-sheet + ESPANDI analysis,
+> and the derived `FormMeta` field requirements (2026-10-27).
+> `entity-form-archetype-pilot.md` — corrected domain model + pilot cut:
+> form layout lives in `page_props.form` (page domain), NOT `EntityMeta.form`;
+> served columns gain class-derived constraints via `withColumnConstraints`;
+> `events.emits` module declaration feeds subject pickers; pilot =
+> `/system/job/rules/create` host-rendered, `RuleFormPage.svelte` deleted.
 
 ## Status: ⚪ TODO — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST · updated 2026-10-23
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
 | 1 | Extend `ModuleRouteDecl` → `PageRouteDeclaration` (`page_type`, `entity`, `page_props`, `component_key`) in BE `module-nav-types.ts` + FE mirror | ⏳ not done | — | vocabulary already exists: `kind: list\|detail\|create\|page`; also rename `ModuleRouteDecl` → `ModuleRouteDeclaration` — no `Decl` abbreviations |
-| 2 | Extend `EntityMeta` closed schema with optional `form`, `kanban`, `timeline` sibling sections of `table` (BE type + FE mirror, snake_case) | ⏳ not done | — | `ConfigEntryMeta extends EntityMeta` is the extension precedent |
-| 3 | Promote `type_config.validation` vocabulary → `MetaColumn.validation` + `FormMeta` cross-field rules; shared FE↔SDK validator (mirror `config-validation.ts` ↔ `config-validator.ts` pattern) | ⏳ not done | — | absorbs the missing `entity-validation-autoderive.md` scope |
+| 2 | Extend `MetaColumn` with derived constraint props (`nullable`, `max_length`, `pg_type` via dal `withColumnConstraints`) + authored props (`format` closed vocab, `pattern`, `secret`, `json_schema`); `page_props.form` = `FormPageDecl`/`FormFieldPlacement` (page-domain layout) — NOT `EntityMeta.form`; `kanban`/`timeline` remain EntityMeta sections when they arrive | ⏳ not done | — | corrected model in `entity-form-archetype-pilot.md` §B/§D/§E; pilot = job_rule create |
+| 3 | Validation: `format`/`pattern`/constraint props on `MetaColumn` → `buildEntityFormSchema` (mirrors `buildConfigValueSchema`); cross-field rules via `page_props.form.validators` closed vocab — NOT serialized zod | ⏳ not done | — | absorbs `entity-validation-autoderive.md` scope; `buildConfigValueSchema` is the shipped Path-C precedent |
 | 4 | Build `PageRouteDeclaration` → component dispatch: `PAGE_REGISTRY: Record<PageType, Component>` (SheetHost pattern) + `useEntityPage(decl)` driver composable | ⏳ not done | — | driver = `useEntityMetadata` + `useEntityList` + `usePresence` + `useSyncChannel` |
 | 5 | Consolidate the ~500–700 duplicated lines in the 5 EntityListTable pages onto `useEntityList` (already exists, only adopted by jobs) | ⏳ not done | — | prerequisite refactor for `PageType.Table` |
 | 6 | `PageType.Table` generic page (`EntityListPage`): `{ entity }` → full meta-driven page incl. `table.default_view` sub-view (table/cards/cards_list) | ⏳ not done | — | collapses table pages to near-zero code |
