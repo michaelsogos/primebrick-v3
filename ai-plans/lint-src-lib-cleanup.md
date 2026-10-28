@@ -5,7 +5,7 @@
 > `feature/crm-customer-ownership` after `src/routes` reached 0/0:
 > `npx eslint src/lib` → **344 errors + 237 warnings = 581 problems in 128 files**.
 
-## Status: 🟡 IN PROGRESS — errors 344→0 done 2026-10-28; `any`-warnings pass (task 12) is the remaining chunk
+## Status: ✅ DONE — `npx eslint src/lib` = 0 errors / 0 warnings (581 problems → 0); `svelte-check` 0/0
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -20,8 +20,8 @@
 | 9 | Resolve 3× `svelte/no-unused-props` | ✅ done | 2026-10-28 | Grew to 15 mid-run (destructure removals exposed members): full contract-chain trimming leaf→root (`datetimeIanaRenderTick`, `rowSelected`/`rowDeleted`, `selectedKeys`, `previewPanel`, `index`, `i18n_ns`, `config_type`, `onRowRangeMouseDown`). `data-testid` false-positive (quoted-key alias rule quirk) → default moved to render site, contract preserved |
 | 10 | Resolve 2× `svelte/no-dom-manipulating` (`RemotePageMount`, `RemoteSheetMount`) | ✅ done | 2026-10-28 | `clearMountTarget(el)` added to `remote-loader.ts` next to `disposeMounted` — imperative mount-target ops live in the mount module, not in `.svelte` files (same boundary as `mountReport`) |
 | 11 | Resolve 1× `svelte/no-at-html-tags` (`ai-chat-panel` :524) + 1× `no-control-regex` | ✅ done | 2026-10-28 | `{@html}` output is already `DOMPurify.sanitize`d in `mdToHtml` → `eslint-disable-next-line` with justification (DocsPanel convention). Control regex → explicit charCode guard (equivalent, clearer at the security boundary) |
-| 12 | Eliminate 237× `@typescript-eslint/no-explicit-any` warnings | ⏳ not done | — | **REMAINING CHUNK.** Strategy proven on ComboSelect: `unknown` at boundaries, concrete local types at consumers. Group by file cluster (entity-list-table ~80, panels ~50, ai ~35, errors ~10) |
-| 13 | Final gate: `npx eslint src/lib` → 0/0 AND `svelte-check` stays 0/0; commit per rule | ⏳ partial | 2026-10-28 | Errors: 344 → **0** ✅ · svelte-check 0/0 ✅ · warnings: 237 `any` pending task 12. ~115 files modified, uncommitted — awaiting commit instruction |
+| 12 | Eliminate 237× `@typescript-eslint/no-explicit-any` warnings | ✅ done | 2026-10-28 | Split in 4 commits: boundary casts → real types (`6fc70a3`, −60: transformers.ts/WebGPU native types, `isSupportedCountry`, `declare global` i18n, `rowFocused` latent bug fixed); `Record<string,any>` → `unknown`/`AuditData` (`f7f3d2a`, −68); entity-list-table pipeline → `TRow` generics + `MetaColumn[]` + `EntityRowActions` + `ReturnType<typeof useX>` (`70ad0f4`, −90); tail (`6650183`, −19: superForm pieces, auth `user`, index-sig → `unknown`). +30 unit tests (`numOr`, `buildAuditData`, `pushNotification` RFC7807, `tryParseJsonObject`, `parseColumnOrderState`, phone cases) |
+| 13 | Final gate: `npx eslint src/lib` → 0/0 AND `svelte-check` stays 0/0; commit per rule | ✅ done | 2026-10-28 | **eslint src/lib+src/routes: 0 errors, 0 warnings** ✅ · svelte-check 0/0 ✅ · vitest 530/530 ✅ · 4 type-cleanup commits pushed |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->
