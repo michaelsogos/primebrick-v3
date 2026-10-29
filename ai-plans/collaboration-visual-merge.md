@@ -27,6 +27,14 @@
 > plan's FE half; `root-page-skeleton` acceptance item "presence area exists"
 > is slot-only — the consumer is this plan's F10.
 >
+> **UX decisions 2026-10-28 (user-approved, revise §6.4/§6.6):** unified
+> avatar stack in `page-header-presence` — self rightmost, editors-by-recency
+> then readers-by-`last_seen_at` leftward, cap 6 (self + 4 + `+N` pill), zero
+> others → render nothing. Live EDITING → warning-gradient ring; EDITED
+> (saver, `edited_at` within 5 min AND `> myMountTime`) → primary-gradient
+> ring. Readers/editors stay separate sections inside `CollaborationPanel`.
+> New field: `PresenceEntry.edited_at` stamped by the audit hook (§5.4).
+>
 > **Revision 2026-07-22 (post-verification):** Empirically verified that SSE infrastructure already exists and is reusable — SDK `src/sse/` (`createSseWriter`/`createSseEventBus`/`bridgeNatsToSse`, exported `src/index.ts:114-125`, documented `docs/user-guide/sse-standard.mdx`); BE consumes it for service lifecycle (`src/modules/system/services-events-route.ts`); FE has `@microsoft/fetch-event-source@2.0.1` installed (`package.json:74`) plus reusable `createSseConnection` (`src/lib/sse/create-sse-connection.ts`). The plan now **reuses** these primitives instead of reinventing them. DAL optimistic lock and presence/collaboration modules remain to be built (verified absent). See facts F14-F17 and decisions D6/D6b.
 
 ---
@@ -140,7 +148,8 @@ export interface PresenceEntry {
   status: PresenceStatus;
   field?: string;
   value?: unknown;
-  last_seen_at: number; // epoch ms
+  last_seen_at: number; // epoch ms — last signal/heartbeat (ordering for pure readers)
+  edited_at?: number;   // epoch ms — stamped by the collaboration service when THIS user's save publishes entity-changed (drives the EDITED ring; compared to 5-min window + FE myMountTime)
   tab_count: number;    // dedup by user; badge only for self
 }
 
@@ -372,6 +381,7 @@ Hook in `primebrick-be-v3/src/db/audit-port-adapter.ts` (BE-side, NOT DAL — ke
 - After `writeAudit` with action `UPDATE` (and `SOFT_DELETE`/`RESTORE`/`HARD_DELETE` if relevant), guarded by `isAuditableEntity(ctor)`:
   - Build `EntityChangedMarker` from `version` + `auditLogId` + `changedBy`.
   - `presenceStore.setChanged(marker, 5min)` + `publishEntityChanged(nc, marker)`.
+  - **+ `edited_at` stamping (2026-10-28 UX decision):** the same hook stamps `edited_at = now` on the saver's `PresenceEntry` (cheap `hset` on the `users` hash) so the FE can render the EDITED ring for every recent saver — not only the last one carried by `changed_by`.
 - Only for auditable entities (auto-guard via `isAuditable`). Zero per-entity code.
 
 ### 5.5 Error mapping: `ERR01` → 409
@@ -432,11 +442,19 @@ Logic on `entity-changed` event:
 
 ### 6.4 Component: `src/lib/components/collaboration/PresenceAvatars.svelte` (new)
 
-Rendered in `FormPageLayout.headerExtras`. Two stacks:
-- **Editors** (left, `border-warning` ring + tooltip "Mario is editing: telefono = +39 333...").
-- **Readers** (right, plain avatar).
+Rendered in the `page-header-presence` slot of `PageHeader` (supersedes `FormPageLayout.headerExtras` — see revision note).
 
-Overflow (DOM-safe): cap visible avatars at 4 per group; beyond → `+N` pill that opens the right Sheet. Full list in panel (virtualized if > 50, realistic backoffice < 20). Click any avatar/pill → `openSheet("collaboration", { entity, uuid })` via `sheet-manager`.
+**Unified stack — UX decisions 2026-10-28 (user-approved):**
+
+- **Zero others** → render nothing (not even self).
+- **≥1 other present** → self always **rightmost**, others laid out leftward.
+- **Ordering left-of-self:** active editors first, sorted by most recent edit signal (`editors[].since`, overwritten per signal = edit recency); then pure readers by `last_seen_at` desc. Readers with no edit activity naturally decay into the `+N` bucket.
+- **Cap:** max 6 badges visible — self + 4 others + `+{N}` pill (`N = others.length - 4`), pill leftmost. Hidden users are always the least-recently-active. Click any avatar or the pill → `openSheet("collaboration", { entity, uuid })`; full list lives in the panel (virtualized if > 50, realistic backoffice < 20).
+- **Rings (no separate stacks):**
+  - `status === "EDITING"` (live) → warning-gradient ring, tooltip "{name} is editing: {field}".
+  - `edited_at` within 5 min **and** `edited_at > myMountTime` (past saver after my entry) → primary-gradient ring, tooltip "{name} saved a change {x}min ago". Auto-purges: the ring drops when the window expires; the `EntityChangedMarker` (same 5-min TTL) still backs the stale banner.
+  - Otherwise → plain avatar.
+- `myMountTime` is FE-local (`Date.now()` at channel mount) — "edited after my ingresso" needs no backend timestamp.
 
 ### 6.5 Panel: `src/lib/components/collaboration/CollaborationPanel.svelte` (new)
 
@@ -449,14 +467,13 @@ Sections:
 - **Conflicts** (if `conflicts` non-empty): per-field widget "DB: X | Yours: Y" + CTAs "Keep DB" / "Keep mine" / "Overwrite".
 - Global CTAs: "Resolve all with DB", "Resolve all with mine", "Save (retry)".
 
-### 6.6 DRY integration in `FormPageLayout.svelte`
+### 6.6 DRY integration — `PageHeader` presence slot (supersedes FormPageLayout)
 
-`primebrick-fe-v3/src/lib/components/FormPageLayout.svelte`:
-- Reads `meta.collaboration?.enabled` (via `useEntityMetadata`).
-- If true, auto-renders `<PresenceAvatars {entity} {uuid} />` in `headerExtras` (alongside whatever the page already passes).
-- Auto-injects `useCollaborativeForm` into the form context when collaboration enabled.
+`primebrick-fe-v3/src/lib/components/page-header/PageHeader.svelte`:
+- Renders `<PresenceAvatars>` into `[data-testid='page-header-presence']` when the resolved route decl + loaded meta say `collaboration.enabled` AND the route carries an entity `uuid` (detail/edit surfaces; presence is per-record).
+- `useCollaborativeForm` is injected by `EntityFormPage`/`FormPageLayout` when collaboration enabled (form-domain merge logic stays form-scoped).
 
-Result: **no form page needs modification** to get presence + merge. Existing pages (`customers/[uuid]/+page.svelte`, `users/[uuid]/+page.svelte`) inherit the feature automatically when meta says `enabled`.
+Result: **no page needs modification** — presence appears on every censured record surface (forms first; lists/details inherit automatically if they resolve an entity uuid).
 
 ### 6.7 Field highlighting (CSS, using existing tokens)
 
@@ -534,7 +551,7 @@ Cross-link to optimistic lock (ERR01) and collaboration.
 - NEW `src/lib/composables/useCollaborativeForm.svelte.ts`
 - NEW `src/lib/components/collaboration/PresenceAvatars.svelte`
 - NEW `src/lib/components/collaboration/CollaborationPanel.svelte`
-- EDIT `src/lib/components/FormPageLayout.svelte` — auto-inject when `meta.collaboration.enabled`
+- EDIT `src/lib/components/page-header/PageHeader.svelte` — mount `PresenceAvatars` in the `page-header-presence` slot when `collaboration.enabled` + entity uuid (supersedes the `FormPageLayout.headerExtras` mount; FormPageLayout keeps only the `useCollaborativeForm` merge injection)
 - EDIT `src/lib/shell/sheets/` — register `collaboration` panel
 - EDIT `src/lib/entity-list/types.ts` — `collaboration` meta field
 - NEW `docs/user-guide/collaboration.mdx`
@@ -559,7 +576,7 @@ Cross-link to optimistic lock (ERR01) and collaboration.
 | F7 | BE: audit hook `ENTITY CHANGED` + `GET audit/:auditLogId` diff endpoint | save → marker Redis + NATS event → SSE frame |
 | F8 | BE: keyspace notifications → LEAVE on expiry | stop client → LEAVE within ~30s |
 | F9 | BE: meta auto-inject `collaboration.enabled` + `ERR01` → 409 mapping | meta endpoint check; 409 on concurrent save |
-| F10 | FE: `usePresenceChannel` (wraps existing `createSseConnection`) + `PresenceAvatars` + `FormPageLayout` integration (no new dependency) | visual check on `customers/[uuid]` |
+| F10 | FE: `usePresenceChannel` (wraps existing `createSseConnection`) + `PresenceAvatars` (unified stack, §6.4) + `PageHeader` slot mount (no new dependency); SDK+BE: `edited_at` stamping | visual check on `customers/[uuid]` |
 | F11 | FE: `useCollaborativeForm` silent merge + conflict + stale banner | 2-browser test |
 | F12 | FE: `CollaborationPanel` (right sheet) + resolution CTAs | E2E Playwright (2 contexts) |
 | F13 | FE: 409 `ERR01` handling → conflict UI | same-user 2-tab test |
