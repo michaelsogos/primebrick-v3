@@ -110,4 +110,8 @@
    any touched public component type still compile.
 4. No `any` → `any` disguised casts, no blanket disables, no behavior change —
    proven by svelte-check + spot-verified E2E on entity-list table interactions
-   (largest touched surface).
+   (largest touched surface). ✅ `src/e2e/entity-list-table-interactions.spec.ts`
+   — 3/3 green: sort wire params, select-all `data-state`, preview +
+   `data-focused-row-index` (also proved the `focusedRowIndex` latent bug fix).
+   Bonus catch: `pnpm build` exposed a `?worker` worker-bundle regression —
+   fixed via `@primebrick/ui/ai` narrow subpath (`8763509`).

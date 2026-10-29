@@ -25,7 +25,7 @@
 >   `headerExtras`/`headerActions` have 0 consumers; ~10 identical `breadcrumb`
 >   snippets in list `+page.svelte`s.
 
-## Status: 🟡 IMPL DONE — verify partial — rev3: 2026-10-28
+## Status: ✅ DONE — all acceptance criteria green — rev4: 2026-10-28
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
@@ -50,7 +50,7 @@
 | 19 | i18n: `app.nav.favorites` + star a11y labels ×7 langs (public.translations patch + sign) | ✅ done | 2026-10-28 | app.favorites.{title,add,remove,empty} ×7 seeded public.translations |
 | 20 | i18n: add `description_key` on job rules list/create decls (job-handler nav-declaration.ts) as first consumers | ✅ done | 2026-10-28 | description_key on ai console/docs + job schedule/rules decls |
 | 21 | E2E: header anatomy per surface (list/create/remote/custom) + star toggle roundtrip + favorites in launcher + rules create regression; svelte-check + lint 0/0 | ✅ done | 2026-10-28 | `page-chrome-enforcement.spec.ts` (5 pass + 1 vacuous skip — no decl uses `chrome:'remote'` today) + `host-chrome-favorites` (3/3) + `job-rule-form-lifecycle` (2/2) + `jobs-pages` (13/13) — all green serial; 12-worker parallelism causes dev-server hydration contention (infra flake, not regression) |
-| 22 | Docs: anatomy/pre-implementation docs updates for mandatory header + preferences contract | ⏳ not done | — | pending user approval — propose first |
+| 22 | Docs: anatomy/pre-implementation docs updates for mandatory header + preferences contract | ✅ done | 2026-10-28 | `app-shell.mdx` (diagram + mandatory-header section), `entity-list-pages.md` (stale snippet/ownership contract fixed), `page-title-standard.md` (host-rendered h1) — user-approved |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 
@@ -137,10 +137,10 @@ class UserPreferenceEntity extends Auditable(EntityBase) /* + Deletable? decide 
 
 ## Acceptance
 
-- [ ] EVERY `(app)` page renders identical header anatomy from decl — zero per-page header code reachable (structural + typing + lint proof)
-- [ ] `description_key` on ANY route kind renders the subtitle
-- [ ] Star toggles favorite → persisted via `/me/preferences` → survives reload → shows in launcher first row (incl. create routes)
-- [ ] Remote pages: host chrome default + decl opt-out works
-- [ ] `layout.sections` + `AppPageLayout` + dead header props fully removed
-- [ ] Presence area exists as fixed feature (collaboration consumer ready)
-- [ ] E2E green + svelte-check + eslint 0/0
+- [x] EVERY `(app)` page renders identical header anatomy from decl — zero per-page header code reachable (structural + typing + lint proof) — `page-chrome-enforcement.spec.ts`
+- [x] `description_key` on ANY route kind renders the subtitle — declared on job/ai decls, asserted in E2E
+- [x] Star toggles favorite → persisted via `/me/preferences` → survives reload → shows in launcher first row (incl. create routes) — `host-chrome-favorites.spec.ts` 3/3
+- [x] Remote pages: host chrome default + decl opt-out works — remote surface E2E green; `chrome:'remote'` opt-out contract-driven (vacuous: no decl uses it today)
+- [x] `layout.sections` + `AppPageLayout` + dead header props fully removed
+- [x] Presence area exists as fixed feature (collaboration consumer ready) — slot at `PageHeader.svelte:157`; consumer = `collaboration-visual-merge` F10
+- [x] E2E green + svelte-check + eslint 0/0
