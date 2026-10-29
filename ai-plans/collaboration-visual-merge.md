@@ -584,7 +584,7 @@ Cross-link to optimistic lock (ERR01) and collaboration.
 | F7 | BE: audit hook `ENTITY CHANGED` + `GET audit/:auditLogId` diff endpoint | save → marker Redis + NATS event → SSE frame |
 | F8 | BE: keyspace notifications → LEAVE on expiry | stop client → LEAVE within ~30s |
 | F9 | BE: meta auto-inject `collaboration.enabled` + `ERR01` → 409 mapping | meta endpoint check; 409 on concurrent save |
-| F10 | FE: `usePresenceChannel` (wraps existing `createSseConnection`) + `PresenceAvatars` (unified stack, §6.4) + `PageHeader` slot mount (no new dependency); SDK+BE: `edited_at` stamping | visual check on `customers/[uuid]` |
+| ✅ F10 | FE: `usePresenceChannel` (wraps existing `createSseConnection`) + `PresenceAvatars` (unified stack, §6.4) + `PageHeader` slot mount (no new dependency); SDK+BE: `edited_at` stamping | **DONE 2026-10-28** — wire types moved to `@primebrick/core` (`presence.ts`); `markEdited` port op + audit-hook stamp; `presence-stack.ts` pure logic (10 unit tests); `{#key}` remount on record change; svelte-check/eslint 0/0, 540 vitest. Remaining: visual check live + i18n keys for tooltips |
 | F11 | FE: `useCollaborativeForm` silent merge + conflict + stale banner | 2-browser test |
 | F12 | FE: `CollaborationPanel` (right sheet) + resolution CTAs | E2E Playwright (2 contexts) |
 | F13 | FE: 409 `ERR01` handling → conflict UI | same-user 2-tab test |
