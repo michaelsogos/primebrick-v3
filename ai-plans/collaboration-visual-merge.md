@@ -35,6 +35,14 @@
 > ring. Readers/editors stay separate sections inside `CollaborationPanel`.
 > New field: `PresenceEntry.edited_at` stamped by the audit hook (§5.4).
 >
+> **Archetype scope (user, 2026-10-28):** the avatar stack + presence channel
+> apply to **update pages only** (detail/edit surfaces holding a record uuid).
+> **Create pages get nothing** — no record exists to collaborate on. **List
+> archetype gets a different treatment (TBD)** — not avatars-in-header.
+> **Standing rule:** for EVERY page archetype the question MUST be asked
+> "how do we render the collaboration feature?" — tracked in
+> `metadata-driven-page-system` (the root archetype plan).
+>
 > **Revision 2026-07-22 (post-verification):** Empirically verified that SSE infrastructure already exists and is reusable — SDK `src/sse/` (`createSseWriter`/`createSseEventBus`/`bridgeNatsToSse`, exported `src/index.ts:114-125`, documented `docs/user-guide/sse-standard.mdx`); BE consumes it for service lifecycle (`src/modules/system/services-events-route.ts`); FE has `@microsoft/fetch-event-source@2.0.1` installed (`package.json:74`) plus reusable `createSseConnection` (`src/lib/sse/create-sse-connection.ts`). The plan now **reuses** these primitives instead of reinventing them. DAL optimistic lock and presence/collaboration modules remain to be built (verified absent). See facts F14-F17 and decisions D6/D6b.
 
 ---
@@ -470,10 +478,10 @@ Sections:
 ### 6.6 DRY integration — `PageHeader` presence slot (supersedes FormPageLayout)
 
 `primebrick-fe-v3/src/lib/components/page-header/PageHeader.svelte`:
-- Renders `<PresenceAvatars>` into `[data-testid='page-header-presence']` when the resolved route decl + loaded meta say `collaboration.enabled` AND the route carries an entity `uuid` (detail/edit surfaces; presence is per-record).
+- Renders `<PresenceAvatars>` into `[data-testid='page-header-presence']` when the resolved route decl + loaded meta say `collaboration.enabled` AND the route is an **update surface** (`kind: 'detail' | 'edit'` holding an entity uuid). **Create surfaces render nothing** — no record exists to collaborate on. List archetype gets a different treatment (TBD — not avatars-in-header).
 - `useCollaborativeForm` is injected by `EntityFormPage`/`FormPageLayout` when collaboration enabled (form-domain merge logic stays form-scoped).
 
-Result: **no page needs modification** — presence appears on every censured record surface (forms first; lists/details inherit automatically if they resolve an entity uuid).
+Result: **no page needs modification** — presence appears automatically on every update surface with `collaboration.enabled`; create and other archetypes follow their own rules (see archetype-scope note in the header).
 
 ### 6.7 Field highlighting (CSS, using existing tokens)
 

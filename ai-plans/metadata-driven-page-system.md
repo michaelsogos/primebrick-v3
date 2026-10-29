@@ -43,6 +43,13 @@
 > dependency for tasks 15–16 here. Inverse: `docs-generation-per-service-split`
 > task 5 is blocked on this plan's form-meta maturity; `page-chrome-enforcement.spec.ts`
 > now pins the mandatory-header contract for whatever dispatches pages (task 21).
+>
+> **Standing rule (user, 2026-10-28):** for EVERY page archetype designed or
+> migrated under this plan, the question MUST be asked: *"how do we render
+> the collaboration feature?"* — presence avatars + channel are defined for
+> update surfaces only (`collaboration-visual-merge` §6.4/§6.6); create gets
+> nothing; list/kanban/timeline/custom each need an explicit answer in their
+> task row — never default to "same as forms".
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
