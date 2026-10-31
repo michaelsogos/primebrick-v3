@@ -226,6 +226,18 @@ Migration of the existing `kind` vocabulary: `list` → `table` (+`entity`),
 `detail|create` → `form` (+`form_mode`), `page` → `custom` (+`component_key`).
 Keep `kind` readable during transition or hard-cut — decision at implementation.
 
+> **Status note (2026-10-29, F11 pilot):** the update mode of `entity_form` is
+> already implemented under the CURRENT vocabulary — `kind:"detail"` +
+> `entity` + `page_props.form` resolves to `EntityFormPage` in update mode
+> (GET record → defaults → PUT `{entity:{…,version}}`), sharing the same form
+> declaration as `kind:"create"`. Reference: `job-handler/nav-declaration.ts`
+> `RULE_FORM` used by both `rulesPaths.create` and `rulesPaths.detail`. The
+> `page_type`/`form_mode` rename above stays a pure vocabulary migration —
+> no behavior gap remains. A separate `layouts.edit` form-shape override
+> (detail-only placement/policy) is NOT implemented: `page_props.form` is
+> verbatim-shared; if a real need arises, extend `FormPageDecl` — do not
+> fork the declaration.
+
 ### B.3 EntityMeta — per-page-type sections (closed-schema extension)
 
 Root `columns` stays the single field dictionary. New optional siblings of `table`:

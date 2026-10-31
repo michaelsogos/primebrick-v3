@@ -43,6 +43,47 @@
 > "how do we render the collaboration feature?" — tracked in
 > `metadata-driven-page-system` (the root archetype plan).
 >
+> **F11 revision 2026-10-28 (deep audit, user-approved):** F11 is decomposed
+> A–I below. Three pre-existing gaps found:
+> (a) `entity-changed` markers only fire for BE entities — `EntityAuditPort`
+> is BE-local (`src/db/entity-audit-port.ts`); US services use dal-pg's
+> default `makeTableAuditPort` (audit rows only, no marker) and have no
+> Redis client. Fix: SDK `makeMarkerAuditPort(writer, entity_type)` helper
+> (audit write + NATS publish only) + BE NATS persister
+> `entity.*.*.changed` → `setChanged`/`markEdited`, so services never need
+> Redis. US opts in via the existing `auditPort` seam
+> (`dal-pg entity-service.ts:153`).
+> (b) `GET /api/v1/entities/:e/:uuid/audit/:auditLogId` is BE-entity-only —
+> it queries `${entityType}_audit` unqualified on the BE DAL (wrong name +
+> wrong schema for `job.job_rules_audit`, and a persistence-boundary
+> violation). Fix: FE fetches the diff from the OWNING service's existing
+> paged endpoint `{entityApiBase(entity)}/:uuid/audit?page=1&limit=1`
+> (changed_at DESC → latest entry = the marker's change). The broken BE
+> endpoint becomes redundant — delete it (never worked even for BE entities,
+> see (c)).
+> (c) **latent wire-name bug in the landed backend:** `EntityAuditPort`
+> builds `marker.entity_type = params.tableName` — the physical table name
+> (`user_profiles`, `job_rules`) — but every subscriber, presence key and
+> URL uses the API entity name (`user_profile`, `job_rule`). Markers publish
+> to `entity.user_profiles.<uuid>.changed` while SSE subscribes
+> `entity.user_profile.<uuid>.changed`; `markEdited` writes
+> `presence:user_profiles:…` while signals write `presence:user_profile:…`;
+> `getAuditLogDiff` looks up `user_profile_audit` vs real
+> `user_profiles_audit`. Result: entity-changed SSE, edited_at stamping and
+> the diff endpoint were dead code even for BE entities. Fix: BE
+> `makeEntityRouter` already receives BOTH `entity` class and `entityName`
+> — it populates a module-level `entityClassName → entityName` map that
+> `EntityAuditPort` consults on `writeAudit` (unmapped → warn + skip marker,
+> audit row still written). US markers carry the API name explicitly via the
+> `auditMarkerPort` constructor arg (each service knows its own name — same
+> string as its router `entityName`).
+> `collaboration.enabled` needs no work — SDK `assembleMeta` already injects
+> it for every `auditable` entity incl. US services.
+> The archetype update mode itself (`EntityFormPage` handling
+> `kind:"detail"`) does not exist yet — it is F11 step D, not a separate
+> plan; it is the first implementation of the root plan's `form_mode:'edit'`
+> axis (metadata-driven-page-system.md ~line 219).
+
 > **Revision 2026-07-22 (post-verification):** Empirically verified that SSE infrastructure already exists and is reusable — SDK `src/sse/` (`createSseWriter`/`createSseEventBus`/`bridgeNatsToSse`, exported `src/index.ts:114-125`, documented `docs/user-guide/sse-standard.mdx`); BE consumes it for service lifecycle (`src/modules/system/services-events-route.ts`); FE has `@microsoft/fetch-event-source@2.0.1` installed (`package.json:74`) plus reusable `createSseConnection` (`src/lib/sse/create-sse-connection.ts`). The plan now **reuses** these primitives instead of reinventing them. DAL optimistic lock and presence/collaboration modules remain to be built (verified absent). See facts F14-F17 and decisions D6/D6b.
 
 ---
@@ -85,7 +126,7 @@
 | D7 | FE merge = optimistic UX; BE `version` guard = correctness guarantee. The 409 from `ERR01` is the real barrier. | D4. UX merge is best-effort; the SQL guard is authoritative. |
 | D8 | Presence avatars auto-injected in `FormPageLayout.headerExtras` when `meta.collaboration.enabled` is true. | F10, F12. Zero per-page code. |
 | D9 | Stale banner is FE `$state`, set on `entity-changed`, never reset by SSE; resets only on reload/remount. | User requirement: banner persists until next reload/remount, which triggers fresh DB load + `GET /presence`. |
-| D10 | Multi-tab same user: dedup by `userUuid` in Redis; `tabCount` tracked via per-tab `sessionId` set; badge shown only to self. Optimistic lock (D4) makes same-user multi-tab saves safe (second save → 409 `ERR01`). | User requirement. |
+| D10 | Multi-tab same user: presence identity is the **tab session** (`user_uuid:session_id`), not the user — superseded by F13. Another tab of the same user IS visible ("you — other tab") and its saves merge/conflict like a foreign writer; `changed_by === me` alone no longer suppresses the signal. `tab_count` tracked via per-user `sessionId` set. Optimistic lock (D4) remains the last-resort guard. | User requirement (raised 2026-10-31 — "protect users from themselves"). |
 | D11 | `EDITING` signal sends field + full value (post blur/onchange) to all readers via SSE, per user's explicit schema. Optional per-field `collaboration.expose_editing_value` flag in meta (default `true`) for PII-sensitive fields. | User schema. Flag is opt-out for sensitive fields. |
 | D12 | Error codes centralized in DAL (`error-codes.ts`), mapped in BE (`api-errors.ts` → `ApiError` 409), documented in zudoku (`pages/dal/guide/error-codes.mdx`). | F8, F9. Stable codes for client-side `err.code === 'ERR01'` branching. |
 
@@ -392,6 +433,52 @@ Hook in `primebrick-be-v3/src/db/audit-port-adapter.ts` (BE-side, NOT DAL — ke
   - **+ `edited_at` stamping (2026-10-28 UX decision):** the same hook stamps `edited_at = now` on the saver's `PresenceEntry` (cheap `hset` on the `users` hash) so the FE can render the EDITED ring for every recent saver — not only the last one carried by `changed_by`.
 - Only for auditable entities (auto-guard via `isAuditable`). Zero per-entity code.
 
+### 5.4a Cross-service markers + entity_type correctness (F11 deep-dive — verified 2026-10-28)
+
+Two defects found:
+
+**(1) Markers never fire for service-owned entities.** `EntityAuditPort` is
+BE-local; microservices (e.g. `job_rule` in `job.job_rules`) use dal-pg's
+default `makeTableAuditPort` — audit rows only, no marker — and have no
+Redis client (job-handler wires `NatsClient` only).
+
+**(2) `marker.entity_type` carries the physical table name** (`user_profiles`,
+`job_rules`) while every subscriber, presence key and URL uses the API entity
+name (`user_profile`, `job_rule`). Result: entity-changed SSE, `markEdited`
+stamping and the BE diff endpoint are dead code even for BE entities.
+
+Fix, keeping Redis ownership in the gateway:
+
+1. **SDK** — new `src/presence/marker-audit-port.ts`:
+   `makeMarkerAuditPort(writer: Pick<Repository,"add">, entityType: string)`
+   — a full `AuditPort` (writes the `{tableName}_audit` row via `writer`,
+   captures the inserted id for `audit_log_id`) that then publishes the
+   `EntityChangedMarker` (with `entity_type = entityType`, the API name) on
+   NATS via `publishEntityChanged(NatsClient, marker)` for `UPDATE`/
+   `SOFT_DELETE`/`RESTORE`/`HARD_DELETE`. Best-effort; no Redis.
+2. **US services** — opt in per auditable entity via the existing `auditPort`
+   seam (`dal-pg entity-service.ts:153`):
+   `auditPort: makeMarkerAuditPort(getDal(), "job_rule")`.
+3. **BE persister** — unqueued NATS subscriber on `entity.*.*.changed`:
+   `presenceStore.setChanged(marker, 5min)` + `markEdited(entity, uuid,
+   changed_by, changed_at)`. Sole Redis writer for markers.
+4. **BE entity_type fix** — BE `makeEntityRouter` already receives both
+   `entity` class + `entityName`: it populates a module-level
+   `entityClassName → entityName` registry; `EntityAuditPort` resolves
+   `params.entityClassName` through it (unmapped → warn + skip marker; the
+   audit row is always written).
+5. **SSE fanout unchanged** — `collaborationBusRegistry` already bridges
+   `entityChangedSubject` per entity to the SSE bus.
+
+`changed_by` carries the service actor (`requireActor()` = user uuid) — the
+FE self-check compares it against `userProfileStore.current.uuid`.
+
+**Diff fetch (supersedes the BE `audit/:auditLogId` endpoint):** FE reads the
+OWNING service's paged endpoint `{entityApiBase(entity)}/:uuid/audit?page=1&limit=1`
+(changed_at DESC → latest row = the marker's change; `delta` already in the
+row, `changed_by_name` included). Uniform for BE and US entities; the broken
+BE-only `audit/:auditLogId` route gets deleted.
+
 ### 5.5 Error mapping: `ERR01` → 409
 
 `primebrick-be-v3/src/http/api-errors.ts`:
@@ -436,11 +523,15 @@ Reactive state:
 - `merged_fields: Record<field, { new_value, badge_until }>` — silent merges (transient green badge 3s).
 - `is_stale: boolean` — banner; persists in `$state` until reload/remount (never reset by SSE).
 
-Logic on `entity-changed` event:
-1. Fetch diff: `GET /api/v1/entities/:entity/:uuid/audit/:auditLogId` → `Record<field, {old,new}>`.
+Logic on `entity-changed` event (self-saves excluded: skip when
+`changed.changed_by === current user uuid`):
+1. Fetch diff from the OWNING service (not the BE collab endpoint — it only
+   queries BE-schema tables): `GET {entityApiBase(entity)}/:uuid/audit?page=1&limit=1`
+   → latest row's `delta: Record<field, {old,new}>`. Sanity-check
+   `row.id === changed.audit_log_id` when present.
 2. For each field in diff:
    - `isTainted(field)` true → `conflicts[field] = { local: form[field], remote: diff[field].new, base: diff[field].old }`; block field (readonly + conflict class).
-   - `isTainted(field)` false → silent merge: `form[field] = diff[field].new`; `merged_fields[field] = { new_value, badge_until: now+3s }`.
+   - `isTainted(field)` false → silent merge: `form[field] = diff[field].new` then **untaint** the field (`$tainted[field] = false`) — programmatic sets mark tainted in sveltekit-superforms; verify in unit test. `merged_fields[field] = { new_value, badge_until: now+3s }`.
 3. `is_stale = true` (persists).
 4. Update internal `loaded_version` to `changed.version` after silent merges (align optimistic lock for next save).
 
@@ -471,14 +562,14 @@ Registered in `sheet-manager` panel registry. Uses existing `Sheet.Content` (sid
 Sections:
 - **Readers** (full list: avatar + name + "for Xs").
 - **Editors** (full list: avatar + field + value + "editing for Xs").
-- **Stale banner** (if `is_stale`): "Entity updated by Mario to version 13. Reload to align." + CTA "Reload entity" (`invalidateAll` / remount).
+- **Stale state** (if `is_stale`): "Entity updated by Mario to version 13. Reload to align." + CTA "Reload entity" (`invalidateAll` / remount). The primary stale surface is the presence-zone chip (§6.5a); the panel shows the same state expanded.
 - **Conflicts** (if `conflicts` non-empty): per-field widget "DB: X | Yours: Y" + CTAs "Keep DB" / "Keep mine" / "Overwrite".
 - Global CTAs: "Resolve all with DB", "Resolve all with mine", "Save (retry)".
 
 ### 6.6 DRY integration — `PageHeader` presence slot (supersedes FormPageLayout)
 
 `primebrick-fe-v3/src/lib/components/page-header/PageHeader.svelte`:
-- Renders `<PresenceAvatars>` into `[data-testid='page-header-presence']` when the resolved route decl + loaded meta say `collaboration.enabled` AND the route is an **update surface** (`kind: 'detail' | 'edit'` holding an entity uuid). **Create surfaces render nothing** — no record exists to collaborate on. List archetype gets a different treatment (TBD — not avatars-in-header).
+- Renders `<PresenceAvatars>` into `[data-testid='page-header-presence']` when the resolved route decl + loaded meta say `collaboration.enabled` AND the route is an **update surface** (`kind: 'detail'` holding an entity uuid — `PageRouteKind` has no `'edit'` literal; `detail` IS the update surface, same `entity_form` archetype as `create`, per `page-route.ts:147`). **Create surfaces render nothing** — no record exists to collaborate on. List archetype gets a different treatment (TBD — not avatars-in-header).
 - `useCollaborativeForm` is injected by `EntityFormPage`/`FormPageLayout` when collaboration enabled (form-domain merge logic stays form-scoped).
 
 Result: **no page needs modification** — presence appears automatically on every update surface with `collaboration.enabled`; create and other archetypes follow their own rules (see archetype-scope note in the header).
@@ -489,7 +580,27 @@ Result: **no page needs modification** — presence appears automatically on eve
 - Field silently merged: `bg-success` transient badge 3s (token `--color-success`).
 - Field in conflict: `border-destructive` + warning icon, readonly (token `--color-destructive`).
 
-### 6.8 Stale banner persistence
+### 6.5a Presence-zone status chip (F11, user-approved 2026-10-28)
+
+The stale/conflict indicator lives inside the `page-header-presence` slot,
+**left of the avatar stack** — not a body banner. Three escalating states:
+
+1. **Nothing** — record aligned; zero visual noise.
+2. **Silent merges applied** (`is_stale`, no conflicts) — amber/warning chip
+   `↻ Updated by {name}`; click → small popover summarizing merged fields +
+   "Reload" CTA.
+3. **Conflicts pending** (`conflicts` non-empty) — chip escalates to strong
+   warning/destructive tint with count: "N conflicting changes"; click →
+   conflict resolution UI (popover field list in F11, CollaborationPanel
+   in F12).
+
+Dummy-user principles: no jargon (never "stale"/"version"), recognized
+notification-badge affordance, visual weight scales with severity. Chip
+reads the shared presence holder (F11 registry — is_stale from `changed`
+marker, conflict count from the form's registered merge state), so
+PageHeader needs no form-composable dependency.
+
+### 6.8 Stale state persistence
 
 `is_stale` is `$state(false)` in `useCollaborativeForm`, set to `true` on `entity-changed`, **never** reset by SSE events. Resets only on reload/remount (SvelteKit remount → new composable → `is_stale=false` + fresh DB load). This realizes exactly the user-described behavior.
 
@@ -543,11 +654,19 @@ Cross-link to optimistic lock (ERR01) and collaboration.
 - EDIT `src/index.ts` — presence exports (SSE exports at `:114-125` unchanged)
 - NEW `test/presence.test.ts`
 - NEW `docs/user-guide/presence.mdx`
+- **F11.A** NEW `src/presence/marker-audit-port.ts` — `makeMarkerAuditPort(writer, entityType)`: full `AuditPort` (writes `{tableName}_audit` via writer, captures inserted id) + NATS `publishEntityChanged` on state-changing actions; `entity_type` = explicit API name (see §5.4a). Export from `src/index.ts`
+
+### `primebrick-us-v3` (F11.C/E — job-handler pilot) ✅ DONE
+- EDIT `job-handler/src/modules/jobs/jobs.service.ts` — `auditPort: makeMarkerAuditPort(getDal().tableAuditPort(), "<api_name>")` on all three auditable entityService configs (`job_rule`, `job_schedule`, `job_run`); inner port = `dal.tableAuditPort()` (writes `job.*_audit`), the wrapper only adds the NATS marker
+- EDIT `job-handler/src/nav-declaration.ts` — `RULE_FORM: FormPageDecl` shared verbatim by `rulesPaths.create` + NEW `rulesPaths.detail` (`/system/job/rules/[uuid]`, `kind:"detail"`, `entity:"job_rule"`) — the first `page_props.form` update surface; powers the F11 pilot
 
 ### `primebrick-be-v3` (new module + edits — reuses SDK SSE primitives)
 - NEW `src/modules/collaboration/*` (router, service, presence-store-holder, collaboration-bus-registry, dto)
 - EDIT `src/modules/index.ts` — mount
 - EDIT `src/db/audit-port-adapter.ts` — `publishEntityChanged` hook (guard `isAuditable`)
+- **F11.B** ✅ NEW `src/modules/collaboration/marker-persister.ts` — unqueued NATS subscriber `entity.*.*.changed` → `setChanged` + `markEdited` (sole Redis writer for markers; services stay Redis-free); wired in `index.ts` inside the presence-init retry block; `started` latches only after subscribe succeeds so NATS-down retries
+- **F11.B** ✅ NEW `src/db/entity-name-registry.ts` + EDIT `src/http/entity-router.ts` — `makeEntityRouter` registers `className→apiName` at mount; EDIT `src/db/entity-audit-port.ts` — marker `entity_type` resolved via registry (was broken: table name `user_profiles` ≠ api name `user_profile`); `writeAudit` returns audit id
+- **F11.B** ✅ DELETED `GET …/audit/:auditLogId` collab route + `getAuditLogDiff` + `findAuditById` + `AuditDiffResponse` — wrong table-name derivation AND cross-service DB reads; diffs come from the owning service's `GET /:uuid/audit?page=1&limit=1`
 - EDIT `src/http/api-errors.ts` — `OptimisticConcurrencyError` (ERR01 → 409), global handler mapping
 - EDIT meta assembler — auto-inject `collaboration.enabled`
 - EDIT `infra/docker-compose.postgres.yml` — `notify-keyspace-events Exg`
@@ -563,6 +682,12 @@ Cross-link to optimistic lock (ERR01) and collaboration.
 - EDIT `src/lib/shell/sheets/` — register `collaboration` panel
 - EDIT `src/lib/entity-list/types.ts` — `collaboration` meta field
 - NEW `docs/user-guide/collaboration.mdx`
+- **F11.D** ✅ EDIT `src/lib/entity-form/EntityFormPage.svelte` — `kind:'detail'` update mode (uuid via positional `[param]` extraction, `apiFetchExt` GET → defaults from record (JSON→`extJsonStringify`, bool→`??false`), PUT `{entity:{…fields,version}}`, RETURNING realigns version + `reset({newState})` stay-on-page, popup-close preserved)
+- **F11.E** ✅ EDIT `src/lib/components/entity-table-page/EntityTablePage.svelte` — `censusDetailRoute`/`effectiveEditPath` mirroring the create lookup (`[param]`→`:uuid`); rules list needs no prop
+- **F11.F** ✅ NEW `src/lib/collaboration/presence-channel-registry.svelte.ts` — refcounted `entity:uuid` channel shared by `PresenceAvatars` + `useCollaborativeForm` (deferred close survives `{#key}` remounts); `usePresenceChannel` is now the thin acquire/release wrapper; NEW `src/lib/collaboration/merge-delta.ts` (pure, 5 tests) + `useCollaborativeForm.svelte.ts` (marker → owning-service audit diff → per-field merge/conflict, `enabled()` gate, version realign, self-marker rules) + `collab-status-store.svelte.ts` (form→header status bridge)
+- **F11.F** ✅ EDIT `EntityFormPage.svelte` — `sendEditing`/`sendReading` via focusin/focusout on the field wrapper (no control changes), conflict=readonly+destructive ring, other-editing=amber, merged=emerald flash
+- **F11.G** ✅ NEW `src/lib/components/collaboration/PresenceStatusChip.svelte` — chip left of avatars: invisible/amber "Updated by {name}"/warning "{n} changes need attention" + popover keep-mine/use-new; EDIT `PageHeader.svelte`; i18n patch `20261029120000_seed_app_collaboration_keys.sql` (7 langs)
+- **F11.H** ✅ `handleVersionConflict()` on the composable — 409 ERR01 → fresh record GET → realign version, untouched fields adopt fresh values, tainted fields → conflicts; retry = normal save
 
 ### `primebrick-v3-docs` (new pages)
 - NEW `pages/dal/guide/error-codes.mdx`
@@ -585,10 +710,10 @@ Cross-link to optimistic lock (ERR01) and collaboration.
 | F8 | BE: keyspace notifications → LEAVE on expiry | stop client → LEAVE within ~30s |
 | F9 | BE: meta auto-inject `collaboration.enabled` + `ERR01` → 409 mapping | meta endpoint check; 409 on concurrent save |
 | ✅ F10 | FE: `usePresenceChannel` (wraps existing `createSseConnection`) + `PresenceAvatars` (unified stack, §6.4) + `PageHeader` slot mount (no new dependency); SDK+BE: `edited_at` stamping | **DONE 2026-10-28** — wire types moved to `@primebrick/core` (`presence.ts`); `markEdited` port op + audit-hook stamp; `presence-stack.ts` pure logic (10 unit tests); `{#key}` remount on record change; svelte-check/eslint 0/0, 540 vitest. Remaining: visual check live + i18n keys for tooltips |
-| F11 | FE: `useCollaborativeForm` silent merge + conflict + stale banner | 2-browser test |
+| ✅ F11 | Update-surface merge end-to-end on the `job_rule` pilot — sub-steps: **A** SDK `auditMarkerPort` (wrap + NATS publish, no Redis — services have none); **B** BE NATS persister `entity.*.*.changed` → `setChanged`/`markEdited`; **C** US job-handler `auditPort` wiring; **D** `EntityFormPage` detail/update mode (GET record → `defaults` → PUT `{entity:{…,version}}`); **E** `kind:"detail"` decl for `job_rule` + ELT census detail-route lookup; **F** FE channel registry + `useCollaborativeForm` + `sendEditing`; **G** presence-zone chip + popover + i18n seeds; **H** ERR01/409 → conflicts → retry; **I** tests | **A–H DONE 2026-10-29** — actual files: SDK `presence/marker-audit-port.ts` (`makeMarkerAuditPort(inner, entityType)`, `writeAudit` → `Promise<bigint>`); DAL `AuditPort.writeAudit` now returns the audit id + `makeTableAuditPort` returns it; BE `marker-persister.ts` (5 unit tests) + `entity-name-registry.ts` (`className→apiName`, fixes marker `entity_type` bug) + broken `audit/:auditLogId` route REMOVED (diffs come from owning service paged audit); US jobs.service marker port on all 3 auditable entities + `RULE_FORM` shared decl + `kind:"detail"` route; FE `presence-channel-registry.svelte.ts` (refcounted shared channel) + `useCollaborativeForm.svelte.ts` (`enabled()` gate, merge/conflict/stale + `handleVersionConflict`) + `merge-delta.ts` (5 tests) + `collab-status-store.svelte.ts` (header-readable status) + `PresenceStatusChip.svelte` (popover, keep-mine/use-new) + EntityFormPage detail mode + focus/blur `sendEditing` + field rings + ELT `censusDetailRoute`; i18n patch `20261029120000_seed_app_collaboration_keys` (7 langs, manifest re-signed). svelte-check/eslint 0/0, 545 vitest, BE+US tsc clean. **I DONE 2026-10-31** — `src/e2e/collaboration-form.spec.ts` 2/2 green on the live stack (2 contexts, `e2e_collab_admin` twin minted in global.setup): A alone → zero avatars (design); B joins → stack renders; B saves → A's untouched field silent-merges, tainted field → conflict (readonly + destructive ring + chip count); popover keep-mine resolves; create page mounts no presence. Two real bugs found & fixed by the E2E: `$state` invalid placement in `collab-status-store` (SSR 500 on every app page) and marker-persister never retrying when NATS connects after boot (self-retry 5s + `started` reset on subscribe rejection, covered by 2 new unit tests — 6/6). |
 | F12 | FE: `CollaborationPanel` (right sheet) + resolution CTAs | E2E Playwright (2 contexts) |
-| F13 | FE: 409 `ERR01` handling → conflict UI | same-user 2-tab test |
-| F14 | Docs: error-codes.mdx, collaboration.mdx (BE+FE), audit-trail cross-link | docs build |
+| ✅ F13 | **Session-keyed presence** (identity = tab session, not user) — sub-steps: **A** core `presence.ts` (+`session_id` on entry/delta, +`changed_by_session` on marker); **B** SDK store session-keyed (`users`/`editors` fields `user_uuid:session_id`, `remove(sessionId)` scoped LEAVE, snapshot staleness filter, `markEdited` all-sessions, extJson bigint→Number normalize); **C** BE `buildEntry`+delta `session_id`, LEAVE per-session, SSE `?session_id` echo filter, ALS `Session.clientSessionId` ← `X-Client-Session` header (rpc-router + BE auth middleware); **D** marker ports stamp `changed_by_session` (BE `EntityAuditPort` + SDK `makeMarkerAuditPort` via `getClientSessionId()` — no DAL change); **E** FE `tab-session.ts` (sessionStorage), channel tab-session + `?session_id`, PUT `X-Client-Session`, `useCollaborativeForm` self-rule = user+session, "you — other tab" tooltip/chip label, `orderPresenceStack` session-aware + client staleness prune; **F** tests — SDK store 7/7, presence-stack 13/13, E2E 3/3 **live green** (incl. same-user 2-context). **Bugs fixed en route**: LEAVE killed all user sessions · tab-A READING cleared tab-B EDITING · stale entries never expired client-side (FE prune added) · `presenceRing` bigint arithmetic crash · `/svc` gateway dropped `x-client-session` (allowlist) · i18n patch `20261031140000` (you / you_other_tab, signed dev-micha-2) | ✅ done 2026-10-31 |
+| F14 | Docs: error-codes.mdx; fix `collaboration.mdx` overclaim ("any @AuditTrail" → "services installing marker audit port"); `entity-write-payload.md` version-in-entity note; collaboration.mdx (FE); audit-trail cross-link | docs build |
 
 Dev server rules (AGENTS.md): check ports 5173/3001 before starting; never kill user PID; reuse running HMR server.
 
