@@ -1,68 +1,68 @@
 # Lighthouse (Edge DevTools) for accessibility measurement → VPAT evidence + self-improvement
 
-> Standalone analysis plan. Goal: determine whether and how Lighthouse a11y
-> audits can (a) feed the VPAT report or an attachment ("allegato"), and
-> (b) be used by us to continuously improve accessibility.
+> Goal: determine whether and how Lighthouse a11y audits can (a) feed the
+> VPAT report or an attachment ("allegato"), and (b) drive continuous
+> improvement. **The whole thread is PARKED — resume another day.** All
+> evidence + reproduction recipe below.
 
-## Status: 🟡 IN PROGRESS — Plan date: 2026-11-01 23:15 UTC / 00:15 CET (updated 2026-11-02 01:30 CET)
+## Status: ⏸️ PARKED (worked state saved) — opened 2026-11-01, parked 2026-11-02 ~01:45 CET
 
-| # | Task | Status | When | Notes |
-|---|------|--------|------|-------|
-| 1 | Inventory existing a11y pipeline (axe-audit, vpat-data, VpatReport, pdf) | ✅ done | 2026-11-01 | Part A |
-| 2 | Analyze what Lighthouse a11y actually measures vs our axe run | ✅ done | 2026-11-02 | Part B — empirical |
-| 3 | Decide Lighthouse vs axe role: corroborating attachment, second evidence, redundant | ⏳ partial | — | Empirics in Part C — placement still open |
-| 4 | Empirical: run `lighthouse` on real routes; diff vs vpat-data.json | ✅ done | 2026-11-02 | Part C numbers |
-| 5 | Empirical: Edge DevTools Lighthouse panel walkthrough | ⏳ not done | — | Manual, user-assisted |
-| 6 | Coverage gap: authenticated routes via e2e conventions | ✅ done | 2026-11-02 | Solved — see Part D |
-| 7 | Decide attachment form: allegato vs merged into vpat-data.json | ⏳ not done | — | Needs user decision |
-| 8 | Self-improvement: official test, CI gate, trends | 🟡 partial | 2026-11-02 | Spec shipped; gate open |
-
-<!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
-     Update this table every session that touches the plan. -->
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 1 | Inventory existing a11y pipeline (axe-audit, vpat-data, VpatReport, pdf) | ✅ done | Part A |
+| 2 | What Lighthouse a11y measures vs our axe run | ✅ done | Part B — empirical |
+| 3 | Lighthouse vs axe role (attachment / second evidence / redundant) | ✅ verdict | Part C — corroborating, not replacement |
+| 4 | Empirical run + diff vs vpat-data.json | ✅ done | Part C numbers |
+| 5 | Edge DevTools Lighthouse panel walkthrough (manual) | ⏳ deferred | — |
+| 6 | Authenticated-route audits via e2e conventions | ✅ done | Part D — SHIPPED spec |
+| 7 | Allegato form: separate artifact vs merged VPAT section | ⏳ deferred | **user decision pending** |
+| 8 | CI gate / score baseline / trends | ⏳ deferred | **user decision pending** |
+| 9 | Route-list consolidation (axe list vs spec list) | ⏳ deferred | — |
+| 10 | Fix `/system/settings/modules/showcase` HTTP 500 (real app bug) | ⏳ deferred | separate bug thread |
 
 ---
 
-## Part A — What already exists (verified)
+## Evidence saved (what exists and where)
 
-| Piece | Location | Role |
+| Artifact | Path | Content |
 |---|---|---|
-| `scripts/axe-audit.mjs` | `primebrick-fe-v3` | @axe-core/playwright over 18 routes → `public/vpat/vpat-data.json` (WCAG 2.0/2.1/2.2 A/AA/AAA + best-practice + 508 + EN301549) |
-| `public/vpat/vpat-data.json` | `primebrick-fe-v3` | Machine audit output (axe 4.12.1) |
-| `scripts/sync-vpat-data.mjs` | `primebrick-v3-docs` | Copies vpat-data.json FE → docs in Cloudflare build |
-| `src/components/VpatReport.tsx` | `primebrick-v3-docs` | VPAT 2.5 INT page, SC → axe-rule mapping |
-| `scripts/generate-vpat-pdf.mjs` | `primebrick-v3-docs` | `vpat-2.5.pdf` via pdfmake |
-| **`src/e2e/lighthouse-a11y.spec.ts`** | `primebrick-fe-v3` | **NEW official spec** — see Part D |
+| **Official spec** | `primebrick-fe-v3/src/e2e/lighthouse-a11y.spec.ts` | 18 route audits, serial (edge-ai, workers:1) — committed `feature/crm-customer-ownership` |
+| Per-route reports | `primebrick-fe-v3/public/vpat/lighthouse/<slug>.report.json` | 17 JSON reports (committed; `.report.html` gitignored — regenerable) |
+| Aggregate | `public/vpat/lighthouse/summary.json` | mean_score + per-route score + failing audits |
+| Spec registration | `primebrick-fe-v3/playwright.config.ts` → `EDGE_SPECS` | serial on shared Edge session |
+| Dependency | `primebrick-fe-v3/package.json` | `lighthouse: 12.8.2` pinned devDep |
+| Empirical scratch | `D:\git\primebrick\temp\lighthouse\` | `auth-audit*.mts` probes, early reports (temp, not committed) |
 
-## Part B — What Lighthouse a11y actually is (empirical)
+## How the evidence was obtained (reproduction recipe)
 
-- **Same engine** (axe-core), **subset of rules**: no `best-practice` (region/landmark-one-main/page-has-heading-one all absent), no AAA contrast (`color-contrast-enhanced` absent — only AA `color-contrast`).
-- **Adds**: weighted 0–100 score per route; `target-size` (WCAG 2.2 2.5.8 — axe run doesn't flag it); 10 **manual-check prompts** (focus-traps, logical-tab-order, managed-focus, offscreen-content-hidden, use-landmarks…) = a checklist for the manual-evaluation section of the VPAT.
-- **Run modes**: `lighthouse` npm CLI/node, `--port` attaches to a running Edge (CDP), `--extra-headers` file injects auth cookies, `--max-wait-for-load` bounds page-load wait.
-- Edge DevTools panel = manual equivalent (task 5 still open).
+**Run**: `pnpm test:e2e lighthouse` (full) or `LH_ROUTES=login,customers pnpm test:e2e lighthouse` (subset). Requires FE dev on :5173, BE on :3001, PG/Casdoor up.
 
-## Part C — Empirical diff on real routes
+**Architecture that works** (arrived after several dead ends — see "Pitfalls"):
+- Actors: `e2e_test_admin` minted/destroyed by `global.setup.ts`/`global.teardown.ts` — NEVER dev `admin`.
+- Auth: `POST /api/v1/auth/login` in `beforeAll` → session Set-Cookie → written to `test-results/lighthouse-session-headers.json` → `--extra-headers` on every LH run. **No browser login flow at all.**
+- Browser: `lighthouse --port=9333` attaches to the shared **headed** Edge (`getSharedContext` from `helpers/edge-context.ts` — launch `launchPersistentContext(E2E_PROFILE, {channel:'msedge', headless:false})` only when nothing listens). Spec opens ZERO playwright pages; LH-spawned targets swept per run (pages tracked before/after).
+- Serial: registered in `EDGE_SPECS` → project `edge-ai` workers:1.
+- Bound: `execFile` timeout 150s per LH run; `--max-wait-for-load=30000`.
+- Secrets: headers file lives in `test-results/` (gitignored), never `public/`.
 
-| Route | axe (best-practice incl.) | Lighthouse |
-|---|---|---|
-| `/login` | document-title + color-contrast-enhanced + landmark-one-main + page-has-heading-one + region(11) | **0.95** — document-title + label-content-name-mismatch |
-| `/customers` (auth) | — | **0.86** — aria-required-attr + document-title + label-content-name-mismatch×4 + **target-size×2** |
+## Results snapshot (full authenticated run, 17/18 pass)
 
-Redundant: `document-title` (same finding, both engines).
-Enriches: `target-size`, `label-content-name-mismatch` instances axe's snapshot missed, the 0–100 score, manual checklist.
-Misses vs axe: AAA contrast, best-practice landmark/heading rules.
+- mean score ≈ **0.87**; `/welcome` 1.00, `/login` 0.95, mid band 0.82–0.91.
+- Recurring findings: `document-title`, `label-content-name-mismatch`, `target-size`, `aria-required-attr`, `color-contrast`.
+- **`/system/settings/modules/showcase` → HTTP 500** — real app bug, not a11y.
+- vs axe (`vpat-data.json`): LH misses `best-practice` + AAA contrast rules; adds `target-size` (WCAG 2.5.8), the 0–100 score, and 10 manual-check prompts (= checklist for the manual-evaluation VPAT section).
 
-## Part D — Official test (SHIPPED)
+## Pitfalls hit (do not repeat)
 
-`src/e2e/lighthouse-a11y.spec.ts` — edge-ai project (workers:1, serial on shared Edge :9333).
+- MSYS mangles env values like `LH_ROUTES=/login` → use bare names (`LH_ROUTES=login`).
+- Headless Edge exits when its last tab closes; never hand-launch `msedge.exe` — use `helpers/edge-context.ts` (`getSharedContext`, lockfile-serialized).
+- `page.goto()` to the SAME url stalls on a reused tab; playwright-owned targets break LH navigation (`Page.navigate: Target closed`) → solution above: fetch-login + `--extra-headers`, zero playwright pages.
+- `require.resolve("lighthouse/package.json")` fails (`exports` map) — resolve `lighthouse` main entry then walk up to `cli/index.js`.
+- `pnpm` workspace commands must run from `primebrick-workspace/` (the yaml lives there): `pnpm --filter ./../primebrick-fe-v3 add -D <dep>`.
 
-- **Auth**: `POST /api/v1/auth/login` in beforeAll with `E2E_ADMIN_*` creds → session Cookie → `--extra-headers` JSON file. No browser login flow, no tab churn. Actors minted/destroyed by global.setup/teardown (canonical).
-- **Browser**: `--port=9333` attaches LH to the shared headed Edge (`getSharedContext`); zero playwright pages; LH audit targets swept per run.
-- **Output**: `public/vpat/lighthouse/<slug>.report.json|.html` + `summary.json` (mean_score + per-route score + failing audits).
-- **Run**: `pnpm test:e2e lighthouse` (full 18) or `LH_ROUTES=login,customers pnpm test:e2e lighthouse` (subset).
-- `lighthouse@12.8.2` pinned devDependency.
+## Open decisions when we resume
 
-## Remaining decisions for the user
-
-1. **Allegato form**: separate Lighthouse report artifact vs merged section inside the VPAT page/PDF. (Empirics now available.)
-2. **CI gate** — plain meaning: at build/release time a script re-audits and fails if any route's a11y score drops below the recorded baseline (`summary.json` becomes the baseline). Prevents silent regressions.
-3. **Route list consolidation**: the 18 routes live both in `scripts/axe-audit.mjs` and the spec — extract to one shared file so the two audits can't drift.
+1. **Allegato form**: separate Lighthouse artifact vs merged section in `VpatReport.tsx`/`vpat-2.5.pdf`. `sync-vpat-data.mjs` must be extended to copy `public/vpat/lighthouse/` either way.
+2. **Baseline gate**: `summary.json` as baseline; release/build check fails on score regression — hard-fail or warn?
+3. **Route list**: extract the 18 routes shared by `scripts/axe-audit.mjs` + spec into one file.
+4. Remediation work on the recurring findings (real page fixes).
