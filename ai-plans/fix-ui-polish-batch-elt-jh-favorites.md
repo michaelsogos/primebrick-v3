@@ -16,15 +16,15 @@
 | 4 | be: `public.translations` patch — `system.entities.list.keys.*` + `app.favorites.other` (7 langs) + MANIFEST re-sign | ⏳ not done | — | |
 | 5 | fe: `ConfigList` bulk CTAs soft→solid (`warning`, `destructive`); `FilterBar` clear-all + `CardViewRenderer` sort/dir triggers → `outline` | ⏳ not done | — | matches `BulkActionsToolbar` convention |
 | 6 | fe: delete dead `toolbar/BulkActions.svelte` + `pagination/Pagination.svelte` and their index re-exports | ⏳ not done | — | zero consumers found |
-| 7 | us/job: `nav-declaration` — `name` loses `span:2`; `enabled` moves right after it; `source_subject` placement + comment removed | ⏳ not done | — | field count 8→7 |
-| 8 | fe: `EntityFormPage` renders booleans via `SwitchField` anatomy (control-first) inside `FormControl`; `FormFieldDispatcher` `'switch'` branch deleted | ⏳ not done | — | construction-time enforcement |
-| 9 | ui: `SwitchField` spreads `...restProps` onto inner `Switch` (FormControl `id`/`aria-*` wiring) | ⏳ not done | — | |
+| 7 | us/job: `nav-declaration` — `name` loses `span:2`; `enabled` moves right after it; `source_subject` placement + comment removed | ✅ done | — | FULL removal: entity+meta+DB col (patch 20261101100000)+i18n keys+e2e |
+| 8 | fe: `EntityFormPage` renders booleans via `SwitchField` anatomy (control-first) inside `FormControl`; `FormFieldDispatcher` `'switch'` branch deleted | ✅ done | — | boolean → throw in dispatcher (closed CONTROLS registry) |
+| 9 | ui: `SwitchField` spreads `...restProps` onto inner `Switch` (FormControl `id`/`aria-*` wiring) | ✅ done | — | |
 | 10 | ui+fe: new `due_target` widget — composite `jobs.due.` + lane (from `execution_context`) + owner ComboSelect (modules census) + action input; `nav-declaration` uses `widget:"due_target"` | ⏳ not done | — | DECISION point (alt: keep textbox) |
-| 11 | fe: migrate hand-rolled/misplaced switch usages to `SwitchField` (clients create+edit, launcher footer, CardViewRenderer datetime toggle) | ⏳ not done | — | |
+| 11 | fe: migrate hand-rolled/misplaced switch usages to `SwitchField` (clients create+edit, launcher footer, CardViewRenderer datetime toggle) | ✅ done | — | CardViewRenderer kept: legit composite (`thumbIcons` — SwitchField can't express it); eslint-allowlisted |
 | 12 | fe: `SidebarAppLauncher` favorites → hierarchy: col2 = modules owning favorites (+ `__other` orphans pseudo-group), col3 = favorite pages | ⏳ not done | — | `Preferiti → JH → Create Rules` |
-| 13 | fe: eslint `no-restricted-imports` — `Switch` named import from `@primebrick/ui` banned outside allowlist | ⏳ not done | — | mirrors sheets/vendor/chrome precedent |
+| 13 | fe: eslint `no-restricted-imports` — `Switch` named import from `@primebrick/ui` banned outside allowlist | ✅ done | — | allowlist = sanctioned composites only |
 | 14 | sdk tool: `check-standards.ts` gains `.svelte` scanning + gated rules `raw-switch`, `button-variant-toolbar`; fe-v3 wires `pnpm check:standards` + `.devin/check-standards.json` | ⏳ not done | — | fe currently has NO standards gate (doc drift) |
-| 15 | fe e2e: update `jobs-pages.spec.ts` + `job-rule-form-lifecycle.spec.ts` (source_subject assertions, 8→7 fields, due_target if adopted) | ⏳ not done | — | specs assert field presence today |
+| 15 | fe e2e: update `jobs-pages.spec.ts` + `job-rule-form-lifecycle.spec.ts` (source_subject assertions, 8→7 fields, due_target if adopted) | ✅ done | — | |
 | 16 | docs: update `button-variant-standard`, `form-field-standard`, `patterns.md` toolbar note; report `verify-file-creation.md` drift | ⏳ not done | — | canonical docs only — propose text, write after approval |
 | 17 | verify: `pnpm check`, `pnpm lint`, `pnpm test`, `svelte-check` on touched repos + Playwright visual pass on `/system/job/rules/create`, a config list page, ELT footer, launcher favorites | ⏳ not done | — | |
 
