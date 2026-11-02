@@ -77,8 +77,10 @@ subject disarms — fail-closed by design; unchanged for source triggers.
 
 ## Implementation state (2026-11-02 — verified green)
 
-- Items 1–8 implemented; item 9 partially (builds/checks/docs green;
-  engine+checkpoint unit tests still open).
+- Items 1–9 implemented and committed; engine+checkpoint unit tests
+  landed (29 tests: gated arm/disarm, immediate publish, boot arm,
+  me-lane resolve+refuse, checkpoint hit/miss/stale/refuse/fallback,
+  assertTriggerShape matrix) — 61 tests total, all green.
 - Snapshot key is `auth:snap:<uuid>` (impl.), TTL 6h safety-net.
 - `job_schedules.kind` decided: `infra_derived` | `trigger`; legacy
   `rule`/`manual` rows migrate/remain display-only (badge keeps `manual`
@@ -168,10 +170,10 @@ subject disarms — fail-closed by design; unchanged for source triggers.
    `{infra_derived, rule}` (rename `rule`→`trigger`? keep `rule` for
    legacy rows; new rows write `trigger`) — decide label.
    "Schedules" nav page stays as armed-state registry.
-9. **Verify**: jh build + db:check + docs regen (triggers pages emit);
-   `check:standards` all repos; FE entity-form check; engine unit test
-   for the three kinds + me-lane header plumbing + checkpoint
-   (hit/miss/stale/refuse paths).
+9. **Verify** ✅: jh build + db:check + docs regen (triggers pages emit);
+   `check:standards` all repos; FE entity-form check; unit tests landed
+   (`triggers-engine`, `due-forwarder`, `trigger-shape` — three paths,
+   me-lane plumbing, checkpoint hit/miss/stale/refuse/fallback).
 
 ## Out of scope (flagged)
 
