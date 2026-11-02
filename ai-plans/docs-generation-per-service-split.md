@@ -38,15 +38,21 @@
 > in `core/src/columns.ts` (typed on `Pick<MetaColumn>` subsets so loose
 > structural meta flows through; `defaultVisibleColumnKeys`/
 > `searchableTextColumns` re-express over them; `columns.test.ts` pins
-> the contract). FE entity-list-table (5 files) + ai list-config
-> migrated to the predicates; docs-gen `render.ts` consumes them and
-> dropped its loose local MetaColumn for the real core type. Verified:
-> regenerated rules.mdx — 7 columns shown, only filter/payload_map/
-> created_at (explicit `default_visible: false`) hidden, intro "Each
-> row shows…" restored. ONE way to read, shared by runtime, docs, and
-> the future form builder (same opt-out family as `nullable === false`
-> → required). Convention: new code MUST NOT inline `col.<flag> !==
-> false` — use the predicates (candidate check-standards rule).
+> the contract). Migrated to the predicates: FE entity-list-table
+> (5 files), ai-cerebellum/ai-models/customers list-config (ai-models
+> and customers also had `c.sortable` TRUTHY reads — absent flags
+> silently unsortable, same bug class as the renderer), be
+> `deriveSearchableKeys` (now composes `searchableTextColumns`); docs-gen
+> `render.ts` consumes them and dropped its loose local MetaColumn for
+> the real core type. Verified: regenerated rules.mdx — 7 columns
+> shown, only filter/payload_map/created_at (explicit
+> `default_visible: false`) hidden, intro "Each row shows…" restored.
+> ONE way to read, shared by runtime, docs, and the future form
+> builder (same opt-out family as `nullable === false` → required).
+> Enforced: new check-standards rule `column-flag-defaults` (always-on,
+> consumer+lib profiles, vendored copies synced in core/dal/ui;
+> core/src/columns.ts exempt as the canonical implementation) — clean
+> on all repos.
 
 > **Unblocked 2026-10-28** — the intended form-fact source is LIVE:
 > `page_props.form`/`FormPageDecl` on the route declaration (pilot:
