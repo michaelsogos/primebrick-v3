@@ -26,21 +26,27 @@
 > FormField boundaries (password doc showed "checkbox" from `is_admin`).
 > FIXED in extract-svelte (member-tag leaf normalization + member-expr
 > attr resolution) and render (fallback bounded by next FormField).
-> F2 ⏳ pending-user — **column flags have ONE canonical contract that the
+> F2 ✅ done — **column flags have ONE canonical contract that the
 > renderer violated**: runtime reads `sortable`/`filterable`/
 > `searchable`/`default_visible` as `!== false` (absent = enabled —
 > `entity-meta.ts` documents "default true"; `core/columns.ts:69,87`,
 > ~20 inline sites in fe entity-list-table + ai list-config). Renderer
 > used truthy checks → every defaulting column documented as
 > hidden/non-sortable/non-filterable (rules.mdx all-"no", missing "Each
-> row shows" intro). Proposal: canonical predicates `isColumnVisible/
-> isColumnSortable/isColumnFilterable/isColumnSearchable` in
-> `core/src/columns.ts` (the semantic home — `MetaColumn` already lives
-> there; `export * from "@primebrick/core"` in sdk makes them importable
-> by docs-gen with NO new dep); migrate the ~20 inline `!== false` call
-> sites onto them (behavior-preserving); docs-gen consumes the same
-> predicates — ONE way to read, shared by runtime, docs, and the future
-> form builder (same opt-out family as `nullable === false` → required).
+> row shows" intro). Implemented: canonical predicates
+> `isColumnVisible/isColumnSortable/isColumnFilterable/isColumnSearchable`
+> in `core/src/columns.ts` (typed on `Pick<MetaColumn>` subsets so loose
+> structural meta flows through; `defaultVisibleColumnKeys`/
+> `searchableTextColumns` re-express over them; `columns.test.ts` pins
+> the contract). FE entity-list-table (5 files) + ai list-config
+> migrated to the predicates; docs-gen `render.ts` consumes them and
+> dropped its loose local MetaColumn for the real core type. Verified:
+> regenerated rules.mdx — 7 columns shown, only filter/payload_map/
+> created_at (explicit `default_visible: false`) hidden, intro "Each
+> row shows…" restored. ONE way to read, shared by runtime, docs, and
+> the future form builder (same opt-out family as `nullable === false`
+> → required). Convention: new code MUST NOT inline `col.<flag> !==
+> false` — use the predicates (candidate check-standards rule).
 
 > **Unblocked 2026-10-28** — the intended form-fact source is LIVE:
 > `page_props.form`/`FormPageDecl` on the route declaration (pilot:
