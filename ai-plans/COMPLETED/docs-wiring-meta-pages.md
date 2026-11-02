@@ -1,6 +1,9 @@
 # Generated-docs wiring for meta-pages — evidence + fix plan
 
-**Status**: evidence collected, no fixes applied yet (user instruction: "solo evidenze").
+**Status**: ✅ DONE (2026-11-02) — all 5 fix items landed via
+`docs-generation-per-service-split` (SDK docs-gen engine + per-service
+thin scripts). Verification targets emitted as `triggers*.mdx` after the
+later `job-trigger-unification` rename (was `rules*.mdx`).
 **Collected**: 2026-11-02, on release branches (be 3.4.0, us 3.4.0, fe 3.3.0, sdk 3.3.0, dal 3.4.0, core 3.1.0, ui 3.1.0).
 
 ## Goal
@@ -101,39 +104,41 @@ that pipeline does not exist for JH (or emailsender).
 - Skipped `no facts`: `/`, `/dev/rc`, credentials, migrations, templates,
   translations, `/[...path]`.
 
-## Fix plan (not started)
+## Fix plan — all landed via [`docs-generation-per-service-split`](./docs-generation-per-service-split.md)
 
-1. **Meta-page extraction (L1)**: teach `docs-extract` to read service
-   `nav-declaration.ts` meta-pages (route, kind, entity, `page_props.form`)
-   — or expose nav-meta via a build-time artifact the extract step can
-   consume, so `rules/create` + `rules/{uuid}` produce real facts
-   (`page_props.form` already contains field placement, `options_source`,
-   constraints — richer than AST facts).
-2. **Meta evaluation (L2)**: replace `localRequire` stubs with real module
-   resolution (or import compiled meta via the service's own runtime — e.g.
-   `bun -e "import('...job.meta.ts')"` prints the meta JSON), so
-   `withColumnConstraints`-wrapped metas evaluate correctly in the owning
-   service's context.
-3. **Per-service render leg (L3)**: add `docsDir` to JH/emailsender
-   `build-docs-pack` + a shared `generate-reference-docs`/`docs-render`
-   invocation parameterized on the service (same pattern CRM uses
-   accidentally via copied file — should be deliberate).
-4. **Catch-all guard**: skip routes matching `/\[.*\]/` patterns in render
-   (or render a proper "dynamic route" doc), preventing `[...path].mdx` junk.
-5. **Ghost cleanup**: stale `customers.mdx` in BE generated/ — decide policy
-   (auto-delete ghosts vs keep-and-warn; the ghost check already detects
-   them).
+1. ✅ **Meta-page extraction (L1)**: landed as the census adapter —
+   `sdk/src/docs-gen/collect.ts` enumerates DECLARED routes from the
+   service's `nav-declaration.ts` (route, kind, entity, `page_props.form`)
+   + BE `MODULE_NAV`; never scans the routes FS. `triggers/create` +
+   `triggers/{uuid}` emit real form facts (was `rules*` at plan time).
+2. ✅ **Meta evaluation (L2)**: the `transpileModule`/`localRequire`
+   loader died with the legacy `docs-render.ts`; each thin
+   `scripts/generate-page-docs.ts` `import`s its own declaration modules
+   natively (bun/tsx) — `withColumnConstraints`-wrapped metas evaluate
+   inside the owning repo, no stubs.
+3. ✅ **Per-service render leg (L3)**: `docsDir: "docs/user-guide"` in
+   job-handler `build-docs-pack.ts` + shared engine render in
+   `generate:docs` for be/ai/jh (emailsender deferred per R1 — remote
+   custom pages, documents once archetype-migrated).
+4. ✅ **Catch-all guard**: `[...` segments are never documentable
+   (explicit guard) — zero `[...path].mdx` in any generated/ dir.
+5. ✅ **Ghost cleanup**: `generated/` is pipeline-owned — stale files are
+   auto-deleted on regen + regression diff vs HEAD; `customers.mdx` gone
+   from be (crm ships its own copy via `docsDir`).
 
-## Verification target
+## Verification target — met (post-rename names)
 
-After fix, `pnpm docs:generate` (or JH equivalent) must emit into JH's pack:
+`pnpm generate:docs` in job-handler emits into its pack (emitted as
+`triggers*` after [`job-trigger-unification`](./job-trigger-unification.md)
+renamed `job_rule` → `job_trigger`; `RULE_FORM` → `TRIGGER_FORM`):
 
-- `rules.mdx` — list page (entity `job_rule`, `EntityTablePage`)
-- `rules-create.mdx` — fields from `RULE_FORM` in `page_props.form`:
+- `triggers.mdx` — list page (entity `job_trigger`, `EntityTablePage`)
+- `triggers-create.mdx` — fields from `TRIGGER_FORM` in `page_props.form`:
   `event_subject` (options `census.emits`), `target_subject`
-  (options `census.callables`), `filter` (json schema), `payload_map`,
-  `schedule_spec`, `immediate` — with permission/op tables like users-create.
-- `rules-edit.mdx` — same form, update mode (detail kind).
+  (options `census.callables`), `filter`, `payload_map`, `schedule_spec`,
+  `execution_context` — with permission/op tables like users-create.
+- `triggers-edit.mdx` — same form, update mode (detail kind).
 
-Acceptance: `git status` on JH docs shows the 3 files; no `[...path].mdx`
-junk; `customers.mdx` ghost resolved.
+Acceptance met: the 3 files exist under `docs/user-guide/generated/`;
+no `[...path].mdx` junk; `customers.mdx` ghost resolved (auto-delete
+on regen is the chosen policy).

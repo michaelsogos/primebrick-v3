@@ -6,7 +6,26 @@
 > **D5** (ghost `[...path]` emission). Every claim below was verified
 > empirically on 2026-10-26 against source, live regeneration, and DB schema.
 
-## Status: ✅ IMPLEMENTED (2026-11-02) — Plan date: 2026-10-26 14:54 UTC · updated 2026-11-02
+## Status: ✅ FULLY DONE (verified 2026-11-02, archived) — Plan date: 2026-10-26 14:54 UTC · updated 2026-11-02
+
+> **Related plans**: evidence/diagnosis in
+> [`docs-wiring-meta-pages.md`](./docs-wiring-meta-pages.md) (DONE — its 5
+> fix items are tasks 1/2/5/6/9 here); the later
+> [`job-trigger-unification.md`](./job-trigger-unification.md) renamed the
+> JH emitted pages `rules*.mdx` → `triggers*.mdx` and retired
+> `job-schedules-create.mdx` (manual arming absorbed into schedule-only
+> triggers) — every acceptance criterion below that names `rules*` now
+> reads `triggers*`.
+>
+> **Archive-time empirical state**: sdk `src/docs-gen/` live; thin
+> `generate-page-docs.ts` wired in `generate:docs` for be/ai/jh only
+> (crm/emailsender/webhook stay pack-only per R1); generated output —
+> jh 6 pages (triggers×3 + job-schedules + runs + run-detail sheet),
+> ai 6 (console + docs-index + 4 sheets), be 26 (incl. the 4 recovered
+> settings `kind:"page"` docs + later reference docs); zero
+> `[...path].mdx`, zero `customers.mdx` ghost in be (crm ships its own
+> copy via `docsDir`); `column-flag-defaults` rule live in
+> check-standards across all repos.
 
 > **Landed** — engine in `@primebrick/sdk/src/docs-gen/` (branch
 > `feature/docs-gen-engine`), wired generators in `primebrick-us-v3`
@@ -218,7 +237,7 @@ section**.
 - BE run reproduces the 17-file baseline byte-identically except the intentional diffs listed in the run report (nav-sync prose already landed; `customers.mdx` ghost is auto-deleted).
 - No `[...path]`/catch-all file can ever be emitted; `[param]` detail segments emit normally.
 - emailsender/crm/webhook are NOT wired — their remote custom pages stay undocumented until archetype migration (their routes would emit for free once wired, same as JH).
-- job-handler emits `rules.mdx` + `rules-create.mdx` + `rules-edit.mdx` + `job-schedules*.mdx` + `runs.mdx` + `run-detail.mdx` (sheet) into `job-handler/docs/user-guide/generated/`; the pack carries them via `docsDir`.
+- job-handler emits `rules.mdx` + `rules-create.mdx` + `rules-edit.mdx` + `job-schedules*.mdx` + `runs.mdx` + `run-detail.mdx` (sheet) into `job-handler/docs/user-guide/generated/`; the pack carries them via `docsDir`. *(landed as `triggers*.mdx` after `job-trigger-unification`; `job-schedules-create.mdx` retired there too — current set: `triggers{,-create,-edit}.mdx`, `job-schedules.mdx`, `runs.mdx`, `run-detail.mdx`)*
 - ai emits `console.mdx` + `docs-index.mdx` + the 4 sheet pages.
 - `service_registry.endpoints.nav` census coverage = 100% declared routes in wired services either documented or explicitly skipped with reason.
 
