@@ -1,6 +1,6 @@
 # Payload-map value validation — zod as the single declaration source
 
-## Status: � ARCHITECTURE DECIDED (2026-11-02) — Plan date: 2026-11-01
+## Status: DECISIONS LOCKED (2026-11-02) — Plan date: 2026-11-01
 
 > **Reworked after the closed-vocabulary challenge.** The original Part D
 > asked "which JSON-Schema keywords may `payload_schema` declare" — wrong
@@ -29,10 +29,11 @@
 | 2 | Empirics: zod 4.6.7 `toJSONSchema`/`meta()` emission table | ✅ done | table above |
 | 3 | **zod-source pilot**: emailsender `SEND_EMAIL_REQUEST_SCHEMA` → `SendEmailSchema` zod — `z.infer` kills the manual `SendEmailRequest` mirror; `x_*` via `.meta()`; `payload_schema` = `toJSONSchema`; `route.validate` = `schema.parse` | ⏳ not done | emailsender needs zod dep added (4.6.7, pinned convention) |
 | 4 | **Portable checker in core**: extend `jsonValueMatchesSchema` semantics into a canonical `payloadSchemaCheck(schema) → errors[]` honoring the emittable subset (type/properties/required/items/enum/const/format-map/pattern/min*/max*/additionalProperties) — pure, dep-free, shared FE+US | ⏳ not done | the "one way to read" — same posture as `isColumn*` predicates |
-| 5 | **Design-time** (widget): `const` leaf/chip values checked against the field's prop — `propConstraint` on the shared checker | ⏳ open | needs Q3 |
-| 6 | **Submit-time** (form): `payload_map_conformance` cross-field validator (closed registry, same precedent as `job_trigger_shape`) + `buildEntityFormSchema(meta, decl, env)` env-injected `resolveCallable` — runs inside `validators: zod4(...)` per-pass, reads `data.target_subject` live, parses the payload_map JSON **string** (runtime binding convention), honors `'' = absent = verbatim` | ⏳ open | needs Q4; seam verified below |
-| 7 | **Runtime** (owner): `route.validate = schema.parse` on every callable carrying `payload_schema` — explicit 1-liner, NOT auto-derive (JSON Schema alone is lossy: refine/transform already gone) | ⏳ open | roll out per service, emailsender first |
-| 8 | **Lint** "declared but unvalidated": every callable's `payload_schema` should pair a `validate` — schema-completeness lint scoped to the declaring service | ⏳ open | Q5 — feasible as check-standards rule on `payload_schema` without `validate` in same route object |
+| 5 | **Design-time** (widget) — **DECIDED: mark**: `const` leaf/chip values checked via shared checker → standard invalid state on the row input (destructive ring + hint below — the normed control pattern, only wiring); the field error also lands on the superform `payload_map` path → `updateForm.valid === false` blocks submit (tainted-but-invalid cannot submit — existing mechanism, no workaround) | ⏳ open | Q3 resolved |
+| 6 | **Submit-time** (form) — **DECIDED: block**: `payload_map_conformance` cross-field validator (closed registry, same precedent as `job_trigger_shape`) + `buildEntityFormSchema(meta, decl, env)` env-injected `resolveCallable` — runs inside `validators: zod4(...)` per-pass, reads `data.target_subject` live, parses the payload_map JSON **string**, honors `'' = absent = verbatim`; required-unmapped surfaces as field error on `payload_map` AND per-row invalid state on the unmapped required row (asterisk convention already renders `*` on required labels) | ⏳ open | Q4 resolved |
+| 7 | **Runtime** (owner) — **DECIDED: architectural invariant, not opt-in**: `payload_schema` accepts the **zod schema itself** on `NatsRoute`/`NatsRequestRoute`; `makeNatsRoutes` derives `z.toJSONSchema` (census) AND wires `schema.parse` as mandatory validation — a callable contract without runtime validation becomes impossible to declare. `route.validate` remains for private routes / post-contract checks. Breaking surface: `email-send.ts` + `crm/fake-event-emitter.ts` only | ⏳ open | Q5 resolved — enforced once in the factory, zero drift possible |
+| 8 | **Server-side mirror** (no drift): JH entity write path gains `assertPayloadMapConformance` hook in `jobs.service.ts` `beforeCreate/beforeUpdate` — resolves the callable decl + runs the SAME core `payloadSchemaCheck`; `callable-catalog` extended from subject-set to `subject → payload_schema` (register payload + census row already carry it). BE entity path uses the same hook seam (`validateBody`+hooks pattern) | ⏳ open | verified: `schemas:{entityBody}` is envelope-only today; catalog stores subjects only |
+| 9 | **i18n**: error label keys for widget marks + submit errors (`job.entities.job_trigger.fields.payload_map.errors.*` + `app.widgets.payload_map.*`) ×7 languages | ⏳ open | translation patch per convention |
 
 <!-- Status values: ✅ done · ⏳ not done · 🚫 dropped. -->
 
@@ -141,19 +142,30 @@ e.g. `job_trigger_shape`); they receive `(data, ctx)` — `data` includes
 registry entry, resolves the schema per pass, and runs the shared core
 checker — static schema, dynamic data, zero new error channels.
 
-## Part E — Remaining decisions (reduced set)
+## Part E — Decisions LOCKED (2026-11-02, user)
 
-- **Q3 — design-time posture**: invalid `const` in chip/text — refuse
-  insertion (hard) or insert + red mark (soft)? *Recommend: mark — hard
-  blocks paste/raw-JSON workflows; the row already has an error surface
-  to grow.*
-- **Q4 — submit-time posture**: required destination field unmapped —
-  block submit or warn-only? *Recommend: block — an unmapped required
-  field is a guaranteed runtime failure; the checker can compute it
-  cheaply (schema.required − mapped ∪ inject/semantic-resolved).*
-- **Q5 — lint**: `payload_schema` present but no `validate` on the same
-  route → check-standards warning (scoped to declaring service).
-  *Recommend: warn — some schemas are form-only contracts.*
-- **Format map**: FE honors `format` values emitted by zod (`email`,
-  `uuid`, `date-time`, `uri`…) via a shared format→check map inside the
-  core checker — NOT a second `MetaColumnFormat` registry.
+- **Q3 → mark**: invalid `const` marks the row input (standard invalid
+  state + hint) AND the error lands on the superform `payload_map` path —
+  tainted-but-invalid cannot submit (`updateForm.valid` gate already
+  exists; no workaround). Design-time is the early signal, submit is the
+  authoritative gate.
+- **Q4 → block**: required-unmapped blocks submit. The unmapped required
+  ROW gets the normed invalid state (destructive ring + hint under the
+  input — same convention as every other field; the `*` asterisk on
+  required labels already renders). Field-level error on `payload_map`.
+  Only applies when `target_subject` resolves to a census callable.
+- **Q5 → architectural invariant**: no lint — `payload_schema` on a route
+  accepts the **zod schema**; the route factory derives the census JSON
+  Schema AND the mandatory runtime `validate` in one place
+  (`makeNatsRoutes`/`makeNatsRequestRoute`). Declaring a callable contract
+  without runtime validation is impossible by construction — "once only,
+  never drift". Only 2 files declare `payload_schema` today
+  (`emailsender/email-send.ts`, `crm/fake-event-emitter.ts`) — trivial
+  migration.
+- **Server-side mirror**: the entity write path validates the stored
+  `payload_map` against the same core checker + census schema (JH hook +
+  catalog carrying `subject → payload_schema`) — FE and BE/US never drift
+  because both consume the SAME checker and the SAME schema.
+- **Format map**: the core checker honors `format` values emitted by zod
+  (`email`, `uuid`, `date-time`, `uri`…) via a shared format→check map —
+  NOT a second `MetaColumnFormat` registry.
