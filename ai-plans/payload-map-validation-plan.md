@@ -169,3 +169,64 @@ checker — static schema, dynamic data, zero new error channels.
 - **Format map**: the core checker honors `format` values emitted by zod
   (`email`, `uuid`, `date-time`, `uri`…) via a shared format→check map —
   NOT a second `MetaColumnFormat` registry.
+
+## Part F — Shared validation engine placement (empirical re-verification 2026-11-02)
+
+### What exists today (verified in code)
+
+- `config_entry` **already has meta-driven server-side validation**:
+  `validateConfigValue(type, type_config, value)` in `sdk/src/config/config-validator.ts`,
+  invoked at service layer (`config-entries.service.ts:857`) — type-derived
+  checks (email regex, url, phone, bigint, min/max length-vs-value, unsigned,
+  regex rules) driven by `TYPE_CAPABILITIES` (`sdk/src/config/type-capabilities.ts`).
+  `EMAIL_REGEX` is explicitly shared with the FE "Zod refine" (in-file comment).
+  This is the "same rules both sides" precedent — scoped to the config type model.
+- Generic entity writes are **not** meta-validated server-side: BE
+  `makeEntityRouter` mounts `validateBody` only when `config.schemas.createBody`
+  is supplied (hand-written per-router DTOs — drift-prone by construction);
+  US `entities-route.ts` passes `entityBody` = bare cast (envelope only).
+- Documented lib layering (core AGENTS.md + dev-guide/overview.mdx):
+  `core` = root, env-neutral contracts — **two runtime deps only**
+  (`@primebrick/decimal`, `json-bigint`), "no other dependencies allowed";
+  re-exported through `@primebrick/ui` (FE, US remote bundles) and
+  `@primebrick/sdk` (BE/US). `sdk` is **deliberately zod-free**: route
+  `schemas` are plain `(raw) => T` validators; services inject `schema.parse`
+  bound to their own zod. `ui` already deps `zod 4.6.7`.
+
+### Consequence — engine anatomy (no zod in core, no FE reach into sdk)
+
+- **core** hosts the single rule source as pure, dep-free functions:
+  `entityFieldConstraints(meta)` → declarative IR per field
+  (type/required/format/pattern/bounds/enum/json_schema) and
+  `checkEntityFields(meta, entity)` → `FieldIssue[]` (path, code,
+  error_label_key). Plus context-free cross-field impls
+  (`jobTriggerShapeIssues(entity)`), shared by both registries.
+- **ui** binds the IR to zod for superform (`fieldSpecToZod`,
+  `buildEntityFormSchema` refactored to consume it) — ui already owns
+  zod 4.6.7 and is the FE's primebrick façade; remote bundles can reuse it.
+- **sdk** adds `entityFieldValidator(meta)` returning the documented
+  `(raw) => entity` plain validator (zod-free) — becomes the DEFAULT
+  `schemas.createBody`/`updateBody` in the sdk entity-router when a service
+  passes no explicit schema (enforcement by default, DTOs still override).
+- **BE** keeps `validateBody`/`entityWriteBody` for hand DTOs; for
+  meta-driven default, `makeEntityRouter` gets the same core checker via a
+  thin `z.unknown().superRefine` adapter in `src/http/validation.ts`.
+- Owner validates: BE for BE entities, US when BE proxies — each side runs
+  the same core predicates; FE runs the same predicates inside zod.
+- Shared fixture matrix in core tests → consumed by FE/BE/US unit tests;
+  e2e: raw-API invalid write → 400, matching UI rejection.
+
+### Clarifications (user-requested)
+
+- "Two projections": the wire schema and the form schema are NOT identical
+  by design — in the form, JSON columns are bound as STRINGS (superform
+  `dataType:'json'` + `JSON.parse` at submit) and `''` means "absent";
+  on the wire the entity arrives already parsed. One rule source
+  (core predicates on the PARSED value); the form wrapper adds only
+  string-binding adaptations on top — rule drift impossible.
+- "Context validators, shared but injected": the CHECK function is core-
+  pure and shared; the DATA it needs is supplied per side. Example —
+  `payload_map_conformance(map, callable_schema)` is one pure function in
+  core; FE injects `resolveCallable` reading its live census store, JH
+  injects one reading callable-catalog (extended to carry payload_schema).
+  Same check code, different data source — no duplicated logic.
