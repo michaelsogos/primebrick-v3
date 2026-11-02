@@ -30,7 +30,7 @@
 | 3 | **zod-source pilot**: emailsender `SEND_EMAIL_REQUEST_SCHEMA` → `SendEmailSchema` zod — `z.infer` kills the manual `SendEmailRequest` mirror; `x_*` via `.meta()`; `payload_schema` = `toJSONSchema`; `route.validate` = `schema.parse` | ⏳ not done | emailsender needs zod dep added (4.6.7, pinned convention) |
 | 4 | **Portable checker in core**: extend `jsonValueMatchesSchema` semantics into a canonical `payloadSchemaCheck(schema) → errors[]` honoring the emittable subset (type/properties/required/items/enum/const/format-map/pattern/min*/max*/additionalProperties) — pure, dep-free, shared FE+US | ⏳ not done | the "one way to read" — same posture as `isColumn*` predicates |
 | 5 | **Design-time** (widget): `const` leaf/chip values checked against the field's prop — `propConstraint` on the shared checker | ⏳ open | needs Q3 |
-| 6 | **Submit-time** (form): required-destination-unmapped + non-conforming const surfaces as field error via the shared checker; needs `validators` signature extension or editor-side error channel (target schema is dynamic per `target_subject`) | ⏳ open | needs Q4 |
+| 6 | **Submit-time** (form): `payload_map_conformance` cross-field validator (closed registry, same precedent as `job_trigger_shape`) + `buildEntityFormSchema(meta, decl, env)` env-injected `resolveCallable` — runs inside `validators: zod4(...)` per-pass, reads `data.target_subject` live, parses the payload_map JSON **string** (runtime binding convention), honors `'' = absent = verbatim` | ⏳ open | needs Q4; seam verified below |
 | 7 | **Runtime** (owner): `route.validate = schema.parse` on every callable carrying `payload_schema` — explicit 1-liner, NOT auto-derive (JSON Schema alone is lossy: refine/transform already gone) | ⏳ open | roll out per service, emailsender first |
 | 8 | **Lint** "declared but unvalidated": every callable's `payload_schema` should pair a `validate` — schema-completeness lint scoped to the declaring service | ⏳ open | Q5 — feasible as check-standards rule on `payload_schema` without `validate` in same route object |
 
@@ -109,7 +109,39 @@ via `schema.parse` in the owner. One declaration, two layers, zero loss.
 4. **Enrollment**: unchanged x_* validation + the emitted-schema contract
    documented ("consumers honor the `toJSONSchema`-emittable subset").
 
-## Part D — Remaining decisions (reduced set)
+## Part D — Runtime-form contract (verified adaptations — do NOT break)
+
+The entity form is **runtime-generated** on zod + sveltekit-superforms
+(`EntityFormPage.svelte`). Its conventions constrain how validation can
+attach — verified empirically:
+
+- **Schema built once** from `meta` + `page_props.form` (`buildEntityFormSchema`
+  in `$derived.by`) → the zod object is STATIC; anything that depends on
+  user-chosen values (the selected callable's `payload_schema`) cannot be
+  baked into a column schema.
+- `superForm(..., { SPA: true, validators: zod4(schema), dataType: 'json' })`
+  → superRefines run **per validation pass** receiving the FULL `data`
+  object — which already contains sibling fields (`target_subject`).
+- `payload_map` binds a JSON **string** (`extJsonStringify` on load,
+  `JSON.parse` at submit, `'' → undefined` for absent) — a validator
+  must parse safely, never assume an object.
+- `''`/absent map = verbatim passthrough — meaningful state, not "empty".
+- Declared automation (`x_inject`/`x_semantic`) is **already seeded into
+  the map** by the pair-keyed `seededFor` effect before validation runs —
+  "required field mapped" must count machine-seeded entries as mapped.
+- `reset({newState})`/tainted dance exists — validators must be pure and
+  side-effect-free (no writes into `$form`).
+
+**The seam**: cross-field rules already exist (`CROSS_FIELD_VALIDATORS`,
+e.g. `job_trigger_shape`); they receive `(data, ctx)` — `data` includes
+`target_subject`. What they lack is census access → extend
+`buildEntityFormSchema(meta, decl, env?)` with an injected
+`resolveCallable(subject)` (EntityFormPage passes a lookup over
+`callableDecls`). The `payload_map_conformance` validator stays a closed
+registry entry, resolves the schema per pass, and runs the shared core
+checker — static schema, dynamic data, zero new error channels.
+
+## Part E — Remaining decisions (reduced set)
 
 - **Q3 — design-time posture**: invalid `const` in chip/text — refuse
   insertion (hard) or insert + red mark (soft)? *Recommend: mark — hard
