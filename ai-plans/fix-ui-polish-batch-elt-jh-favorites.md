@@ -14,8 +14,8 @@
 | 2 | ui: move `Kbd` from fe `$lib/components/ui/kbd` → `@primebrick/ui`; new `KeyboardHints` composite (`hints[]` + optional `end` snippet) | ⏳ not done | — | one canonical legend component for launcher + ELT |
 | 3 | fe: `TableFooter` renders centered `KeyboardHints` (↑↓ move · Space select · ⏎ row actions · ←→ preview · Esc close); launcher footer migrated to same component | ⏳ not done | — | |
 | 4 | be: `public.translations` patch — `system.entities.list.keys.*` + `app.favorites.other` (7 langs) + MANIFEST re-sign | ⏳ not done | — | |
-| 5 | fe: `ConfigList` bulk CTAs soft→solid (`warning`, `destructive`); `FilterBar` clear-all + `CardViewRenderer` sort/dir triggers → `outline` | ⏳ not done | — | matches `BulkActionsToolbar` convention |
-| 6 | fe: delete dead `toolbar/BulkActions.svelte` + `pagination/Pagination.svelte` and their index re-exports | ⏳ not done | — | zero consumers found |
+| 5 | fe: `ConfigList` bulk CTAs soft→solid (`warning`, `destructive`); `FilterBar` clear-all + `CardViewRenderer` sort/dir triggers + `BulkActionsToolbar` mode toggle → `ghost` (user design call: muted, matching Colonne/Filtro/pager chrome — supersedes plan's `outline`) | ✅ done | 2026-11-04 | `8f5d593` (solid) + `10a58ec` (ghost×4) — check-standards clean |
+| 6 | fe: delete dead `toolbar/BulkActions.svelte` + `pagination/Pagination.svelte` and their index re-exports | ✅ done | 2026-11-04 | `b14925e` — +bonus `ConfigBulkActionBar` (same orphan pattern, testids unreferenced). Replaced by TableFooter pager / BulkActionsToolbar+useBulkActions / @primebrick/ui SelectableToolbar |
 | 7 | us/job: `nav-declaration` — `name` loses `span:2`; `enabled` moves right after it; `source_subject` placement + comment removed | ✅ done | — | FULL removal: entity+meta+DB col (patch 20261101100000)+i18n keys+e2e |
 | 8 | fe: `EntityFormPage` renders booleans via `SwitchField` anatomy (control-first) inside `FormControl`; `FormFieldDispatcher` `'switch'` branch deleted | ✅ done | — | boolean → throw in dispatcher (closed CONTROLS registry) |
 | 9 | ui: `SwitchField` spreads `...restProps` onto inner `Switch` (FormControl `id`/`aria-*` wiring) | ✅ done | — | |
