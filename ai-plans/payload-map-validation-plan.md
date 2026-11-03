@@ -230,3 +230,82 @@ checker — static schema, dynamic data, zero new error channels.
   core; FE injects `resolveCallable` reading its live census store, JH
   injects one reading callable-catalog (extended to carry payload_schema).
   Same check code, different data source — no duplicated logic.
+
+## Part G — Implementation status (2026-11-02)
+
+### Implemented
+
+- **core** `src/field-validation.ts` (new, ~550 lines, dep-free):
+  `checkFieldValue(col, value)` — the single field predicate
+  (boolean/numeric/json dispatch; bounds, pattern, formats: email, url,
+  nats_subject, schedule_spec grammar, color_hex, phone, date/datetime/time,
+  badge vocabulary, `json_schema` via `jsonSchemaCheck`);
+  `checkEntityFields(meta, entity, {partial})` — entity-level wire check;
+  `jobTriggerShapeIssues(entity)` — shared trigger-shape predicate;
+  `payloadMapConformance(map, callableSchema)` — required-coverage +
+  const-conformance vs the emitted JSON Schema (`x_inject`/`x_semantic`
+  props count as covered). Exported from `index.ts`; 19 unit tests green
+  (81 total in core suite).
+- **sdk** `src/http/entity-field-validator.ts` (new): `entityFieldValidator(meta)`
+  → `(raw) => {entity}` plain validator per the documented zod-free contract;
+  `makeEntityRouter` defaults `createBody`/`updateBody` to it when `meta`
+  is present and no schema is passed.
+- **sdk** `src/nats/nats-routes.ts`: `payload_schema` is now a
+  `CallablePayloadContract<TReq> = {schema, parse}` — the route factory
+  runs `parse` BEFORE the handler (a contract-less callable is
+  undeclarable) and records `schema` into the callable registry for the
+  census. `makeNatsRoutes<TReq>` is generic so the parsed type flows into
+  the handler. `route.validate` remains a post-contract hook.
+- **emailsender**: `SendEmailSchema` (zod) declared in `types.ts`
+  (`entityId: z.bigint()` — ext-json wire), projected via
+  `z.toJSONSchema` with `unrepresentable: bigint → {type:"integer"}`;
+  emitted schema verified (`required`, `to.items.format:"email"`,
+  `entityId.type:"integer"`); runtime parse verified (rejects malformed
+  `to`, accepts bigint `entityId`).
+- **crm** `fake-event-emitter`: migrated to `EmitFakeEventSchema` (zod
+  enum + overrides record) — hand validate removed, contract owns it.
+- **job-handler**: `entities-route.ts` drops the `entityBody` casts →
+  sdk default meta validation active. `callable-catalog` now stores
+  `subject → payload_schema`; `assertPayloadMapConformance` runs in
+  `beforeCreate`/`beforeUpdate` after `assertCallableTarget` — resolves
+  the schema from the catalog, checks non-empty maps (empty = verbatim
+  passthrough), fetches the stored row on partial updates.
+- **ui** `src/lib/entity-form/field-spec-to-zod.ts` (new): the
+  form-binding projection — `checkFieldValue` inside `superRefine`,
+  plus the JSON-string control binding and `required` `.min(1)` wrap.
+- **FE** `build-entity-form-schema.ts` refactored: per-column schema via
+  `fieldSpecToZod`; `job_trigger_shape` delegates to
+  `jobTriggerShapeIssues`; new `payload_map_conformance` registry entry
+  resolving the callable schema via injected `env.resolveCallable`;
+  `EntityFormPage` passes a live closure over `callableDecls`.
+- **PayloadMapEditor**: design-time marks — `fieldIssues` derived from
+  `payloadMapConformance` grouped per destination field; row gets
+  `border-l-destructive`, the value cell `ring-destructive`, and an
+  inline hint (`app.widgets.payload_map.conformance_hint`).
+- **nav-declaration (JH)**: `validators: ["job_trigger_shape",
+  "payload_map_conformance"]`.
+- **BE** `entity-write.ts`: `entityFieldsBody(meta, {partial})` adapter
+  (`checkEntityFields` inside `superRefine`, `entityWriteBody` envelope);
+  `entity-router.ts` defaults `createBody`/`updateBody` to it — every
+  BE-owned entity write now gets meta-derived field validation.
+
+### Verification (all green)
+
+| Repo | Check | Result |
+|---|---|---|
+| core | vitest + standards + build | 81 tests, clean |
+| sdk | vitest (nats) + tsc + build | 23 nats tests, contract rejection logged |
+| job-handler | vitest + tsc | 34 tests |
+| emailsender | tsc + schema emission + runtime parse | clean |
+| crm | tsc | clean |
+| ui | check-standards + svelte-package | clean |
+| FE | vitest (form schema) + svelte-check | 9/9, 0 errors |
+| BE | vitest (http) + tsc | 47 tests, clean |
+
+### Follow-ups (not blocking)
+
+- Shared fixture-matrix file consumable by all repos' tests (currently
+  each repo tests the same predicates through its own projection — the
+  predicate itself is structurally shared, so drift is impossible even
+  without the file).
+- E2E: raw HTTP/NATS invalid write → 400, matching the UI rejection.
