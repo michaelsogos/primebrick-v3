@@ -6,7 +6,7 @@
 > lists empiric findings (file:line), the root cause, the fix, and the
 > enforcement hook that prevents recurrence.
 
-## Status: ⚪ TODO — Plan date: 2026-10-28 — Awaiting approval
+## Status: 🟡 IN PROGRESS — Plan date: 2026-10-28 — item 14 landed 2026-11-04
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -23,7 +23,7 @@
 | 11 | fe: migrate hand-rolled/misplaced switch usages to `SwitchField` (clients create+edit, launcher footer, CardViewRenderer datetime toggle) | ✅ done | — | CardViewRenderer kept: legit composite (`thumbIcons` — SwitchField can't express it); eslint-allowlisted |
 | 12 | fe: `SidebarAppLauncher` favorites → hierarchy: col2 = modules owning favorites (+ `__other` orphans pseudo-group), col3 = favorite pages | ⏳ not done | — | `Preferiti → JH → Create Rules` |
 | 13 | fe: eslint `no-restricted-imports` — `Switch` named import from `@primebrick/ui` banned outside allowlist | ✅ done | — | allowlist = sanctioned composites only |
-| 14 | sdk tool: `check-standards.ts` gains `.svelte` scanning + gated rules `raw-switch`, `button-variant-toolbar`; fe-v3 wires `pnpm check:standards` + `.devin/check-standards.json` | ⏳ not done | — | fe currently has NO standards gate (doc drift) |
+| 14 | sdk tool: `check-standards.ts` gains `.svelte` scanning + gated rules `raw-switch`, `button-variant-toolbar`; fe-v3 wires `pnpm check:standards` + `.devin/check-standards.json` | ✅ done | 2026-11-04 | sdk `27fd7e5` + fe `edd26b0` — NEW `--profile=fe` (empty base set: consumer rules are browser false-positives, 172 hits baseline); raw-switch = line rule + structural pass for multi-line imports; baseline = **13 violations**, all items 5+6 evidence (ConfigList×2, FilterBar, CardViewRenderer×2, BulkActions×4, Pagination×4). Script NOT yet wired into `test`/`prebuild` — enforce after 5+6 clear the baseline. Side finding: be-v3 has 51 PRE-EXISTING `i18n-sql-ns` violations on patch `20261116040000_emailsender_callable_help_keys.sql` (emailsender.* keys seeded into public.translations) — not from this change, separate workstream |
 | 15 | fe e2e: update `jobs-pages.spec.ts` + `job-rule-form-lifecycle.spec.ts` (source_subject assertions, 8→7 fields, due_target if adopted) | ✅ done | — | |
 | 16 | docs: update `button-variant-standard`, `form-field-standard`, `patterns.md` toolbar note; report `verify-file-creation.md` drift | ⏳ not done | — | canonical docs only — propose text, write after approval |
 | 17 | verify: `pnpm check`, `pnpm lint`, `pnpm test`, `svelte-check` on touched repos + Playwright visual pass on `/system/job/rules/create`, a config list page, ELT footer, launcher favorites | ⏳ not done | — | |
