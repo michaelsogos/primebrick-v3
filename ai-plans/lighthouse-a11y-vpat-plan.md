@@ -66,3 +66,63 @@
 2. **Baseline gate**: `summary.json` as baseline; release/build check fails on score regression — hard-fail or warn?
 3. **Route list**: extract the 18 routes shared by `scripts/axe-audit.mjs` + spec into one file.
 4. Remediation work on the recurring findings (real page fixes).
+
+---
+
+## NEW REQUIREMENT (added 2026-11-03): component-library-level ARIA/WCAG evaluation for `@primebrick/ui`
+
+**Need**: an independent a11y evaluation that audits the **UI library itself** —
+the canonical primitives in `primebrick-v3-ui` — auto-generated at every lib
+build, merged into the general VPAT document (also build-time generated), and
+exposed by the docs repo as a **ready-to-download PDF**.
+
+With or without Lighthouse is an open implementation choice — the requirement
+is the *component-level evidence*, not the tool.
+
+### Why this is required now (evidence)
+
+- `@primebrick/ui` now owns **all** canonical primitives — 144 Svelte
+  components: `wheel-picker`, `tabs` (sliding pill), `search-input`,
+  `numeric-input`, `choicebox`, `date-dropper`, `input-group`, `textarea`,
+  `prop-navigator`, ComboSelect, JsonEditor … consumed by FE **and remote
+  module bundles**. Conformance must be proven at the lib level: a route
+  audit can pass while a primitive is broken in isolation (states, variants,
+  keyboard contracts not exercised by that route).
+- Real a11y surface shipped in this thread that has **zero systematic
+  conformance evidence** today:
+  - `wheel-picker`: listbox semantics (`role=listbox` group owns the tab
+    stop, options `tabindex="-1"`), arrow stepping, focus-visible ring —
+    needs `aria-activedescendant`/`aria-selected` verification against
+    WCAG 1.3.1/4.1.2 + keyboard (2.1.1).
+  - `tabs`: sliding pill + `settledValue` color contract — dead
+    `data-active:` classes were replaced by `data-[state=active]`;
+    `prefers-reduced-motion` honored — needs checks on 1.4.13/2.3.3.
+  - `date-wheel-picker` popover: keybind contract (←→/↑↓/Enter/Esc) +
+    footer legend — focus management under 2.4.3.
+  - `choicebox`: radiogroup + `aria-checked` + roving tabindex.
+- Current pipeline audits **routes**, not components:
+  `scripts/axe-audit.mjs` → `public/vpat/vpat-data.json`;
+  `src/e2e/lighthouse-a11y.spec.ts` → `public/vpat/lighthouse/*.report.json`
+  — both exercise the FE app. No component-level harness exists.
+- `svelte-check` a11y warnings are compile-time heuristics only — they
+  caught `a11y_click_events_have_key_events` on wheel items, but cannot
+  verify ARIA correctness, contrast, focus order, or keyboard behavior.
+
+### Acceptance shape (to decide on resume)
+
+- **Harness**: a component-level audit produced at **lib build time** —
+  candidate approaches: (a) axe-core over a rendered-per-variant catalog
+  (playground/docs page or jsdom+vitest fixture per component), (b) the
+  Lighthouse spec pointed at a lib storybook/catalog page, (c) hybrid:
+  axe per component + LH aggregate on the catalog route. Output:
+  `primebrick-v3-ui/docs/dev-guide/_extracted/a11y-report.json` (or
+  similar) committed/artifact'd like `components.json`.
+- **Merge**: the lib report must land in the general VPAT document —
+  `primebrick-v3-docs`: `scripts/sync-vpat-data.mjs` extended to pull the
+  lib artifact; `VpatReport.tsx` gains a *component library conformance*
+  section (or a dedicated allegato); `generate-vpat-pdf.mjs` emits it.
+- **Distribution**: the generated PDF is published by `primebrick-v3-docs`
+  (CF worker deploy on `main`) as a ready-to-download asset — no manual
+  step between lib change and updated VPAT.
+- **Gate question** (same as open decision 2): does a lib-level
+  regression fail the build, warn, or just land in the report?

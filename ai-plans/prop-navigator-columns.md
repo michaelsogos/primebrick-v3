@@ -1,14 +1,29 @@
 # Prop Navigator — column-picker for schema-driven paths
 
-## Status: ⚪ TODO — Plan date: 2026-11-03
+## Status: 🟢 DONE — Plan date: 2026-11-03, shipped 2026-11-03
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
-| 1 | `use-prop-navigation` composable (column model, roving tabindex, arrow dispatch, scroll-right) | ⏳ not done | — | |
-| 2 | Sub-components: navigator-header / navigator-column / navigator-row / navigator-footer | ⏳ not done | — | |
-| 3 | `prop-navigator.svelte` orchestrator (search row + popover body) in `@primebrick/ui` | ⏳ not done | — | |
-| 4 | payload-map-editor: `pathTree` replaces flat `pathOptions`; path picker swaps to navigator | ⏳ not done | — | |
-| 5 | E2E: drill `$.customer` → column 2 → leaf commit; deep object → column 3 + scroll-right; search flat mode | ⏳ not done | — | |
+| 1 | `use-prop-navigation` composable (column model, roving tabindex, arrow dispatch, scroll-right) | ✅ done | 2026-11-03 | `ui/src/lib/composables/use-prop-navigation.svelte.ts` — N-column generalization of the launcher's mechanics |
+| 2 | Sub-components: navigator-header / navigator-column / navigator-row / navigator-footer | ✅ done | 2026-11-03 | + `Kbd` vendored into ui (user decision: vendored, not inline) |
+| 3 | `prop-navigator.svelte` orchestrator (search row + popover body) in `@primebrick/ui` | ✅ done | 2026-11-03 | ComboSelect-chrome trigger, footer eye-dashed reveal (same i18n keys, aria-pressed) |
+| 4 | payload-map-editor: `pathTree` replaces flat `pathOptions`; path picker swaps to navigator | ✅ done | 2026-11-03 | all path lanes via `leafValue` — every picker site migrated at once |
+| 5 | E2E: drill `$.customer` → column 2 → leaf commit; deep object → column 3 + scroll-right; search flat mode | ✅ done | 2026-11-03 | 4/4 green; col-3 scroll untestable — real event schema is 2 levels (no fake fixture) |
+
+## Decisions recorded (user-approved at TOC)
+
+1. **Standalone `PropNavigator` in `@primebrick/ui`** — NOT a ComboSelect feature (navigable vs selectable stay orthogonal predicates).
+2. **`Kbd` vendored** into `ui/src/lib/components/kbd/` — remotes inherit it.
+3. **Launcher migration deferred** — user wants a dedicated impact analysis first (launcher navigates routes, navigator navigates schema props — different domains; tracked below).
+
+## Follow-ups (not in scope)
+
+- `SidebarAppLauncher` → `usePropNavigation` migration — needs the impact analysis the user asked for (nav-route activation vs path-commit semantics, favorites column, preview-on-focus of module data, CTA/goto split).
+- Column-3 scroll-right is exercised by code (`$effect` → `scrollLeft = scrollWidth`) but has no real ≥3-level fixture yet; when an event schema grows a nested object, the mechanism is already in place.
+
+## Semantics delta discovered in E2E
+
+`aria-disabled` on a **navigable** node lies — the row IS operable (it descends). `aria-disabled` now marks only disabled **leaf** rows (truly inert); navigable+disabled keep `opacity-50` (visual "not committable") but stay clickable. Playwright enforces the same reading (`aria-disabled` elements are unclickable), which caught the bug.
 
 ---
 
