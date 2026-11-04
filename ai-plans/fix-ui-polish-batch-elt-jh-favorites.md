@@ -21,7 +21,7 @@
 | 9 | ui: `SwitchField` spreads `...restProps` onto inner `Switch` (FormControl `id`/`aria-*` wiring) | ✅ done | — | |
 | 10 | ui+fe: new `due_target` widget — composite `jobs.due.` + lane (from `execution_context`) + owner ComboSelect (modules census) + action input; `nav-declaration` uses `widget:"due_target"` | ⏳ not done | — | DECISION point (alt: keep textbox) |
 | 11 | fe: migrate hand-rolled/misplaced switch usages to `SwitchField` (clients create+edit, launcher footer, CardViewRenderer datetime toggle) | ✅ done | — | CardViewRenderer kept: legit composite (`thumbIcons` — SwitchField can't express it); eslint-allowlisted |
-| 12 | fe: `SidebarAppLauncher` favorites → hierarchy: col2 = modules owning favorites (+ `__other` orphans pseudo-group), col3 = favorite pages | ⏳ not done | — | `Preferiti → JH → Create Rules` |
+| 12 | fe: `SidebarAppLauncher` favorites → hierarchy: col2 = modules owning favorites, col3 = favorite pages | ✅ done | — | DESIGN (b) per user call: orphans HIDDEN from UI but preserved in `user_preferences` (reappear if route re-enters census) — `__other` pseudo-group dropped (`app.favorites.other` key stays seeded, harmless). Groups ordered by module declaration order, group row = module icon + label + count + chevron; Enter on group descends, Enter on item navigates. Bonus fixes: `ui/ai-icon` indirection deleted (5 consumers repointed to `@primebrick/ui`); favorites-root hover flicker (`href:''` surviving `??` → `||` nbsp fallback) |
 | 13 | fe: eslint `no-restricted-imports` — `Switch` named import from `@primebrick/ui` banned outside allowlist | ✅ done | — | allowlist = sanctioned composites only |
 | 14 | sdk tool: `check-standards.ts` gains `.svelte` scanning + gated rules `raw-switch`, `button-variant-toolbar`; fe-v3 wires `pnpm check:standards` + `.devin/check-standards.json` | ✅ done | 2026-11-04 | sdk `27fd7e5` + fe `edd26b0` — NEW `--profile=fe` (empty base set: consumer rules are browser false-positives, 172 hits baseline); raw-switch = line rule + structural pass for multi-line imports; baseline = **13 violations**, all items 5+6 evidence (ConfigList×2, FilterBar, CardViewRenderer×2, BulkActions×4, Pagination×4). Script NOT yet wired into `test`/`prebuild` — enforce after 5+6 clear the baseline. Side finding: be-v3 has 51 PRE-EXISTING `i18n-sql-ns` violations on patch `20261116040000_emailsender_callable_help_keys.sql` (emailsender.* keys seeded into public.translations) — not from this change, separate workstream |
 | 15 | fe e2e: update `jobs-pages.spec.ts` + `job-rule-form-lifecycle.spec.ts` (source_subject assertions, 8→7 fields, due_target if adopted) | ✅ done | — | |
@@ -288,8 +288,9 @@ is the canonical module display name.
 
 - New derived `favoriteGroups`: group resolved favorites by module id;
   each group = `{ module: ModuleInfo | null, items: FavoriteItem[] }`.
-  Orphans (no decl, disabled module) fall into a `__other` pseudo-group
-  (label = new key `app.favorites.other`, star icon, muted).
+  IMPLEMENTED variant (user call): orphans are FILTERED OUT of the
+  launcher but kept in `user_preferences` — they silently reappear if
+  the route re-enters the user's census. No `__other` pseudo-group.
 - Column 2 under favorites renders the *groups* as module-like rows
   (module icon or star fallback, `resolveModuleLabel`, `ChevronRight`;
   NO goto CTA — groups preview only). Column 3 renders the group's
@@ -300,9 +301,9 @@ is the canonical module display name.
   `targetRows`, `hoverPath` (`Preferiti › Module › Page`) updated to the
   grouped shape.
 - Edge cases: module `enabled===false`/`accessible===false` → census skips
-  it → items become orphans (muted, still removable — today's contract).
+  it → items become orphans (hidden per design-b, still stored).
   `favoriteItems` order follows the stored array (user's starring order);
-  groups ordered by first appearance of a favorite.
+  groups ordered by module declaration order in `shellNav.modules`.
 
 ---
 
@@ -421,8 +422,10 @@ checkpoint > lint > compile; tests are the second net):
   or limit to the entity-form archetype?
 - [ ] **Item 1**: move `Kbd` to `@primebrick/ui` (recommended, doctrine)
   vs duplicate a fe-local legend component?
-- [ ] **Item 7**: orphan favorites under a muted `Other` pseudo-group
-  (recommended) vs flat muted rows as today?
+- [x] **Item 7**: RESOLVED — user call: design (b) hide-or-preserve.
+  Orphans filtered from launcher UI, hrefs kept in `user_preferences`
+  (reappear on census return). `__other` pseudo-group rejected: FE can't
+  distinguish "dead forever" from "temporarily unreachable".
 - [ ] **Item 5**: keep `source_subject` translation/hint keys (recommended
   — pending capability) or also soft-delete them via patch?
 
