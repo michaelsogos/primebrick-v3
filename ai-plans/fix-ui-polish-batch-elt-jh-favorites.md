@@ -25,7 +25,7 @@
 | 13 | fe: eslint `no-restricted-imports` — `Switch` named import from `@primebrick/ui` banned outside allowlist | ✅ done | — | allowlist = sanctioned composites only |
 | 14 | sdk tool: `check-standards.ts` gains `.svelte` scanning + gated rules `raw-switch`, `button-variant-toolbar`; fe-v3 wires `pnpm check:standards` + `.devin/check-standards.json` | ✅ done | 2026-11-04 | sdk `27fd7e5` + fe `edd26b0` — NEW `--profile=fe` (empty base set: consumer rules are browser false-positives, 172 hits baseline); raw-switch = line rule + structural pass for multi-line imports; baseline = **13 violations**, all items 5+6 evidence (ConfigList×2, FilterBar, CardViewRenderer×2, BulkActions×4, Pagination×4). Script NOT yet wired into `test`/`prebuild` — enforce after 5+6 clear the baseline. Side finding: be-v3 has 51 PRE-EXISTING `i18n-sql-ns` violations on patch `20261116040000_emailsender_callable_help_keys.sql` (emailsender.* keys seeded into public.translations) — not from this change, separate workstream |
 | 15 | fe e2e: update `jobs-pages.spec.ts` + `job-rule-form-lifecycle.spec.ts` (source_subject assertions, 8→7 fields, due_target if adopted) | ✅ done | — | |
-| 16 | docs: update `button-variant-standard`, `form-field-standard`, `patterns.md` toolbar note; report `verify-file-creation.md` drift | ⏳ not done | — | canonical docs only — propose text, write after approval |
+| 16 | docs: update `button-variant-standard`, `form-field-standard`, `patterns.md` toolbar note; report `verify-file-creation.md` drift | ✅ done | 2026-11-04 | `fdf517f` — toolbar location rule (solid/outline/ghost, soft banned) + SwitchField enforcement note; `verify-file-creation.md` drift self-resolved (script now exists) |
 | 17 | verify: `pnpm check`, `pnpm lint`, `pnpm test`, `svelte-check` on touched repos + Playwright visual pass on `/system/job/rules/create`, a config list page, ELT footer, launcher favorites | ⏳ not done | — | |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
@@ -96,8 +96,8 @@ cannot express "centered content" today.
 |---|---|---|---|
 | `config-list/ConfigList.svelte:287` | bulk revert CTA | `soft`+`tone="warning"` | `variant="warning"` |
 | `config-list/ConfigList.svelte:299` | bulk delete CTA | `soft`+`tone="destructive"` | `variant="destructive"` |
-| `entity-list-table/toolbar/FilterBar.svelte:61` | "Clear all" reset | `soft`+`tone="primary"` | `variant="outline" tone="primary"` (secondary role) |
-| `entity-list-table/components/CardViewRenderer.svelte:224,245` | sort column / sort direction dropdown triggers | `soft` | `variant="outline"` (trigger chrome) |
+| `entity-list-table/toolbar/FilterBar.svelte:61` | "Clear all" reset | `soft`+`tone="primary"` | `variant="ghost"` (muted — user call, supersedes `outline`) |
+| `entity-list-table/components/CardViewRenderer.svelte:224,245` | sort column / sort direction dropdown triggers | `soft` | `variant="ghost"` (muted, matching pager page-size dropdown) |
 | `entity-list-table/toolbar/BulkActions.svelte` (all) | legacy bulk bar | `soft` ×4 | **dead code — delete** |
 | `entity-list-table/pagination/Pagination.svelte` (all) | legacy pager | `soft` ×4 | **dead code — delete** |
 
@@ -113,8 +113,10 @@ cannot express "centered content" today.
   primary already exists" (`detail-page-cta-placement.md:51-54`) — the
   toolbar usages were simply never migrated; nothing in code forbids it.
 
-**Fix**: solids in ConfigList; `outline` for secondary reset/trigger
-chrome; delete dead files; doc amendment (Part D) + lint gate (item 14).
+**Fix**: solids in ConfigList; `ghost` for muted reset/trigger chrome
+(user design call — `outline` superseded; matches Colonne/Filtro toggles
+and pager controls); delete dead files; doc amendment (Part D) + lint
+gate (item 14).
 
 ### 3. `name` single column + `enabled` switch beside it (JH create rules)
 
@@ -318,8 +320,8 @@ is the canonical module display name.
 | fe | `entity-list-table/components/TableFooter.svelte` | centered `KeyboardHints` in `center` slot |
 | fe | `sidebar/SidebarAppLauncher.svelte` | footer → `KeyboardHints` (+ `SwitchField`); favorites → grouped 2-col model |
 | fe | `components/config-list/ConfigList.svelte` | bulk CTAs → `warning`/`destructive` |
-| fe | `entity-list-table/toolbar/FilterBar.svelte` | clear-all → `outline` |
-| fe | `entity-list-table/components/CardViewRenderer.svelte` | sort/dir triggers → `outline`; datetime toggle → `SwitchField` |
+| fe | `entity-list-table/toolbar/FilterBar.svelte` | clear-all → `ghost` |
+| fe | `entity-list-table/components/CardViewRenderer.svelte` | sort/dir triggers → `ghost`; datetime toggle → `SwitchField` |
 | fe | `entity-list-table/toolbar/BulkActions.svelte`, `pagination/*` | DELETE + `toolbar/index.ts`, `pagination/index.ts`, `index.ts` cleanup |
 | fe | `entity-form/EntityFormPage.svelte` | boolean → `SwitchField` anatomy; bool cell alignment |
 | fe | `entity-form/FormFieldDispatcher.svelte` | drop `'switch'`; add `due_target`; `formValues` getter |
@@ -397,13 +399,12 @@ checkpoint > lint > compile; tests are the second net):
    silent nothing-rendered).
 6. **`due_target` composite** — wrong-lane subjects unrepresentable;
    `target_matches_lane` remains as the second net.
-7. **Doc amendments** (canonical text proposed for approval):
-   `button-variant-standard.md` += "toolbar action CTAs are solid variants
-   only (`default`/`destructive`/`warning`/`outline` for secondary);
-   `soft` is reserved for Layout-1 in-card secondary CTAs";
-   `form-field-standard.md` += "boolean fields render `SwitchField`
-   (control-first) — inside superforms `FormControl` too; hand-rolled
-   `Switch`+`<FormLabel>` rows are forbidden".
+7. **Doc amendments** (applied `fdf517f`): `button-variant-standard.md`
+   gained the "Toolbar chrome — location rule" section (solid CTAs /
+   `outline` emphasis / `ghost` muted utilities; `soft` banned —
+   enforced by `button-variant-toolbar`); `button-styles.mdx` +
+   `patterns.md` mirror it; `form-field-standard.md` forbids hand-rolled
+   `Switch`+`<FormLabel>` rows in favour of `SwitchField`.
 
 ---
 
@@ -412,9 +413,9 @@ checkpoint > lint > compile; tests are the second net):
 - [ ] **Item 4**: adopt the `due_target` composite widget (recommended —
   matches SchedulePage, kills lane drift at construction) or keep the
   plain TextInput?
-- [ ] **Item 2**: `FilterBar` "Clear all" → `outline` (recommended: it is
-  a secondary reset) vs `default`? CardViewRenderer sort/dir triggers →
-  `outline` (recommended) vs leave `soft`?
+- [x] **Item 2**: RESOLVED — user call: `ghost` for all muted utility
+  controls (clear-all, sort/dir triggers, FILTER/BULK toggle) matching
+  Colonne/Filtro/pager chrome. `outline` option superseded.
 - [ ] **Item 6 scope**: also migrate launcher footer + CardViewRenderer +
   clients forms to `SwitchField` now (recommended, completes "one anatomy")
   or limit to the entity-form archetype?
