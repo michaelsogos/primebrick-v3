@@ -19,7 +19,7 @@
 | 7 | us/job: `nav-declaration` — `name` loses `span:2`; `enabled` moves right after it; `source_subject` placement + comment removed | ✅ done | — | FULL removal: entity+meta+DB col (patch 20261101100000)+i18n keys+e2e |
 | 8 | fe: `EntityFormPage` renders booleans via `SwitchField` anatomy (control-first) inside `FormControl`; `FormFieldDispatcher` `'switch'` branch deleted | ✅ done | — | boolean → throw in dispatcher (closed CONTROLS registry) |
 | 9 | ui: `SwitchField` spreads `...restProps` onto inner `Switch` (FormControl `id`/`aria-*` wiring) | ✅ done | — | |
-| 10 | ui+fe: new `due_target` widget — composite `jobs.due.` + lane (from `execution_context`) + owner ComboSelect (modules census) + action input; `nav-declaration` uses `widget:"due_target"` | ⏳ not done | — | DECISION point (alt: keep textbox) |
+| 10 | ui+fe: new `due_target` widget — composite `jobs.due.` + lane (from `execution_context`) + owner ComboSelect (modules census) + action input; `nav-declaration` uses `widget:"due_target"` | 🚫 dropped | — | SUPERSEDED by the callables model: `target_subject` is now a `subject_combo` on `census.callables` (closed vocab, `allow_create:false`, BE `assertCallableTarget` enforces). `jobs.due.*` is internal plumbing composed by `triggers-engine` (`jobs.due.<lane>.job.forward.<uuid>`); lane lives in `execution_context` badge; `payload_map` widget + `payloadMapConformance` cover the rich surface. No UI writes raw `jobs.due.*` anywhere (SchedulePage precedent deleted). Closed-registry throw already enforced (FormFieldDispatcher:125). `formValues` getter sliver = speculative, no consumer |
 | 11 | fe: migrate hand-rolled/misplaced switch usages to `SwitchField` (clients create+edit, launcher footer, CardViewRenderer datetime toggle) | ✅ done | — | CardViewRenderer kept: legit composite (`thumbIcons` — SwitchField can't express it); eslint-allowlisted |
 | 12 | fe: `SidebarAppLauncher` favorites → hierarchy: col2 = modules owning favorites, col3 = favorite pages | ✅ done | — | DESIGN (b) per user call: orphans HIDDEN from UI but preserved in `user_preferences` (reappear if route re-enters census) — `__other` pseudo-group dropped (`app.favorites.other` key stays seeded, harmless). Groups ordered by module declaration order, group row = module icon + label + count + chevron; Enter on group descends, Enter on item navigates. Bonus fixes: `ui/ai-icon` indirection deleted (5 consumers repointed to `@primebrick/ui`); favorites-root hover flicker (`href:''` surviving `??` → `||` nbsp fallback) |
 | 13 | fe: eslint `no-restricted-imports` — `Switch` named import from `@primebrick/ui` banned outside allowlist | ✅ done | — | allowlist = sanctioned composites only |
@@ -411,9 +411,11 @@ checkpoint > lint > compile; tests are the second net):
 
 ## Part E — Open decisions for the user
 
-- [ ] **Item 4**: adopt the `due_target` composite widget (recommended —
-  matches SchedulePage, kills lane drift at construction) or keep the
-  plain TextInput?
+- [x] **Item 4**: RESOLVED — dropped as superseded. The callables model
+  removed the premise: users pick a declared callable from a closed
+  `census.callables` combo; `jobs.due.*` is server-side plumbing
+  (`triggers-engine` composes the forward envelope). SchedulePage
+  precedent deleted; no UI writes raw `jobs.due.*` anymore.
 - [x] **Item 2**: RESOLVED — user call: `ghost` for all muted utility
   controls (clear-all, sort/dir triggers, FILTER/BULK toggle) matching
   Colonne/Filtro/pager chrome. `outline` option superseded.
@@ -441,13 +443,14 @@ checkpoint > lint > compile; tests are the second net):
    allowlisted trigger chrome (post-decision).
 3. `/system/job/rules/create` row 1 = `name` | `enabled` (SwitchField,
    default ON); `source_subject` absent; 7 fields total.
-4. `target_subject` either composite (`due_target`, lane follows
-   `execution_context`, owner combobox = module codes) or documented
-   TextInput — per decision.
+4. `target_subject` renders the `census.callables` subject_combo (closed
+   vocabulary — already shipped; `due_target` composite dropped as
+   superseded by the callables model).
 5. Bool fields render switch-first inline anatomy everywhere migrated;
    eslint rejects `import { Switch }` outside the allowlist.
-6. Favorites: `Preferiti → <module> → <page>` columns; orphans grouped
-   muted under "Other"; remove + goto + keyboard descent all work.
+6. Favorites: `Preferiti → <module> → <page>` columns; orphans hidden
+   but preserved in `user_preferences` (design-b); remove + goto +
+   keyboard descent all work.
 7. `pnpm check`, `pnpm lint`, `pnpm test`, `check:standards` clean on
    touched repos; e2e specs updated and passing.
 8. Visual pass (Playwright screenshots): rules/create form, a config
