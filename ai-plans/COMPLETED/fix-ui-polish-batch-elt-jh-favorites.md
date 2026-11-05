@@ -6,7 +6,7 @@
 > lists empiric findings (file:line), the root cause, the fix, and the
 > enforcement hook that prevents recurrence.
 
-## Status: 🟡 IN PROGRESS — Plan date: 2026-10-28 — item 14 landed 2026-11-04 · task 17 verification run 2026-11-05 (see row)
+## Status: � DONE — archived 2026-11-05 (task 17 i18n residual → `emailsender-to-comm-engine-rename.md` violation #9) — Plan date: 2026-10-28
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -26,7 +26,7 @@
 | 14 | sdk tool: `check-standards.ts` gains `.svelte` scanning + gated rules `raw-switch`, `button-variant-toolbar`; fe-v3 wires `pnpm check:standards` + `.devin/check-standards.json` | ✅ done | 2026-11-04 | sdk `27fd7e5` + fe `edd26b0` — NEW `--profile=fe` (empty base set: consumer rules are browser false-positives, 172 hits baseline); raw-switch = line rule + structural pass for multi-line imports; baseline = **13 violations**, all items 5+6 evidence (ConfigList×2, FilterBar, CardViewRenderer×2, BulkActions×4, Pagination×4). Script NOT yet wired into `test`/`prebuild` — enforce after 5+6 clear the baseline. Side finding: be-v3 has 51 PRE-EXISTING `i18n-sql-ns` violations on patch `20261116040000_emailsender_callable_help_keys.sql` (emailsender.* keys seeded into public.translations) — not from this change, separate workstream |
 | 15 | fe e2e: update `jobs-pages.spec.ts` + `job-rule-form-lifecycle.spec.ts` (source_subject assertions, 8→7 fields, due_target if adopted) | ✅ done | — | |
 | 16 | docs: update `button-variant-standard`, `form-field-standard`, `patterns.md` toolbar note; report `verify-file-creation.md` drift | ✅ done | 2026-11-04 | `fdf517f` — toolbar location rule (solid/outline/ghost, soft banned) + SwitchField enforcement note; `verify-file-creation.md` drift self-resolved (script now exists) |
-| 17 | verify: `pnpm check`, `pnpm lint`, `pnpm test`, `svelte-check` on touched repos + Playwright visual pass on `/system/job/rules/create`, a config list page, ELT footer, launcher favorites | ⏳ partial | 2026-11-05 | **VERIFIED**: fe svelte-check 0/0, lint 0 errors (12 `any` warnings — pre-existing e2e/helper files, unrelated scope), vitest 555/555 after fixing 1 stale test (`services-store` `going_live` aggregation — test encoded pre-propagation contract, impl+docblock deliberate in `077d40c`); ui svelte-check 0/0 + 49/49; `check-standards --profile=fe` CLEAN and **already wired into `pnpm test`** (baseline 13→0 resolved during items 5/6). REMAINS: Playwright visual pass — stack down at verify time; surfaces covered by `jobs-pages.spec.ts`/`job-rule-form-lifecycle.spec.ts` (updated task 15). OPEN micro-decisions for closure: (a) also wire `check-standards` into `prebuild`? (test-wiring already enforces in dev pipeline); (b) visual pass = run live or accept implementation-time verification. RESIDUAL RE-HOMED: be-v3 51 `i18n-sql-ns` violations → `emailsender-to-comm-engine-rename.md` violation #9 (same domain — keys get renamed there) |
+| 17 | verify: `pnpm check`, `pnpm lint`, `pnpm test`, `svelte-check` on touched repos + Playwright visual pass on `/system/job/triggers/create`, a config list page, ELT footer, launcher favorites | ✅ done | 2026-11-05 | **ALL VERIFIED on live stack** (FE:5173, BE:3001, JH:3006, CRM:3007, AI:3004, NATS/PG/Redis): fe svelte-check 0/0, lint clean, vitest 555/555, ui 49/49, `check-standards --profile=fe` clean — **wired in BOTH `test` and `prebuild`** (micro-decision (a) → done-in-reality). **Playwright pass run live — 19/19** across `jobs-pages`/`job-trigger-form-lifecycle`/`host-chrome-favorites` specs covering all four surfaces (micro-decision (b) → resolved by running it). 2 real bugs fixed by the pass: (1) `useEntityList` dropped user mutations during bootstrap (`if (!_state.bootstrapped) return`) → pending-refresh queue, deterministic repro via preset-click race; (2) `crm-pages` chunk stale (vendor_requires ui@3.1.0 vs host 3.3.0 exact-match → infinite retry) → rebuilt via `pnpm fe:build`. Spec drift fixed: `rules/create`→`triggers/create` routes, sidebar `/crm/customers`→`/system/crm/pipeline`, footer assertion measuring hint-span gap instead of end-snippet. ➡️ MOVED: 51 be-v3 `i18n-sql-ns` violations → `emailsender-to-comm-engine-rename.md` violation #9 (provenance recorded there 2026-11-05) |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->
@@ -419,17 +419,20 @@ checkpoint > lint > compile; tests are the second net):
 - [x] **Item 2**: RESOLVED — user call: `ghost` for all muted utility
   controls (clear-all, sort/dir triggers, FILTER/BULK toggle) matching
   Colonne/Filtro/pager chrome. `outline` option superseded.
-- [ ] **Item 6 scope**: also migrate launcher footer + CardViewRenderer +
-  clients forms to `SwitchField` now (recommended, completes "one anatomy")
-  or limit to the entity-form archetype?
-- [ ] **Item 1**: move `Kbd` to `@primebrick/ui` (recommended, doctrine)
-  vs duplicate a fe-local legend component?
+- [x] **Item 6 scope**: RESOLVED — done-in-reality. Task 11 migrated all
+  four hand-rolled usages (clients create+edit, launcher footer,
+  CardViewRenderer — kept as sanctioned composite `thumbIcons`); eslint
+  allowlist enforces the boundary.
+- [x] **Item 1**: RESOLVED — doctrine path taken. `Kbd` moved to
+  `@primebrick/ui` (task 2); fe-local copy deleted, all consumers
+  repointed. No duplicate exists.
 - [x] **Item 7**: RESOLVED — user call: design (b) hide-or-preserve.
   Orphans filtered from launcher UI, hrefs kept in `user_preferences`
   (reappear on census return). `__other` pseudo-group rejected: FE can't
   distinguish "dead forever" from "temporarily unreachable".
-- [ ] **Item 5**: keep `source_subject` translation/hint keys (recommended
-  — pending capability) or also soft-delete them via patch?
+- [x] **Item 5**: RESOLVED — full removal chosen. Task 7 landed
+  entity+meta+DB column (patch `20261101100000`) + i18n keys + e2e — the
+  "keep keys" alternative was superseded by the delete-everything scope.
 
 ---
 

@@ -113,7 +113,7 @@ src/
    service code (`emailsender.provider.*`, `emailsender.email_template.*`,
    `emailsender.send`, …); live grants in `public.role_mappings` jsonb.
 9. **51 `i18n-sql-ns` check-standards violations in be-v3** (transferred from
-   `fix-ui-polish-batch` closure notes, 2026-11-05) — patch
+   `COMPLETED/fix-ui-polish-batch-elt-jh-favorites.md` closure notes, 2026-11-05) — patch
    `20261116040000_emailsender_callable_help_keys.sql` seeds `emailsender.*`
    keys into `public.translations`, violating the owning-module namespace
    rule (service-owned keys live in `{service}.translations`, not
