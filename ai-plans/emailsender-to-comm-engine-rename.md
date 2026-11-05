@@ -112,6 +112,14 @@ src/
 8. **30 `Permission.EMAILSENDER_*` enum members in SDK** — values carry the
    service code (`emailsender.provider.*`, `emailsender.email_template.*`,
    `emailsender.send`, …); live grants in `public.role_mappings` jsonb.
+9. **51 `i18n-sql-ns` check-standards violations in be-v3** (transferred from
+   `fix-ui-polish-batch` closure notes, 2026-11-05) — patch
+   `20261116040000_emailsender_callable_help_keys.sql` seeds `emailsender.*`
+   keys into `public.translations`, violating the owning-module namespace
+   rule (service-owned keys live in `{service}.translations`, not
+   `public.translations`). The rename fixes this structurally: the help/label
+   keys move to the `comm` schema translations and the public-seeded rows
+   are dropped/relocated by the migration patches.
 
 ### A.4 Cross-repo reference inventory (empirical grep, ~90 files)
 

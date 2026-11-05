@@ -1,15 +1,17 @@
 # Visual Collaboration & Dynamic Merge — Architecture Plan
 
-> Status: � DONE — archived 2026-11-05. F1–F11+F13 shipped (E2E-verified live).
-> Residuals (explicitly descoped/partial, see phase table):
+> Status: 🟢 DONE — archived 2026-11-05. F1–F11+F13 shipped (E2E-verified live).
+> Residual audit 2026-11-05 (verified — nothing lost):
 > - **F12 `CollaborationPanel` right sheet** — NOT built; descoped. Conflict
 >   resolution lives in `PresenceStatusChip` popover (keep-mine/use-new per
 >   field, delivered F11-G). Sheet id remains reserved if a full panel is
 >   ever wanted.
-> - **F14 docs** — partial: `collaboration.mdx` synced to docs site
->   (backend/dev + backend/guide + getting-started); `error-codes.mdx`
->   (DAL error codes page) not written; `collaboration.mdx` overclaim fix
->   ("any @AuditTrail" → marker-port wording) unverified.
+> - **F14 docs** — VERIFIED COVERED, no residual: error codes documented in
+>   DAL `architecture.mdx` (ERR01/02/03 table) + dedicated `optimistic-lock.mdx`;
+>   `collaboration.mdx` marker-port requirement correctly stated (dev-guide:107-110);
+>   `version`-in-entity write convention documented (`entity-write-payload.md`:24-28);
+>   audit-trail cross-link present (:350). The dedicated `error-codes.mdx` page
+>   was superseded by this coverage.
 > Scope: cross-repo feature spanning `primebrick-dal-v3`, `primebrick-v3-sdk`, `primebrick-be-v3`, `primebrick-fe-v3`, `primebrick-v3-docs`.
 > Mode: PLAN. No source code modified during planning. All claims empirically verified.
 >

@@ -5,7 +5,7 @@
 > (census `callables`), and give rules a form-built payload map (DST). The
 > scheduler stays a dumb trigger — services never learn the word "schedule".
 
-## Status: ✅ CORE VERIFIED E2E (tasks 1–10 done; 11 pending) — Plan date: 2026-10-31 / CET
+## Status: 🟢 DONE — archived 2026-11-05 (tasks 1–10 E2E-verified; task 11 extracted to `crm-semantic-events.md` — different workstream, kept alive there) — Plan date: 2026-10-31 / CET
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
@@ -19,7 +19,7 @@
 | 8 | FE: `payload_map` widget in closed `CONTROLS` — config-entry anatomy: dynamic rows right / `JsonValueEditor` last field bottom | ✅ done | 2026-10-31 | `PayloadMapEditor` in `@primebrick/ui`; bidirectional builder⇄JSON sync; rows driven by `target_schema`/`source_schema` props |
 | 9 | FE: schema-derived editor seed (`array`→`[]`, `object`→`{}`) on edit-open, non-propagating until first real edit | ✅ done | 2026-10-31 | in `JsonValueEditor` edit-open; `[]`≡`null`≡match-all in engine |
 | 10 | FE: permission warn-in-form when target route's `permissions` exceed the rule actor's set | ✅ done | 2026-10-31 | warn rendered under callable combo; enforcement stays on the route (verified live) |
-| 11 | CRM sales-logic boundary → semantic event `crm.customer_high_value` (subscriber separate from CRUD) | ⏳ not done | — | separate step |
+| 11 | CRM sales-logic boundary → semantic event `crm.customer_high_value` (subscriber separate from CRUD) | ➡️ moved | 2026-11-05 | extracted to `crm-semantic-events.md` — separate workstream (CRM sales-logic ownership), not this plan's scope; nothing lost |
 
 ### E2E verified 2026-10-31 (rule `e2e-callable-dispatch`, `emailsender.response.*` → `emailsender.send`, `@every 15s`)
 
