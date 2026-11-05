@@ -1,8 +1,9 @@
 ---
 id: schedule-lifecycle-actions
 title: Schedule lifecycle actions — arm/disarm/stop/pause/disarm-all + endpoint-declared FE custom actions
-status: open
+status: completed
 created: 2026-11-05
+completed: 2026-11-05
 owner: job-handler + sdk + core + fe
 ---
 
@@ -18,15 +19,15 @@ Two levels, always distinct:
 
 | Action | Level | Semantics | Re-arms? |
 |---|---|---|---|
-| STOP (`disarm-job`, existing) | instance | purge declaration only | yes — owner/engine may re-arm |
-| PAUSE (`pause-schedule`) | owner-ad-interim | `enabled` stays true; re-generation suppressed | no, until RESUME |
-| DISABLE (`disarm-schedule`) | owner | trigger → `enabled=false`; infra → sticky `disarmed` suppression | never — only explicit `arm-schedule` |
-| ENABLE (`arm-schedule`) | owner | trigger → `enabled=true` + refreshTrigger; infra → unsuppress + owner rearm ping | — |
+| STOP (`stop-job`) | instance | purge declaration only → `stopped` | yes — owner/engine may re-arm |
+| PAUSE (`pause-schedule`) | owner-ad-interim | `enabled` stays true; re-generation suppressed → `paused` | no, until RESUME |
+| DISABLE (`disable-schedule`) | owner | trigger → `enabled=false`; infra → sticky `disarmed` suppression | never — only explicit `enable-schedule` |
+| ENABLE (`enable-schedule`) | owner | trigger → `enabled=true` + refreshTrigger; infra → unsuppress + owner rearm ping | — |
 | DISARM ALL / PAUSE ALL / RESUME ALL | bulk owner-level | bulk version of the above | — |
 
 **ENABLE/DISABLE = ARM/DISARM SCHEDULE, always** — trigger or not, they are
-owners not runs. `disarm-job` (STOP) is the ONLY instance-level op and is
-the temporary one (≈ "stop this execution now").
+owners not runs. `stop-job` (STOP — renamed from `disarm-job`,
+**breaking**) is the ONLY instance-level op and is the temporary one.
 
 ## Empirical evidence (verified 2026-11-05 — all live code)
 
@@ -115,13 +116,13 @@ extend the set).
 
 ### Routes (all `RpcRoute[]` in `rpc:` — `/api/v1/actions/*`, NEVER entity paths)
 
-- `POST /api/v1/actions/disarm-job` — EXISTS, unchanged (STOP).
-- `POST /api/v1/actions/disarm-schedule` — body `{schedule_subject}`; kind=trigger → `trigger.enabled=false` + `refreshTrigger`; infra → `disarmSchedule` + sticky `disarmed`.
-- `POST /api/v1/actions/arm-schedule` — trigger → `enabled=true` + refresh; infra → clear suppression + `jobs.ctl.schedule.rearm.<svc>` ping (owner re-declares fresh payload/headers; services lacking a rearm handler → row unsuppressed, `missing` drift visible until natural re-declare — documented edge).
-- `POST /api/v1/actions/pause-schedule` / `resume-schedule` — pause: suppression flag (+ event-arm gate); resume: like arm.
-- `POST /api/v1/actions/disarm-all` — bulk: all enabled triggers → enabled=false+refresh; all armed infra → disarm+sticky; report `{disarmed, skipped, errors}`.
+- `POST /api/v1/actions/stop-job` — RENAMED from `disarm-job` (breaking; `disarmSchedule` → `stopped`).
+- `POST /api/v1/actions/disable-schedule` — body `{schedule_subject}`; kind=trigger → `trigger.enabled=false` + `refreshTrigger`; infra → `disarmSchedule` sticky `disarmed`.
+- `POST /api/v1/actions/enable-schedule` — trigger → `enabled=true` + refresh; infra → clear suppression + `jobs.ctl.schedule.rearm.<svc>` ping (owner re-declares fresh payload/headers; services lacking a rearm handler → row unsuppressed, `missing` drift visible until natural re-declare — documented edge).
+- `POST /api/v1/actions/pause-schedule` / `resume-schedule` — pause: `disarmSchedule`→`paused` (+ all arm-path gates); resume: unsuppress→`stopped` + re-arm like enable.
+- `POST /api/v1/actions/disarm-all` — bulk: enumerates `armed`+`stopped` rows (both carry owner intent) → disable each; report `{affected, skipped, errors}`.
 - `POST /api/v1/actions/pause-all` / `resume-all` — freeze/thaw (maintenance window; survives restart via mirror).
-- Permission: `AUTHENTICATED_ADMIN`; bulk ops additionally guarded by FE `mfaStepUp` (host provides it for remote ops).
+- Permission: `AUTHENTICATED_ADMIN`. **No MFA on jobs/rules — final decision** (user 2026-11-05). The `mfa:` route spec + `require_step_up` meta field remain available for other services; the FE `mfaStepUp` wiring stays generic/inert here.
 
 ### Suppression gates (arm paths)
 
@@ -163,18 +164,69 @@ extend the set).
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 1 | core: `RowCustomAction.row_key`, `TableMeta.bulk_custom_actions`, `BulkCustomAction` type + extract-docs | ⏳ | additive, breaking-safe |
-| 2 | sdk: `RpcRoute.entity_op`, `makeServiceRoutes` op attach + construction fail-fast + tests | ⏳ | mirrors BE metaExtraScans intent |
-| 3 | jh: suppression gates in `declareSchedule`/`refreshTrigger`/event-arm + `stopped`/`paused` status + drift update | ⏳ | sticky disarm = user req |
-| 4 | jh: routes arm/disarm/pause/resume/×-all + infra rearm ping contract (`jobs.ctl.schedule.rearm.<svc>` — doc + JH publish; owner handler contract documented for services) | ⏳ | permission ADMIN; report shapes |
-| 5 | jh meta: row_custom_actions + bulk_custom_actions + status badges + i18n patch ×7 + re-sign | ⏳ | patch 20261112x |
-| 6 | fe: `handleCustomAction` endpoint dispatch + bulk custom CTA + mfaStepUp on bulk + refresh | ⏳ | useRowActions/useBulkActions |
-| 7 | tests: gates (suppress/paused/stopped), routes, FE dispatch; JH suite + fe where wired | ⏳ | |
-| 8 | docs: entity-list-pages.md, JH index.mdx, check-standards rule + extract-docs regen | ⏳ | |
-| 9 | E2E live: disable→survives restart+redeclare; pause→freeze; resume→thaw; disarm-all report | ⏳ | |
+| 1 | core: `RowCustomAction.row_key` + `visible_on`, `TableMeta.bulk_custom_actions`, `BulkCustomAction` type + extract-docs | ✅ | 2026-11-05 |
+| 2 | sdk: `RpcRoute.entity_op`, `makeServiceRoutes` op attach + construction fail-fast + tests | ✅ | 4 tests in service-routes.test.ts |
+| 3 | jh: suppression gates in `declareSchedule`/`refreshTrigger`/event-arm + `stopped`/`paused` status + drift update + **due-lane gate** | ✅ | 89/89 tests |
+| 4 | jh: routes stop/disable/enable/pause/resume/×-all + infra rearm ping + `mfa` spec on bulk | ✅ | `stop-job` rename |
+| 5 | jh meta: row_custom_actions + bulk_custom_actions + status badges + i18n patch ×7 + re-sign | ✅ | patch 20261113000000, 29 signed |
+| 6 | fe: `handleCustomAction` endpoint dispatch + `serviceApiPrefix` svc proxy + bulk custom CTA + mfaStepUp + `visible_on` filter | ✅ | svelte-check clean |
+| 7 | tests: gates (suppress/paused/stopped), routes, FE dispatch; JH suite + fe where wired | ✅ | JH 89/89, SDK 10/10 |
+| 8 | docs: entity-list-pages.md, JH index.mdx, extract-docs regen (core+sdk). check-standards lint rule SUPERSEDED — construction fail-fast in `makeServiceRoutes` is strictly stronger (regex tool is line-scoped, can't do cross-file semantic checks) | ✅ | 2026-11-05 |
+| 9 | E2E live: disable→survives restart+redeclare; pause→freeze; resume→thaw; disarm-all report | ✅ | 2026-11-05 — see E2E log below |
+
+### Due-lane gate (added 2026-11-05 — completes the semantics)
+
+Pending `jobs.due.*` messages are honored **only while the schedule is
+still `armed`**: the due-forwarder consults the mirror row at dispatch —
+`status != "armed"` → skip dispatch + record the run `skipped` (audit
+without DLQ). Covers paused/disarmed/stopped uniformly: suppression kills
+pending fires too, and redelivered one-shot dues de-dupe on `fired`.
+No backpressure problem exists anywhere (event lane is plain subscribe,
+no storage; last-mile is fire-and-forget) — DLQ confirmed unnecessary;
+run-history `skipped` provides the audit trail.
+
+## E2E live run (2026-11-05)
+
+Stack: BE :3001 + JH :3006 + NATS/PG/Redis docker. Auth: GATEWAY mode
+(`x-primebrick-client-shield-key` + `x-client-shield-secret` from Redis
+rotation + `x-user-*` admin headers; UA `primebrick-api/3.6.0`).
+
+| Step | Result |
+|------|--------|
+| enable trigger `30ce91e6` (event+schedule) | `enabled=t`, `stopped` → matching event `emailsender.response.e2e` → **armed**, JetStream declaration `@every 15s` |
+| pause | `paused`, `enabled=t` kept; event re-pub → **stays paused** (event-arm gate) |
+| pending dues after pause | 5 run rows `skipped` — due-lane gate live, audit trail works |
+| resume | `disarmed` → event → **armed** |
+| disable | `enabled=f` + `disarmed` |
+| stop-job on infra `ai.partition-maintenance` | `stopped` |
+| disable on infra | `disarmed`; owner re-declare via `jobs.ctl.schedule.request` → `{"armed":false,"skipped":"suppressed:disarmed"}` — **sticky suppression live** |
+| enable on infra | `{"enabled":true,"rearm_requested":true}` + `jobs.ctl.schedule.rearm.ai` ping; owner re-declare → `armed` seq 978 |
+| pause-all | 2 armed → `paused`; event → stays paused |
+| resume-all | 2 → `stopped` + rearm ping; event + owner re-declare → armed |
+| disarm-all | 3 affected, **0 errors**; all 7 rows `disarmed`; orphan trigger row disabled via dead-owner fallback |
+
+**Live bugs found & fixed during E2E:**
+1. `refreshTrigger`/`startTriggersEngine` froze the per-subject fan-out
+   array at boot: a trigger enabled at runtime (or one moved onto an
+   already-bound subject) never received events. Fix: `bindSubject()`
+   resolves `liveTriggers` at delivery time; `refreshTrigger` binds new
+   `event_subject`s. JH restart picked it up and the trigger armed on
+   the next event.
+2. `disarm-all` on a `stopped` row whose trigger owner is soft-deleted
+   errored and left `stopped` (lying about restorable intent). Fix
+   (refined after review): dead-owner trigger rows are GARBAGE — the
+   engine already drops mirrors on trigger delete; rows orphaned while
+   JH was down get `dropScheduleMirror` on the first admin touch
+   (disable/resume → success; enable → honest error "owner trigger
+   deleted — schedule mirror dropped"). Verified live: 7→6 rows.
+3. `dropScheduleMirror` used `dal.delete` (soft) but `job_schedules`
+   has no `deleted_at` — it would have failed on ANY trigger delete.
+   Fixed to `hardDelete` with uuid+version (auditable optimistic
+   concurrency). Latent bug caught by the E2E dead-owner path.
 
 ## Open decisions
 
-- [ ] DLQ for events skipped during pause — add now or later? (proposed: later, config-flaggable)
-- [ ] Row-status-conditional action visibility (show RESUME only when paused) — predicate in RowCustomAction vs always-visible+server-refuse?
-- [ ] Bulk ops MFA step-up required? (FE pattern exists via `components.mfaStepUp`/useMfaStepUp)
+- [x] DLQ — RESOLVED 2026-11-05: not needed (no durable backlog exists to preserve; run `skipped` covers audit)
+- [x] Backpressure — RESOLVED: none exists (plain lanes + suppressed arm ⇒ no accumulation)
+- [x] Row-status-conditional action visibility — RESOLVED: `RowCustomAction.visible_on: {field, values[]}` predicate; FE filters per-row (`isCustomActionVisible`)
+- [x] Bulk ops MFA step-up — RESOLVED 2026-11-05: **NO MFA for jobs/rules, definitive** (user call). Route `mfa:` specs + `require_step_up` meta removed; generic `mfaStepUp` infra stays for other services.
