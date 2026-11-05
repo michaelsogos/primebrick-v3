@@ -3,7 +3,7 @@
 > Continuation of `dynamic-form-pages-pre-plan.md` — expands scope from form pages
 > to the full page-type system (table, list, form, kanban, timeline, custom),
 > route-level page metadata, and module-provided pages.
-> Related plans: `collaboration-visual-merge.md` (DRAFT — presence/merge UI),
+> Related plans: `COMPLETED/collaboration-visual-merge.md` (DONE — presence/merge UI),
 > `module-installation-process.md` (module manifest), `be-endpoint-anatomy-taxonomy-standard.md`
 > (endpoint taxonomy + deferred module-route moves).
 > Hard dependency surfaced: `entity-validation-autoderive.md` — referenced by
@@ -25,7 +25,7 @@
 > `events.emits` module declaration feeds subject pickers; pilot =
 > `/system/job/rules/create` host-rendered, `RuleFormPage.svelte` deleted.
 
-## Status: ⚪ TODO — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST · updated 2026-10-23
+## Status: 🟡 IN PROGRESS — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST · updated 2026-11-05 (tasks 15/16/26/27 delivered by collaboration-visual-merge + package extractions)
 
 > **Drift reconciliation 2026-10-28:** parts of this plan already landed via
 > `entity-form-archetype-pilot.md`, `root-page-skeleton.md` and the package
@@ -35,12 +35,14 @@
 > (`EntityFormPage` renderer) done for the create-pilot — full field/widget
 > coverage per `form-pages-anatomy-audit.md` still open; tasks 26–27
 > (`@primebrick/core`, `@primebrick/ui`) shipped; task 20 (nav decls via
-> `service.register` → census) live. **Presence status corrected:** task 15
-> note "BE is 100% implemented; FE has zero consumers" is accurate —
-> `collaboration-visual-merge.md` backend (DAL lock, SDK presence, BE module +
-> meta inject + audit hook) landed; FE side (F10–F13: `usePresenceChannel`,
-> `useCollaborativeForm`, `PresenceAvatars`, `CollaborationPanel`) is the open
-> dependency for tasks 15–16 here. Inverse: `docs-generation-per-service-split`
+> `service.register` → census) live. **Presence status corrected 2026-11-05:**
+> `collaboration-visual-merge` is COMPLETE — BE chain (DAL lock, SDK presence,
+> BE module + meta inject + audit hook) AND FE side (F10 `usePresenceChannel`/
+> `PresenceAvatars` in `PageHeader`, F11 `useCollaborativeForm` + version
+> write-path + conflict/merge UI on `job_rule`, F13 session-keyed presence)
+> all shipped and E2E-verified. F12 `CollaborationPanel` was descoped —
+> conflict resolution lives in the `PresenceStatusChip` popover. Tasks 15–16
+> here are effectively delivered. Inverse: `docs-generation-per-service-split`
 > task 5 is blocked on this plan's form-meta maturity; `page-chrome-enforcement.spec.ts`
 > now pins the mandatory-header contract for whatever dispatches pages (task 21).
 >
@@ -67,8 +69,8 @@
 | 12 | Timeline spike: `@svar-ui/svelte-gantt@2.8.1` (MIT) vs lighter alternative — validate read-only rendering from entity rows | ⏳ not done | — | gantt-like horizontal bars; `ui/timeline` (vertical, presentational) is a different component |
 | 13 | `PageType.Timeline` (`EntityTimelinePage`): `meta.timeline` mapping (start/end datetime, row/dimension, title, metric, color) | ⏳ not done | — | read-only v1; draggable bars deferred |
 | 14 | `PageType.Custom`: `component_key` → FE component registry; custom pages stay static routes in core FE, declared in census | ⏳ not done | — | my proposal — awaiting user's own idea before deciding |
-| 15 | `usePresence(entity, uuid)` composable consuming `meta.collaboration` — SSE `presence/events`, READING/EDITING/LEAVE/HEARTBEAT signals, `PresenceAvatars` in form-page `headerExtras` | ⏳ not done | — | BE is 100% implemented; FE has zero consumers today; the generated page shells make this free for every dynamic page |
-| 16 | Central write-path handling of collab contracts: `version` optimistic locking + `ERR01`/`ERR02`/`ERR03` → conflict/merge UI hooks in `EntityFormPage` | ⏳ not done | — | per `collaboration-visual-merge.md`; `CollaborationPanel` sheet id reserved |
+| 15 | `usePresence(entity, uuid)` composable consuming `meta.collaboration` — SSE `presence/events`, READING/EDITING/LEAVE/HEARTBEAT signals, `PresenceAvatars` in form-page `headerExtras` | ✅ done | 2026-10-28/31 | delivered by `collaboration-visual-merge` F10/F13: `usePresenceChannel` + presence-channel-registry + `PresenceAvatars` mounted in `PageHeader` slot; session-keyed identity |
+| 16 | Central write-path handling of collab contracts: `version` optimistic locking + `ERR01`/`ERR02`/`ERR03` → conflict/merge UI hooks in `EntityFormPage` | ✅ done | 2026-10-29/31 | delivered by `collaboration-visual-merge` F11: `useCollaborativeForm` + `handleVersionConflict` + `PresenceStatusChip` popover (F12 `CollaborationPanel` sheet descoped → chip popover is the conflict surface); E2E 2/2 + 3/3 live |
 | 17 | Migrate the 5 core table pages (users, customers, organizations, roles, clients) to `EntityListPage` | ⏳ not done | — | pure dedup, can go first — biggest LOC win |
 | 18 | Migrate standard form pages (profile, users/create+[uuid], organizations create+[uuid], clients create+[uuid], configurations/create) to `EntityFormPage`, entity by entity | ⏳ not done | — | roles create/[uuid] (non-standard manual forms) assessed separately |
 | 19 | Migrate AI-module-owned pages (settings/ai, docs-index, jobs, email-providers, migrations, templates, translations) out of hardcoded settings module → declared pages of their owning service | ⏳ not done | — | requires task 20 transport; `ENTITY_SERVICE_MAP` hardcoding must become census-driven `service_code` |
@@ -78,8 +80,8 @@
 | 23 | Census↔implementation consistency check (build/test): declared `entity` routes must resolve a live `/meta`; catches drift like the `templates` mock declaring `entity: 'template'` | ⏳ not done | — | silent drift already observed once |
 | 24 | Decide presence transport for `/ws/` entities (BE-only presence today — module entities have none) | ⏳ not done | — | open design question; gateway proxy vs per-service implementation |
 | 25 | Update rules + docs: `entity-meta-schema.md` (new sections), `entity-list-pages.md` (page-type policy), `docs/dev-guide/entity-metadata.mdx`, `patterns.md`, ai-plans cross-refs; write `entity-validation-autoderive.md` or mark absorbed | ⏳ not done | — | closed-schema rule: extend types first, then consume |
-| 26 | Create `@primebrick/core` package — env-agnostic shared code (EntityMeta family, `PageRouteDeclaration`/`ModuleRouteDeclaration`, presence types, config vocab + validators, write envelope, STANDARD_OPS/permission/sentinel constants, RFC7807, snake_case helpers) | ⏳ partial | — | kills the 3-copy EntityMeta (BE/FE/job.meta.ts) + mirrored validators — Part I |
-| 27 | Create `@primebrick/ui` package (`@sveltejs/package`): components, composables, non-rune utils, `ModulePageHost` + `mountPage` helper + base stylesheet | ⏳ partial | — | FE + module `fe/` sources consume it identically — Part I |
+| 26 | Create `@primebrick/core` package — env-agnostic shared code (EntityMeta family, `PageRouteDeclaration`/`ModuleRouteDeclaration`, presence types, config vocab + validators, write envelope, STANDARD_OPS/permission/sentinel constants, RFC7807, snake_case helpers) | ✅ done | — | `@primebrick/core` shipped — EntityMeta family, presence types, schedule validators (`isValidScheduleSpec`/`jobTriggerShapeIssues`), payload-map types, ext-json codec; consumed by BE/FE/US/SDK |
+| 27 | Create `@primebrick/ui` package (`@sveltejs/package`): components, composables, non-rune utils, `ModulePageHost` + `mountPage` helper + base stylesheet | ✅ done | — | `@primebrick/ui` shipped — components/composables + `mountPage` remote-mount helper; consumed by FE + remote `fe/` bundles identically |
 | 28 | Extraction waves + publish wiring (GitFlow release → npm, same train as dal/sdk): types→core first, validators/helpers→core, components/composables→ui as they stabilize | ⏳ not done | — | EntityListPage + useEntityList are the first ui citizens (jobs remote pilot consumes them) |
 | 29 | Entity-sync channels v2 — **decision A+B taken 2026-10-19**: structured local BroadcastChannel + unified `useEntitySync` surface; **extract a dedicated sub-plan from Part J** | ⏳ not done | — | Part J; replaces per-family `useSyncChannel` names; collaboration SSE plugs into same surface later |
 | 30 | `EntityAction.endpoint` extension (BE+FE closed-schema): emit method+path per op from the route scan incl. `metaExtraScans` → FE write dispatch uses declared endpoints | ⏳ not done | — | discovered 2026-10-19 — fixes latent users-page 404 (writes under `/api/v1/auth/users`); kills `ENTITY_SERVICE_MAP`; entity-level meta — Part J |
@@ -170,8 +172,8 @@ field deltas, `ERR01`/`ERR02`/`ERR03`; SDK `presence/` contract;
 `@AuditTrail()` via `assembleMeta`.
 FE: **only the `CollaborationMeta` type exists — zero consumers.** No presence
 UI, no `usePresence`, no calls to `/presence`. `createSseConnection` is the
-ready-made transport seam. `collaboration-visual-merge.md` (DRAFT) prescribes
-`PresenceAvatars` in `FormPageLayout.headerExtras` + `CollaborationPanel` sheet.
+ready-made transport seam. `collaboration-visual-merge` (COMPLETED) shipped
+`PresenceAvatars` in `PageHeader` + `PresenceStatusChip` popover conflict UI.
 **Implication**: implementing presence inside the generated page shells delivers
 it once, for every dynamic page — the page system is the delivery vehicle, not
 a risk to preserve.
@@ -416,11 +418,12 @@ The page system *carries* collaboration rather than competing with it:
    params) — SSE `presence/events` via `createSseConnection`, READING on mount,
    EDITING per focused field (`expose_editing_value` honored), HEARTBEAT 15s,
    LEAVE on unload.
-2. `PresenceAvatars` rendered in the form page's `headerExtras` — the exact
-   injection point `collaboration-visual-merge.md` prescribes.
+2. `PresenceAvatars` rendered in the form page's `headerExtras` — shipped via
+   `collaboration-visual-merge` F10 (`PageHeader` presence zone).
 3. Write path: `EntityFormPage` always sends `version`; `ERR01` (409) →
-   conflict UI → `/audit/:auditLogId` delta fetch → `CollaborationPanel` sheet;
-   `ERR02`/`ERR03` mapped to existing notification channel.
+   conflict UI → `PresenceStatusChip` popover (keep-mine/use-new) — shipped via
+   F11; `CollaborationPanel` sheet descoped. `ERR02`/`ERR03` mapped to the
+   notification channel.
 4. Known gap to decide: presence endpoints exist only on BE `/api/v1/entities/*`
    — `/ws/` entities have no transport. Options: gateway-proxied presence vs
    per-service implementation via SDK port (contract already exists).

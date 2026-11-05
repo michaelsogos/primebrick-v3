@@ -1,6 +1,15 @@
 # Visual Collaboration & Dynamic Merge — Architecture Plan
 
-> Status: 🟠 PARTIALLY LANDED — backend chain implemented; FE consumer side pending
+> Status: � DONE — archived 2026-11-05. F1–F11+F13 shipped (E2E-verified live).
+> Residuals (explicitly descoped/partial, see phase table):
+> - **F12 `CollaborationPanel` right sheet** — NOT built; descoped. Conflict
+>   resolution lives in `PresenceStatusChip` popover (keep-mine/use-new per
+>   field, delivered F11-G). Sheet id remains reserved if a full panel is
+>   ever wanted.
+> - **F14 docs** — partial: `collaboration.mdx` synced to docs site
+>   (backend/dev + backend/guide + getting-started); `error-codes.mdx`
+>   (DAL error codes page) not written; `collaboration.mdx` overclaim fix
+>   ("any @AuditTrail" → marker-port wording) unverified.
 > Scope: cross-repo feature spanning `primebrick-dal-v3`, `primebrick-v3-sdk`, `primebrick-be-v3`, `primebrick-fe-v3`, `primebrick-v3-docs`.
 > Mode: PLAN. No source code modified during planning. All claims empirically verified.
 >

@@ -5,13 +5,13 @@
 > JetStream schedule declarations firing. Disabling a job that keeps
 > consuming is a cosmetic flag — the disable must reach the NATS layer.
 
-## Status: ⚪ TODO — Plan date: 2026-11-04 13:30 UTC / 14:30 CET
+## Status: 🟡 IN PROGRESS — Plan date: 2026-11-04 13:30 UTC / 14:30 CET · updated 2026-11-05 (task 3 list-decoration landed; strict orphan purge active; see updated OPEN list)
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
 | 1 | us/job: audit the canonical disable paths — `PUT entity job_trigger` (enabled→false) and `POST /api/v1/actions/disarm-job`; verify BOTH reach `disarmSchedule` → `cancelJobSchedule` NATS purge and update `job_schedules.status` | ✅ done | 2026-11-04 | AUDIT VERDICT: canonical path was BROKEN, not just bypassed — `jobs.ctl.triggers.changed` was jetstream-published on a subject the stream never captured (`ai`'s `ensureStream syncSubjects` stomps any extra subject every boot — last-writer-wins race), `.catch(()=>{})` swallowed the failure → hot-reload NEVER worked; trigger CRUD only took effect at restart. FIX (`b0ff22f`→`4c0159e`): core `NatsClient.publish` + `subscribeShielded` reloader + canonical 4 stream subjects + warn on failure. Proven live: enable→arm (seq bump), disable→declaration purged + row `disarmed`. BONUS finding: fired `jobs.due.*` messages nacked on auth errors REDELIVER forever — purge stops future fires only; stale backlog needs consumer-side attention (max_deliver/drop policy). SECURITY note: `jobs.cancel.*` accepted a raw unauthenticated publish — any NATS client can purge any schedule; flag for prod hardening (NATS ACLs) |
 | 2 | us/job + sdk: boot-time reconciliation — `reconcileSchedules()` in JH `onReady` AFTER `startTriggersEngine`; sdk gains `listJobScheduleSubjects` + `cancelJobSchedules(subjects\|"all")` (single purge logic, 1/N/all entry points). Rules: row`disarmed`+decl alive → purge; decl alive+no row (orphan) → purge; row`armed`+decl missing → trigger-kind self-heals via engine (skip), manual/infra → mark drift (row lacks payload+forwardHeaders — re-arm cannot be faithful) | ✅ done | 2026-11-04 | SDK `d3d4658`: `getJobSchedule` + `listJobScheduleSubjects` + `cancelJobSchedules(1\|set\|"all")` + `getJetStreamManager`. JH `505de4c`: `reconcileSchedules()` in onReady after engine (E2 ✓). VERIFIED LIVE w/ 3 fixtures: disarmed+live→PURGED · orphan→REPORTED only (E3 relaxed: strict purge deferred until ai direct-fallback removed — report-only now, flag in task 3) · armed+missing→REPORTED only (E1: row lacks payload/auth — never fabricate). E4: per-subject errors collected, boot safe · E5 idempotent · `getLastReconcileReport()` kept for task 3 |
-| 3 | us/job + fe: surface drift — if a row is `armed` but the NATS schedule is gone (or vice versa), log + expose in the schedules list so the admin sees the real state | ⏳ partial | 2026-11-04 | DONE (deep-dive pass): job_schedule entity route → READ-ONLY (mirror can't drift via canonical API — `a699558`); disarm-job body-validated; disarmSchedule full SUBJECT_RE. REMAINS: list decorate `live`/`drift` at read-time (1 enumeration per call) + `schedule-drift` action exposing `getLastReconcileReport()` + meta badge fields + FE badge |
+| 3 | us/job + fe: surface drift — if a row is `armed` but the NATS schedule is gone (or vice versa), log + expose in the schedules list so the admin sees the real state | ⏳ partial | 2026-11-04 | DONE (deep-dive pass): job_schedule entity route → READ-ONLY (`a699558`); disarm-job body-validated; disarmSchedule full SUBJECT_RE. **2026-11-05:** list decorate `live`/`drift` at read-time DONE (`jobs.service.ts` — 1 enumeration per call, `row.live`/`row.drift`); strict orphan purge ACTIVE (ai direct-fallback removed → governed ctl arm; verified live `1 orphan-purged`). REMAINS: `schedule-drift` action exposing `getLastReconcileReport()` (`schedule-service.ts:420` — fn exists, no route) + `live`/`drift` badge columns in `job.meta.ts` + i18n keys (FE renders badges from meta — zero FE code) |
 | 4 | doc: `.devin/rules` or dev-guide note — job_schedules/job_triggers are mirrors of NATS state; direct SQL writes on them are bypass-only and REQUIRE a `disarmSchedule` NATS call or a job-handler restart to take effect | ⏳ not done | — | prevents repeating today's mistake |
 | 5 | decide: FK/guard — should `job_schedules` expose a guarded admin route for bulk disarm ("disarm all") instead of raw SQL? A `POST /api/v1/actions/disarm-all` on job-handler | ⏳ not done | — | DECISION point — today's need was "kill everything for testing" |
 
@@ -25,15 +25,17 @@ FIXED:
 - **B3 job_schedule entity route writable** — mirror flipped via canonical API (PUT disarmed → NATS keeps firing). Now read-only (list/get/audit) `a699558`.
 - disarm-job body validation; disarmSchedule SUBJECT_RE; stale triggers-engine tests.
 
-OPEN (priority order):
-- **ai direct-publish fallback** (partition-jobs.ts:86) — produces legitimate orphans; replace with `service.register`-triggered re-declare via governed route → then orphan purge can go strict.
-- **Periodic reconcile** — boot-only today; post-boot drift (manual purge/NATS wipe) invisible until restart. Run same fn on interval (config `job.reconcile_interval_ms`) + kind=trigger armed-missing → `refreshTrigger(uuid)` (engine-owned re-derivation).
-- **Trigger delete leaves job_schedules row disarmed forever** — registry accumulates dead identities; delete should remove the row (runs keep subject text).
-- **declareSchedule TOCTOU** — findAll→add/update races on schedule_subject unique; needs atomic upsert or in-process single-flight.
+OPEN (priority order — updated 2026-11-05, struck items resolved):
+- ~~**ai direct-publish fallback**~~ — RESOLVED: ai now arms via governed `jobs.ctl.schedule.request` (`armJobSchedule` SDK wrapper); strict orphan purge verified live.
+- ~~**Trigger delete leaves job_schedules row**~~ — RESOLVED: `dropScheduleMirror` wired into trigger delete.
+- ~~**declareSchedule TOCTOU**~~ — RESOLVED: single-flight lock inside the atomic arm protocol.
+- ~~**ensureStream(syncSubjects)** footgun~~ — RESOLVED: ai drops the flag; JH owns JOBS stream config.
+- ~~**Silent `.catch(()=>{})`**~~ — RESOLVED: publish failures now `warn`-logged.
+- **Periodic reconcile** — boot-only today; post-boot drift (manual purge/NATS wipe) invisible until restart. Run same fn on interval (config `job.reconcile_interval_ms`) + kind=trigger armed-missing → `refreshTrigger(uuid)` (engine-owned re-derivation). NOTE: the `dispatched→lost` sweeper covers run-level drift; schedule-level periodic reconcile still open.
 - **forwarder unreachable-resolver fallback** — forwards frozen headers that die at the callable anyway; should nak/retry instead (transient) or refuse (fail-closed).
-- **Silent `.catch(()=>{})`** on disarm at onEvent:268 + refreshTrigger:291 — drift invisible; log warn at least.
-- **ensureStream(syncSubjects)** footgun on shared JOBS stream — JH owns config; others must not sync (ai drops the flag, keeps allowMsgSchedules for boot-race create).
 - **Old-version ua_prefix rows accumulate** in client_shield_registry (needed for frozen UA headers on old declarations — keep, but document).
+- **jobs.cancel.\* accepts raw unauthenticated publish** — prod hardening: NATS ACLs (infra config, not code).
+- **due-lane redelivery on auth errors** — consumer-side `max_deliver` policy nice-to-have; partially mitigated by `dispatched→lost` sweeper.
 
 ---
 
