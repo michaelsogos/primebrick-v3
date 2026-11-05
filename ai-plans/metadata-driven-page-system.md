@@ -25,7 +25,23 @@
 > `events.emits` module declaration feeds subject pickers; pilot =
 > `/system/job/rules/create` host-rendered, `RuleFormPage.svelte` deleted.
 
-## Status: 🟡 IN PROGRESS — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST · updated 2026-11-05 (tasks 15/16/26/27 delivered by collaboration-visual-merge + package extractions)
+## Status: 🟡 IN PROGRESS — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST · deep drift audit 2026-11-05 (16 tasks verified done-in-reality; table corrected)
+
+> **Deep audit 2026-11-05 (empirical, code-verified):** the route layer,
+> contract types, archetype renderers, census, catch-all and remote-chunk
+> delivery all landed since this table was last updated — often through a
+> *different mechanism than designed* (`page-resolver` kind-dispatch instead
+> of `PAGE_REGISTRY`; `component_url` remote chunks instead of an FE
+> `component_key` registry; `EntityTablePage` instead of `EntityListPage`).
+> Function delivered ≠ letter of the plan; rows below say which.
+> **Remaining real scope:** (a) 9 hand-rolled form pages still await
+> `EntityFormPage` migration (~3.5k dup LOC — task 18); (b) kanban+timeline
+> archetypes never started (crm pipeline still a mock); (c) the standing
+> collaboration rule was only answered for forms — list/kanban/timeline/
+> custom archetypes have ZERO presence/merge answer (verified: no presence
+> refs in `EntityTablePage`/`useEntityList`); (d) hardening: AuditBar
+> extraction, census↔impl check, /ws presence decision, ui extraction of
+> EntityTablePage/useEntityList, useEntitySync v2.
 
 > **Drift reconciliation 2026-10-28:** parts of this plan already landed via
 > `entity-form-archetype-pilot.md`, `root-page-skeleton.md` and the package
@@ -53,38 +69,64 @@
 > nothing; list/kanban/timeline/custom each need an explicit answer in their
 > task row — never default to "same as forms".
 
+> **Auto-determinism hardening 2026-11-14:** closed the last hand-written
+> seams in the entity-meta pipeline. `withColumnConstraints` now auto-derives
+> every physical column missing from authored `columns` (uid first,
+> audit/deletable → `audited`, auto-injected → `default_visible:false`;
+> `hidden:true` is the only opt-out). `RpcRoute.entity_op.cta` synthesizes
+> `row_custom_actions`/`bulk_custom_actions` in served meta — placement,
+> row_key, translation keys, permissions, step-up all inferred from the route;
+> authored meta.table CTAs reduced to explicit overrides (boot fails on
+> dead CTAs). Cell renderers are `format`-keyed: `schedule_spec` (shared
+> `@primebrick/ui` badge+prose), `nats_subject` (census-linked),
+> `json` (readable chips). `ref`/`reverse_ref`/`ref_count` reference columns
+> link entity↔children through the census + `filters[]` URL params — never
+> hardcoded paths. Null-proto `String()` crashes fixed class-wide via
+> `toDisplayString` + `@typescript-eslint/no-base-to-string` (type-aware,
+> enforced at lint). Boolean cells: centered CircleCheck/CircleX + tooltips —
+> fixed standard, documented. Trigger entity: `last_run`/`next_run`/
+> `run_stats` virtual columns (service-decorated, trigger-keyed stats via
+> `trigger_uuids` on `/actions/job-run-stats`; `next_run` evaluates
+> `@every`/`@at` in core `nextScheduleFire`, cron returns null — NATS owns
+> cron). enable/disable trigger ops declared as `entity_op` (auto CTAs).
+> **Near future:** `event_subject`/`target_subject` currently link to the
+> modules page (`/system/settings/modules/[code]`); a dedicated module
+> capabilities page (capabilities/events/schedules overview — the "know"
+> page to author jobs/workflows from) is a planned task — update the
+> `nats_subject` link target in `entity-links.ts` when it lands.
+
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
-| 1 | Extend `ModuleRouteDecl` → `PageRouteDeclaration` (`page_type`, `entity`, `page_props`, `component_key`) in BE `module-nav-types.ts` + FE mirror | ⏳ not done | — | vocabulary already exists: `kind: list\|detail\|create\|page`; also rename `ModuleRouteDecl` → `ModuleRouteDeclaration` — no `Decl` abbreviations |
-| 2 | Extend `MetaColumn` with derived constraint props (`nullable`, `max_length`, `pg_type` via dal `withColumnConstraints`) + authored props (`format` closed vocab, `pattern`, `secret`, `json_schema`); `page_props.form` = `FormPageDecl`/`FormFieldPlacement` (page-domain layout) — NOT `EntityMeta.form`; `kanban`/`timeline` remain EntityMeta sections when they arrive | ⏳ not done | — | corrected model in `entity-form-archetype-pilot.md` §B/§D/§E; pilot = job_rule create |
-| 3 | Validation: `format`/`pattern`/constraint props on `MetaColumn` → `buildEntityFormSchema` (mirrors `buildConfigValueSchema`); cross-field rules via `page_props.form.validators` closed vocab — NOT serialized zod | ⏳ not done | — | absorbs `entity-validation-autoderive.md` scope; `buildConfigValueSchema` is the shipped Path-C precedent |
-| 4 | Build `PageRouteDeclaration` → component dispatch: `PAGE_REGISTRY: Record<PageType, Component>` (SheetHost pattern) + `useEntityPage(decl)` driver composable | ⏳ not done | — | driver = `useEntityMetadata` + `useEntityList` + `usePresence` + `useSyncChannel` |
-| 5 | Consolidate the ~500–700 duplicated lines in the 5 EntityListTable pages onto `useEntityList` (already exists, only adopted by jobs) | ⏳ not done | — | prerequisite refactor for `PageType.Table` |
-| 6 | `PageType.Table` generic page (`EntityListPage`): `{ entity }` → full meta-driven page incl. `table.default_view` sub-view (table/cards/cards_list) | ⏳ not done | — | collapses table pages to near-zero code |
-| 7 | Extract `AuditBar` standalone component out of `FormPageLayout` (lines ~68–195) so the footer is composable per page type | ⏳ not done | — | audit footer is currently baked into FormPageLayout |
-| 8 | `PageType.Form` (`EntityFormPage`): dynamic form renderer on superforms+formsnap, fields/layout/sections from `meta.form`, 2-col grid positions from field decls, audit bar + CTAs by design | ⏳ not done | — | Path C hybrid: generated zod base + `superRefine` for cross-field/dynamic rules |
-| 9 | `PageType.List` unified list archetype: options for toolbar/search/pagination off-on, custom row renderer, sectioned multi-list (`sections: ListSpec[]`), optional footer CTA zone | ⏳ not done | — | must cover ai/migrations/modules/email-providers/docs-index divergences; `ConfigList` stays a separate archetype or becomes a `ListSpec` preset |
-| 10 | Kanban spike: `@svar-ui/svelte-kanban@2.6.0` (MIT, peer svelte ^5.54.0 — we run 5.56.4) vs in-house on `@thisux/sveltednd@0.8.0`/`svelte-dnd-action@0.9.80` — validate theming with our Tailwind tokens | ⏳ not done | — | versions verified via `pnpm view` 2026-10-19 |
-| 11 | `PageType.Kanban` (`EntityKanbanPage`): `meta.kanban` field mapping (status/badge col → columns, title, desc short/long, tags); drag = PATCH status field, optimistic + rollback | ⏳ not done | — | first real page: `/crm/pipeline` (today a placeholder stub) |
-| 12 | Timeline spike: `@svar-ui/svelte-gantt@2.8.1` (MIT) vs lighter alternative — validate read-only rendering from entity rows | ⏳ not done | — | gantt-like horizontal bars; `ui/timeline` (vertical, presentational) is a different component |
-| 13 | `PageType.Timeline` (`EntityTimelinePage`): `meta.timeline` mapping (start/end datetime, row/dimension, title, metric, color) | ⏳ not done | — | read-only v1; draggable bars deferred |
-| 14 | `PageType.Custom`: `component_key` → FE component registry; custom pages stay static routes in core FE, declared in census | ⏳ not done | — | my proposal — awaiting user's own idea before deciding |
+| 1 | Extend `ModuleRouteDecl` → `PageRouteDeclaration` (`page_type`, `entity`, `page_props`, `component_key`) in BE `module-nav-types.ts` + FE mirror | ✅ done | 2026-11-05 audit | done-in-reality: `PageRouteDeclaration` lives in `@primebrick/core` `page-route.ts:32` (kind vocabulary `list\|detail\|create\|page` retained — the `page_type` rename was NOT done and is no longer needed); `component_url`/`component_format`/`integrity` deliver remote chunks; `ModuleRouteDeclaration` rename done; be `module-nav-types.ts` re-exports |
+| 2 | Extend `MetaColumn` with derived constraint props + authored props; `page_props.form` = `FormPageDecl` | ✅ done | — | done-in-reality: DERIVED section `entity-meta.ts:198` (`withColumnConstraints` injects at serve time); `FormPageDecl` at `page-route.ts:149` |
+| 3 | Validation: `format`/`pattern`/constraints → `buildEntityFormSchema`; cross-field via `page_props.form.validators` | ✅ done | — | `build-entity-form-schema.ts` (fe) + `field-spec-to-zod.ts` (ui) — validators closed vocab enforced (throw on unknown) |
+| 4 | `PageRouteDeclaration` → component dispatch: `PAGE_REGISTRY` + `useEntityPage` driver | ✅ done | 2026-11-05 audit | done-in-reality via DIFFERENT mechanism: `page-resolver.ts` maps decl → archetype component in the `(app)/[...path]` catch-all — no literal registry/driver, same function delivered |
+| 5 | Consolidate the ~500–700 duplicated lines in the 5 EntityListTable pages onto `useEntityList` | ✅ done | — | verified: pages now 11–46 lines via `EntityTablePage` (which owns `useEntityList`) — users 43L, customers 11L, roles 46L, clients 14L |
+| 6 | `PageType.Table` generic page | ✅ done | — | shipped as `EntityTablePage.svelte` (fe `$lib/components/entity-table-page`) — name differs, function identical |
+| 7 | Extract `AuditBar` standalone component out of `FormPageLayout` | ⏳ not done | — | VERIFIED ABSENT: no `AuditBar` anywhere; audit footer still baked into `FormPageLayout` (`auditData` prop in `EntityFormPage:595`) |
+| 8 | `PageType.Form` (`EntityFormPage`) | ✅ done | — | `entity-form/EntityFormPage.svelte` — live for `job_trigger` create+detail archetypes (TRIGGER_FORM shared) |
+| 9 | `PageType.List` unified list archetype | 🚫 dropped | 2026-11-05 | dead-by-decision (evolution): the divergent custom-list pages resolved via remote chunks (ai/docs/crm) or `EntityTablePage` (emailsender providers/templates, job lists) — no `ListSpec` archetype needed; residual customs (migrations/templates/translations/modules/credentials) stay hand-rolled legitimately |
+| 10 | Kanban spike: svar-kanban vs in-house dnd | ⏳ not done | — | never started — `/system/crm/pipeline` remote page is still a static mock preview (PipelinePage.svelte "no data writes") |
+| 11 | `PageType.Kanban` (`EntityKanbanPage` + `meta.kanban`) | ⏳ not done | — | no `KanbanMeta` in core; blocked on task 10 |
+| 12 | Timeline spike (svar-gantt vs lighter) | ⏳ not done | — | never started; only presentational `ui/timeline` exists |
+| 13 | `PageType.Timeline` (`EntityTimelinePage` + `meta.timeline`) | ⏳ not done | — | no `TimelineMeta` in core; blocked on task 12 |
+| 14 | `PageType.Custom`: `component_key` → FE component registry | 🚫 dropped | 2026-11-05 | dead-by-decision (better path won): `component_url` remote ESM chunks are THE custom delivery — ai-pages.js, crm-pages.js, jobs-page.js, *-sheets.js registered live; FE registry unnecessary since host customs stay static routes |
 | 15 | `usePresence(entity, uuid)` composable consuming `meta.collaboration` — SSE `presence/events`, READING/EDITING/LEAVE/HEARTBEAT signals, `PresenceAvatars` in form-page `headerExtras` | ✅ done | 2026-10-28/31 | delivered by `collaboration-visual-merge` F10/F13: `usePresenceChannel` + presence-channel-registry + `PresenceAvatars` mounted in `PageHeader` slot; session-keyed identity |
 | 16 | Central write-path handling of collab contracts: `version` optimistic locking + `ERR01`/`ERR02`/`ERR03` → conflict/merge UI hooks in `EntityFormPage` | ✅ done | 2026-10-29/31 | delivered by `collaboration-visual-merge` F11: `useCollaborativeForm` + `handleVersionConflict` + `PresenceStatusChip` popover (F12 `CollaborationPanel` sheet descoped → chip popover is the conflict surface); E2E 2/2 + 3/3 live |
-| 17 | Migrate the 5 core table pages (users, customers, organizations, roles, clients) to `EntityListPage` | ⏳ not done | — | pure dedup, can go first — biggest LOC win |
-| 18 | Migrate standard form pages (profile, users/create+[uuid], organizations create+[uuid], clients create+[uuid], configurations/create) to `EntityFormPage`, entity by entity | ⏳ not done | — | roles create/[uuid] (non-standard manual forms) assessed separately |
-| 19 | Migrate AI-module-owned pages (settings/ai, docs-index, jobs, email-providers, migrations, templates, translations) out of hardcoded settings module → declared pages of their owning service | ⏳ not done | — | requires task 20 transport; `ENTITY_SERVICE_MAP` hardcoding must become census-driven `service_code` |
-| 20 | Module page self-description: extend `ServiceRegisterPayload`/`service_registry.endpoints` with `nav` + `pages` decls; `RoutesCensusService` aggregates them; BE `module-nav-meta.ts` remains fallback (documented placeholder intent) | ⏳ not done | — | the register-payload channel already exists, unused for nav today |
-| 21 | Dynamic route realization: `(app)` catch-all resolving `PageRouteDeclaration` via census → `PageRenderer` dispatch; static routes keep precedence | ⏳ not done | — | `docs/[...path]` is the only catch-all today; must not shadow login/mcp/welcome or static pages |
-| 22 | Meta caching: replace `globalThis` no-TTL cache in `useEntityMetadata` with ETag/localStorage strategy | ⏳ not done | — | deferred Phase-2 item in `cache-invalidation-etag-plan.md` — becomes load-bearing with generated pages |
-| 23 | Census↔implementation consistency check (build/test): declared `entity` routes must resolve a live `/meta`; catches drift like the `templates` mock declaring `entity: 'template'` | ⏳ not done | — | silent drift already observed once |
-| 24 | Decide presence transport for `/ws/` entities (BE-only presence today — module entities have none) | ⏳ not done | — | open design question; gateway proxy vs per-service implementation |
-| 25 | Update rules + docs: `entity-meta-schema.md` (new sections), `entity-list-pages.md` (page-type policy), `docs/dev-guide/entity-metadata.mdx`, `patterns.md`, ai-plans cross-refs; write `entity-validation-autoderive.md` or mark absorbed | ⏳ not done | — | closed-schema rule: extend types first, then consume |
+| 17 | Migrate the 5 core table pages to `EntityListPage` | ✅ done | — | done-in-reality: all 5 on `EntityTablePage`, 11–46 lines each |
+| 18 | Migrate standard form pages (profile, users/create+[uuid], organizations create+[uuid], clients create+[uuid], configurations/create) to `EntityFormPage` | ⏳ not done | — | **BIGGEST RESIDUAL**: all 9 pages still hand-rolled (profile 527L, users/create 679L, users/[uuid] 439L, orgs create 313L/[uuid] 293L, clients create 253L/[uuid] 421L, configurations/create 597L, roles 273L/285L — ~3.9k dup LOC). `EntityFormPage` exists and works (job_trigger proves it); needs per-entity `page_props.form` decls + escape-hatch coverage (avatars, roles tabs, key-rotation) |
+| 19 | Migrate AI-module-owned pages out of hardcoded settings → owning service decls | ✅ done | — | done-in-reality + better: `ai` pages are remote chunks (`ai-pages.js`/`ai-sheets.js`), job pages = host archetypes + remote, emailsender providers/templates = `EntityTablePage` on `/svc/` entities; `ENTITY_SERVICE_MAP` killed by task 30 (`EntityAction.endpoint` + `serviceApiPrefix`); residual statics (migrations/templates/translations/modules/credentials) are legit core pages |
+| 20 | Module page self-description via `service.register` → census | ✅ done | — | live-verified this session: crm registered with `routes`+`callables`+`emits`; `nav-declaration.ts` per service is THE mechanism |
+| 21 | Dynamic route realization: `(app)` catch-all → decl resolution → renderer dispatch | ✅ done | — | `routes/(app)/[...path]/+page.ts` + `page-resolver.ts`: redirect/denied/not-found/component resolution; remote mount + error panel verified live (19/19 e2e) |
+| 22 | Meta caching: ETag/localStorage strategy | ✅ done | — | `getCachedETag`/`setCachedETag` in `@primebrick/ui/cache`, wired in `api.ts` (If-None-Match send + 304 reuse) |
+| 23 | Census↔implementation consistency check | ⏳ not done | — | VERIFIED ABSENT: no drift check exists; the `templates`-mock class of drift can still happen silently |
+| 24 | Decide presence transport for `/ws/` entities | ⏳ not done | — | decision never taken — no presence in us-v3 (verified: zero `presence` refs in job-handler) |
+| 25 | Update rules + docs; `entity-validation-autoderive.md` write/absorbed | ⏳ partial | — | docs updated piecemeal alongside each landing plan; `entity-meta-schema.md`/`entity-list-pages.md` policy alignment + `entity-validation-autoderive.md` resolution still open |
 | 26 | Create `@primebrick/core` package — env-agnostic shared code (EntityMeta family, `PageRouteDeclaration`/`ModuleRouteDeclaration`, presence types, config vocab + validators, write envelope, STANDARD_OPS/permission/sentinel constants, RFC7807, snake_case helpers) | ✅ done | — | `@primebrick/core` shipped — EntityMeta family, presence types, schedule validators (`isValidScheduleSpec`/`jobTriggerShapeIssues`), payload-map types, ext-json codec; consumed by BE/FE/US/SDK |
 | 27 | Create `@primebrick/ui` package (`@sveltejs/package`): components, composables, non-rune utils, `ModulePageHost` + `mountPage` helper + base stylesheet | ✅ done | — | `@primebrick/ui` shipped — components/composables + `mountPage` remote-mount helper; consumed by FE + remote `fe/` bundles identically |
-| 28 | Extraction waves + publish wiring (GitFlow release → npm, same train as dal/sdk): types→core first, validators/helpers→core, components/composables→ui as they stabilize | ⏳ not done | — | EntityListPage + useEntityList are the first ui citizens (jobs remote pilot consumes them) |
-| 29 | Entity-sync channels v2 — **decision A+B taken 2026-10-19**: structured local BroadcastChannel + unified `useEntitySync` surface; **extract a dedicated sub-plan from Part J** | ⏳ not done | — | Part J; replaces per-family `useSyncChannel` names; collaboration SSE plugs into same surface later |
-| 30 | `EntityAction.endpoint` extension (BE+FE closed-schema): emit method+path per op from the route scan incl. `metaExtraScans` → FE write dispatch uses declared endpoints | ⏳ not done | — | discovered 2026-10-19 — fixes latent users-page 404 (writes under `/api/v1/auth/users`); kills `ENTITY_SERVICE_MAP`; entity-level meta — Part J |
+| 28 | Extraction waves + publish wiring: types→core, validators/helpers→core, components/composables→ui | ⏳ partial | — | packages ship with `publishConfig` (core 3.2.0, ui 3.3.0); **`EntityTablePage`/`useEntityList`/`EntityFormPage` are still FE-local** — the "first ui citizens" extraction never happened; a remote chunk needing a table archetype can't import it today (host-rendered archetypes don't need it — the need shrank but the letter stands) |
+| 29 | Entity-sync channels v2: unified `useEntitySync` surface; extract dedicated sub-plan from Part J | ⏳ partial | — | `useSyncChannel.svelte.ts` exists as the per-channel primitive (BroadcastChannel refresh, entity-named); unified v2 surface + dedicated sub-plan never materialized |
+| 30 | `EntityAction.endpoint` extension (BE+FE closed-schema) → FE write dispatch uses declared endpoints | ✅ done | 2026-11-05 | delivered by `COMPLETED/schedule-lifecycle-actions`: `RpcRoute.entity_op` → `meta.actions[].endpoint` emitted by `makeServiceRoutes`; FE `handleCustomAction`/`handleBulkCustomAction` dispatch via `serviceApiPrefix`+`ep.path`; `ENTITY_SERVICE_MAP` no longer needed for writes |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->
