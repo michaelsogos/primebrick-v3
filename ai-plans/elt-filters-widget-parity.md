@@ -3,7 +3,7 @@
 > Related plans: `metadata-driven-page-system.md` (umbrella), `action-chrome-and-bulk-scope-dialog.md` (sibling ELT work).
 > Origin: user request — filters must mount **the same components as create/update forms** (standard tab labels + values, advanced tab values), driven by **one** control-resolution logic, not two. "Quante fonti della verità stai usando?" — the audit below answers: **three**, one incomplete.
 
-## Status: � DONE — Plan date: 2026-11-20 (all tasks closed — E2E parity 6/6, ELT regression 10/10, standards clean)
+## Status: 🟠 IN PROGRESS — Plan date: 2026-11-20. Round 1 closed (E2E parity 6/6); **Round 2 open** — user review 2026-11-21 found filter-surface semantics + UX/standard drift (tasks 29–43).
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -22,7 +22,7 @@
 | 13 | Operator icons — canonical `operator→icon` map in core `columns.ts` next to `getOperatorsForColumnType`; advanced operator combobox renders it. **DECIDED map** (all names verified in `@lucide/svelte` 1.59): `=`→`equal`, `!=`→`equal-not`, `>`→`chevron-right`, `>=`→`arrow-right-to-line`, `<`→`chevron-left`, `<=`→`arrow-left-to-line`, `contains`→`text-search`, `startsWith`→`list-start`, `endsWith`→`list-end`, `BETWEEN`→**`list-indent-increase`** (user pick) | ✅ done | FILTER_OPERATOR_ICON in columns.ts | one map in core — every surface reads it |
 | 14 | `type:"ref"` filterable columns (`job_run.schedule_subject`→`job_schedule`, `job_schedule.trigger_uuid`→`job_trigger`) → `options_source:"entity.ref"` derived from `col.ref.entity`. **Huge-resultset design (decided — infrastructure already native)**: ComboSelect exposes `onSearchInput`/`onLoadMore`/`loadingMore` hooks; `/list` accepts `search`/`search_in`/`page`/`page_size`/`total`. Build ONE `entity-options` delegate: fetch `/{entity}/list?page_size=50&page=n&search=q`, map rows → `{value: uid, label: display_field, icon?}`, append pages on scroll, debounced server-side search (never client-filter a partial set), `total` drives "other X records" affordance | ✅ done | use-entity-ref-options.svelte.ts + entity_ref control | no delegate exists today — hooks are native, wiring is new |
 | 15 | E2E: subject combo in both tabs (options carry icon+desc+subject), boolean tri-state wire `=true/false`, badge multi → IN/OR-chain wire shape, icon on standard labels | ✅ done | elt-filters-parity.spec.ts 6/6 (fe 35d075f) | covers governed combo, tri-state =true, badge IN, entity-ref /list, help gating, advanced op= |
-| 16 | svelte-check + check-standards + unit tests (new: serializer IN-generalization, boolean ops, surface control map) | 🟠 partial | svelte-check 0/0 · standards clean · core+fe unit green; E2E still open | |
+| 16 | svelte-check + check-standards + unit tests (new: serializer IN-generalization, boolean ops, surface control map) | ✅ done | svelte-check 0/0 · standards clean · core 117/117 · fe 569/569 · E2E parity 6/6 (serial) | |
 | 17 | **Ghost help icon bug** — `PrimeField.resolvedHelp`: `MetaColumn` without `tooltip*` keys → `isMetaTooltipHelp=false` → FieldHelp branch returns all-undefined truthy object → icon renders, tooltip never opens (ID/NAME etc.) | ✅ done | 8f794ae | verified `prime-field.svelte:114-129` + `FormLabelWithPriorityHelp:62` `{#if text}` |
 | 18 | PrimeField help surface flag — meta path gates on `show_form_tooltip`; list-surface consumers (filters) must gate on `show_list_tooltip` → `help_context: "form"\|"list"` prop (default `"form"`), FiltersPanel passes `"list"` | ✅ done | 8f794ae + help_context=list in panel | same contract, correct surface flag |
 | 19 | **Header help icon position** — `TableHeader.svelte:83-89` already renders `FormLabelWithPriorityHelp` gated `show_list_tooltip`; move it right-most (after the sort affordance — last in the header flex) | ✅ done | 8f794ae | verify `CardField.svelte:51` same anatomy on cards |
@@ -35,6 +35,21 @@
 | 26 | Commit-close semantics codified in sheets.md: FORM panels `closeSheet()` on commit OR declare `keep_open` — currently Filters=open vs BadgeValue=close by accident — **DECIDED: filters keep open** (user watches the table update behind the sheet) | ✅ done | sheets.md commit-close section | one documented decision |
 | 27 | **Mode toggle → ButtonGroup** (user request): replace Switch+labels toolbar (`FiltersPanel:424-438`) with canonical `ButtonGroup segmented` (ViewModeToggle anatomy — ghost Button `icon+label`, `aria-pressed={active}`, `bg-foreground/10` active), **justified full-width** (`w-full` + `flex-1` buttons). Icons: standard→`list-filter`, advanced→`list-filter-plus` (verified lucide 1.59) | ✅ done | ButtonGroup segmented w-full + icons | same anatomy as ELT view-mode toggle |
 | 28 | **Field search** (user request): `SearchInput` row in TOOLBAR below the toggle; `contains` (case-insensitive) match on `$t(col.label_key)` + `col.label_key` + `col.key`; empty → all fields. One derived `visibleFilterableColumns` feeds BOTH the standard list AND the advanced field selector (single filtered set, not two) | ✅ done | field SearchInput feeding both tabs | solves "too many filterable fields" |
+| 29 | **`schedule_spec` non-filterable** — "Pianificazione" is an authoring widget: a text/equality criterion on a cron spec is meaningless (the specialized control is a *writer*, not a matcher). `filterable:false` on `job_trigger.schedule_spec` + `job_schedule.schedule_spec`. If kind-filtering is wanted later, expose `spec.kind` as a calculated badge column — the `job_schedule.schedule_type` + `filter_presets` pattern is the precedent | ✅ done | `filterable:false` in job.meta.ts both entities | | user finding #1 — specialized editor ≠ filter criterion |
+| 30 | **JSON authoring columns non-filterable** — `job_trigger.filter` (`format:"json"` + `json_schema`) and `job_trigger.payload_map` (`widget:"payload_map"`): specialized renderers, explicitly `filterable:false` | ✅ done | `filterable:false` in job.meta.ts | | user finding #2 — explicit, per-entity |
+| 31 | **`ref_count` → numeric filter control** — `job_trigger.runs` (`kind:"calculated"`) is filterable-by-contract but the dispatcher fell back to text: `ref_count` must resolve `number` on the filter surface; `getOperatorsForColumnType("ref_count")` gets an explicit numeric branch | ✅ done | dispatcher `ref_count`→`number` + numeric ops (columns.ts:133) | | user finding #3 — calculated columns keep real semantics |
+| 32 | **DateWheelPicker DATA/ORA tabs → segmented ButtonGroup** — replace `Tabs`/`TabsList`/`TabsTrigger` with the canonical `ButtonGroup segmented` + ghost `aria-pressed` buttons (same anatomy as the filters mode toggle + ELT view-mode); icons `calendar` (date) / `clock` (time) — verified lucide 1.59 | ✅ done | date-wheel-picker.svelte, UI dist rebuilt | | user finding #4 — one toggle anatomy everywhere |
+| 33 | **Datetime = advanced-only surface** — `last_run`/`next_run`/`created_at`/`updated_at`/`deleted_at`: same-instant equality is noise; ranges/`BETWEEN` belong to the advanced tab. **CONVENTION (type-driven, zero flags)**: standard tab = `isColumnFilterable(col) && col.type !== "datetime"`; advanced tab shows every filterable column. `date` stays standard (day-precision equality is meaningful) | ✅ done | `standardColumnsBase`/`fieldOptionsColumns` split + e2e assertion | | user finding #5 — documented in entity-meta-schema.md |
+| 34 | **`uuid`/`version` out of the standard surface** — auto-derived `uuid` → `filterable:false` at DAL derivation (a uid text-filter is debug noise; relationships use `ref`); auto-derived `version` → `filterable:false` (optimistic-lock counter — already `number` via `columnTypeForPg`, still meaningless as a criterion) | ✅ done | column-constraints.ts:164; uid stays wire-filterable (wireAlwaysFilterable) for ref/actor label lookups | | user findings #6+#8 — derived, applies to every entity |
+| 35 | **Audit-actor multi-select (`created_by`/`updated_by`/`deleted_by`)** — new `options_source:"audit.actors"` (closed-union member): auto-derivation marks `*_by` columns; new `audit_actors` standard route on the entity router (SDK `EntityServiceLike` + BE `entity-router`): `SELECT DISTINCT` over the 3 actor cols UNION → uuid actors resolved to display names via `user_profile` IN-lookup, fictitious actors (`migration-*`, `initial-setup`, `nats:*`) resolve raw — that is why plain `entity_ref`→`user_profile` is WRONG (the vocab is "actors that wrote THIS table", not "existing users"). FE `use-audit-actor-options` delegate + `actor_multi` control → IN/`OR` serialization (already native). Cardinality is small and append-mostly → single fetch, client cache | ✅ done | core union + DAL `distinctAuditActors` (UNION + user_profiles LEFT JOIN, regex-guarded) + `/audit-actors` routes (SDK/BE, lazy-safe per-request check) + `actor_multi` + e2e green; authored `*_by` columns get options_source DERIVED (restating throws) | user finding #7 — distinct-of-the-table beats users-table: it's the actual vocab |
+| 36 | **Standard-tab placeholder copy** — `filterPlaceholder`="No filter applied" is *state* copy rendered as *input hint* on every control (wrong tone). Text controls get `filterValueHint`="Filter value…" (new i18n key, BE patch ×7); combos get `selectValue` | ✅ done | patch `20261122000000_filter_value_hint.sql` signed; per-control defaults in dispatcher | | user finding #9 — copy serves the action, not the state |
+| 37 | **SearchInput eraser parity with TextInput** — TextInput renders the eraser ALWAYS (editable mode); SearchInput gates it on `hasText` → inconsistent CTA anatomy inside the same sheet. Align: eraser always rendered, `disabled` when empty (canonical anatomy documented in component header) | ✅ done | search-input.svelte `{#if clearable}` + `disabled={!hasText \|\| disabled}` | | user finding #10 — same standard, same affordance |
+| 38 | **`cerca campi` is standard-tab-only** — the field SearchInput currently lives in the shared toolbar and shows on the advanced tab where it does nothing (the advanced field combo has its own internal search). Move it inside the standard branch | ✅ done | `{#if tabValue === 'standard'}` gate | | user finding #12 |
+| 39 | **AND/OR connector → segmented ButtonGroup** — the raw `Switch` + side labels becomes `ButtonGroup segmented` + ghost `aria-pressed` buttons (same anatomy as mode toggle); icons `ampersand` (AND — literal `&`) / `split` (OR — a fork); testids `filters-connector-and`/`-or`; translated labels `allCriteria`/`atLeastOneCriteria` stay | ✅ done | ButtonGroup segmented + ampersand/split DynamicIcons | | user finding #13 — kills the last raw Switch in the panel |
+| 40 | **Mode-toggle icons → `funnel`/`hammer`** — standard=funnel (filter semantics), advanced=hammer (build/make semantics); replaces `list-filter`/`list-filter-plus` which reads as generic list chrome | ✅ done | funnel/hammer in mode toggle | | user finding #14 — iconography carries the surface |
+| 41 | **`raw-switch` lint: remove the FiltersPanel exemption** — `.devin/check-standards.json` allowPaths whitelists the panel instead of fixing the violation (task 39 unlocks). New `panel-switch` line rule `/<Switch[\s/>]/` scoped `*/sheets/panels/` — segmented ButtonGroup is THE panel toggle anatomy; Switch stays a row/form control | ✅ done | exemption removed; `panel-switch`/`panel-search-clearable` rules in SDK check-standards + FE config — and the FIRST run caught the stale docs-gen fixture too | | user finding #11 — exemptions are how enforcers die |
+| 42 | **`panel-search-clearable` lint** — `*/sheets/panels/` SearchInput must not pass `clearable={false}` — trivial line rule, closes the class of eraser regressions | ✅ done | | user finding #10+#11 — enforcement, not prose |
+| 43 | **Round-2 verification** — svelte-check 0/0, check-standards clean (with the exemption REMOVED — proof the rule bites), unit tests updated (ref_count ops/serialization, `isColumnFilterable` surface variants), E2E parity suite still 6/6 + datetime-hidden-from-standard assertion | ✅ done | svelte-check 0/0 · standards clean · DAL 508 · SDK 501 · FE 569 unit · **E2E 8/8** (audit-actor + datetime assertions added); bonus fix: `translateFilterConditions` fails closed (unknown field/op/malformed BETWEEN → ValidationError) + `wireAlwaysFilterable` covers uid/`*_by`; lazy-service `auditActors` check moved per-request (mount-time access crashed job-handler boot) | |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 
@@ -318,6 +333,41 @@ Canonical `FILTER_OPERATOR_ICON: Record<FilterOperator, string>` in core
   construction (contract already enforced).
 - The remote `jobs-page.js` surfaces — they consume the same serializer via
   `@primebrick/ui` re-export; the wire change propagates for free.
+
+## Round 2 — user review findings (2026-11-21)
+
+The panel was reviewed rendered (job_trigger + user_profile sheets). Two
+classes of drift:
+
+**A. Filter-surface semantics** — `filterable` defaults ON for every
+non-`virtual` column, so authoring-only fields (json editors, cron specs)
+and noise fields (uid, version, same-instant datetimes) all rendered as
+free-text criteria. Tasks 29–35 assign each its honest treatment: specialized
+editors are OUT (`filterable:false`), calculated counts are numeric,
+datetimes are advanced-only, audit actors get a real governed vocabulary
+(`options_source:"audit.actors"` — the distinct vocab of the table's own
+actor columns, label-resolved through `user_profile`; the `user_profile`
+entity-ref would be wrong because fictitious actors have no profile row).
+
+**B. UX/enforcement drift** — the AND/OR `Switch` survived via a lint
+`allowPaths` exemption (the enforcer existed, the exemption ate it), the
+mode toggle picked generic list icons, the field search leaks into the
+advanced tab, `SearchInput`'s eraser is text-gated while `TextInput`'s is
+always rendered, and `filterPlaceholder` renders *state* copy ("No filter
+applied") as *input* hint. Tasks 36–43 fix the UI and close the exemption
+so the rule actually bites.
+
+### Open questions resolved
+
+- **#7 actor vocab** — distinct-of-the-table (`audit_actors` endpoint) over
+  users-table: the filter domain is "actors that wrote THIS entity", which
+  includes non-user actors (`migration-*`, `initial-setup`, `nats:*`) that
+  a `user_profile` combo can never offer. Cardinality is small +
+  append-mostly → one fetch per open, no paging.
+- **#1 schedule_spec** — no honest matcher control exists: the specialized
+  control is a writer. `filterable:false` now; a `spec.kind` calculated
+  badge is the precedent if kind-filtering is ever wanted
+  (`job_schedule.schedule_type` + `filter_presets`).
 
 ## Part D — Acceptance criteria
 
