@@ -28,6 +28,11 @@
 | 19 | **Header help icon position** — `TableHeader.svelte:83-89` already renders `FormLabelWithPriorityHelp` gated `show_list_tooltip`; move it right-most (after the sort affordance — last in the header flex) | ⏳ not done | — | verify `CardField.svelte:51` same anatomy on cards |
 | 20 | **Hint copy lies** — `job.entities.job_trigger.hints.event_subject` ×7 langs says "…or type an event name" while `allow_create:false` → JH patch fixing copy (drop the type clause); `target_subject` already correct | ⏳ not done | — | DB rows verified live |
 | 21 | Invariant: `options_source:"census.*"` + `allow_create:true` → construction/enrollment error (census vocab is closed by definition — `allow_create` meaningful only for non-census sources) | ⏳ not done | — | enforcement, not convention |
+| 22 | **SheetPanelLayout API fix**: `actions` → EXTRA actions (layout always appends standard close honoring `onClose`); migrate the 5 panels (Filters/Columns/SearchIn/JsonViewer/AiChat) — kills D8 | ⏳ not done | — | API manufactures duplication today |
+| 23 | FiltersPanel anatomy: `contentClass` scroll override removed (D1); `control({id})` threaded everywhere + DateWheelPicker id (D2); advanced labels → `PrimeField` (D3 — also unblocks icons/tooltips on advanced labels); customer-status fallbacks removed (D6); `X` double import, testids, fake-column fabrication cleaned (D9) | ⏳ not done | — | lands with tasks 7-10 refactor |
+| 24 | HEAD reset semantic decision: `resetAllFilters` currently live-commits (`onResetFilters`) bypassing draft→Apply — decide draft-only reset vs live reset, codify in sheets.md | ⏳ not done | — | D7 — contract gap |
+| 25 | **check-standards/ESLint rules for `*/sheets/panels/*.svelte`**: (1) `<SheetPanelLayout` root mandatory, (2) `contentClass` no `overflow`, (3) no raw `<label>`, (4) `PrimeField.control` must destructure `{id}`, (5) no `$t(a\|\|b)` entity fallback in `entity-list/`, (6) `data-testid` on interactive elements, (7) no DropdownMenu-as-select once dispatcher lands | ⏳ not done | — | the "PER SEMPRE" enforcement — prose → rules |
+| 26 | Commit-close semantics codified in sheets.md: FORM panels `closeSheet()` on commit OR declare `keep_open` — currently Filters=open vs BadgeValue=close by accident | ⏳ not done | — | one documented decision |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 
@@ -117,7 +122,86 @@ copy in 7 languages (drop the "or type" clause). Structural follow-up (task
 21): `census.*` + `allow_create:true` must be a construction error — the copy
 was wrong because nothing made the closed vocabulary visible to authors.
 
-### A.6 Pieces already verified reusable
+### A.6 Sheet-anatomy drift audit — FiltersPanel vs `docs/ai/sheets.md` (verified 2026-11-20)
+
+**The FOOT itself is the ONE conforming element** — `p-3` + `Button.w-full`
+matches the FORM-panel skeleton verbatim (sheets.md:149-153). The perceived
+"non-standard footer" is real but architectural, not a local bug:
+
+- **Two commit-footer vocabularies coexist.** Sheet FORM panels: single
+  `w-full` primary CTA (sheets.md contract). Form pages (`FormPageLayout:55`):
+  `bg-muted/50 border-t p-4` + right-aligned `flex gap-2` Reset/Cancel/Save.
+  The entity create/update form — the reference the user sees daily — uses
+  the second. Within the entity-list sheet family, `entity.filters` is the
+  **only** panel with a foot at all (columns/searchIn = pickers,
+  versionHistory/jsonViewer = viewers) → nothing to compare it against.
+- **Micro-divergences inside the vocabulary**: Apply carries a `Play` icon
+  (BadgeValuePanel foot CTAs use `Plus`/none — no icon convention exists);
+  `applyFilters` does NOT `closeSheet()` while BadgeValuePanel's `saveEdit`
+  does (`BadgeValuePanel.svelte:152`) — the only two FORM panels in the app
+  chose **opposite commit semantics** because the contract never codified it.
+
+#### Inventory of real drifts (file:line verified)
+
+| # | Drift | Evidence | Violates |
+|---|-------|----------|----------|
+| D1 | Scroll contract re-implemented: `contentClass="flex min-h-0 flex-col overflow-hidden p-0"` clips CONTENT; each tab re-declares `flex-1 overflow-y-auto p-4` (×2) | FiltersPanel:405, 442, 569 | sheets.md "CONTENT = THE ONLY SCROLLABLE REGION" — override buys nothing vs `contentClass="p-4"` |
+| D2 | `{#snippet control()}` drops the `{ id }` arg — PrimeField contract says control MUST apply `id` for label wiring. Panel hardcodes `id="filter-{col.key}"` manually (TextInput, badge Button); `DateWheelPicker` gets NO id → label `for` points at nothing | FiltersPanel:445, 457, 521-526, 545 | prime-field.svelte:93-94 — two id sources that must agree, one missing |
+| D3 | Advanced tab uses raw `<label class="text-xs font-normal …">` ×3 instead of PrimeField — second label chrome in one panel, `for=` targets ids that exist on no element (DropdownMenu Buttons have no `id`) → dead `for`, no tooltip surface, no icon slot | FiltersPanel:635, 695, 732 | One label anatomy (PrimeField) — this is also why "icon + tooltip on labels" can't reach advanced labels today |
+| D4 | Four hand-rolled "select" anatomies (Button+ChevronDown+placeholder dimming+selected state ~40 lines each): badge multi (std), field, operator, badge value (adv). Zero uses of canonical `ComboSelect` (search/multi/badges/icons/allowCreate) | FiltersPanel:453-518, 638-686, 698-728, 737-776 | Duplicated anatomy ×4 — killed by tasks 7-10 |
+| D5 | `renderFilterInput`/`getBadgeOptions` — the second control resolver (core finding of this plan) | FiltersPanel:226-264, 146-155 | already tasks 7-8 |
+| D6 | Hardcoded entity fallback: `$t(value.label_key \|\| 'system.entities.customer.status.${key}')` — a CUSTOMER i18n path inside generic filtering; any non-customer badge resolves against customer keys | FiltersPanel:152, 601 | data-model rules: "MUST NOT add fallback string-literal defaults" + copy-paste provenance evidence |
+| D7 | HEAD reset = live commit: `resetAllFilters` calls `onResetFilters?.()` — bypasses the draft→Apply boundary while everything else is draft | FiltersPanel:282 | FORM archetype: "draft + explicit commit on the footer CTA" |
+| D8 | HEAD close chrome copy-pasted verbatim in FiltersPanel:416-422, ColumnsPanel:87-93, SearchInPanel:36-42, JsonViewerPanel:57-63, AiChatPanel:129-135 — every panel adding ONE extra action re-declares the ~12-class close button | 5+ files | sheets.md documents this as the pattern — the API itself (`actions` REPLACES default close) manufactures the duplication |
+| D9 | `X` imported twice (line 17 `X as XIcon`, line 23 `X`); `data-testid` missing on field/operator/value/add/edit/remove controls (only `filters-mode-switch`, `filters-apply` have it); `column ?? {type:'text'}` fake-MetaColumn fabrications ×3 (lines 604-605, 605) | FiltersPanel:17, 23 | sheets.md "keep data-testid on interactive elements"; data-model fallback rule |
+
+#### Why the drift happened (root causes)
+
+1. **The contract is prose.** `sheets.md` encodes ~15 anatomy rules in English;
+   the ONLY mechanically enforced rule today is `no-restricted-imports` on the
+   sheet primitive (doc:8-12). Everything else = human/agent discipline.
+2. **The layout API manufactures duplication.** `SheetPanelLayout.actions`
+   REPLACES the default close instead of appending to it → every panel with
+   one extra CTA must re-type the canonical close chrome → 5+ copies that can
+   fork silently. `contentClass` accepts arbitrary Tailwind → panels redefine
+   the scroll contract inside.
+3. **PrimeField's `control({ id })` contract is comment-only** — a zero-arg
+   `{#snippet control()}` compiles silently; broken `for`/`id` wiring is
+   invisible until someone clicks a label.
+4. **No canonical select surfaced for panels.** `@primebrick/ui` has no
+   DropdownMenu at all (verified: not in `src/lib/components/`); the FE keeps
+   a local `$lib/components/ui/dropdown-menu` kit (26+ consumers). Authors
+   reach for the primitive and rebuild select anatomy by hand — ComboSelect
+   existed but nothing steered panel code to it.
+5. **Copy-paste provenance.** The `system.entities.customer.status.*`
+   fallback and `renderFilterInput` shape indicate the panel was lifted from
+   an entity-specific filter page and only partially generalized.
+
+#### Prevention design (lint + architecture — "PER SEMPRE")
+
+- **API fix (one move kills D8)**: `SheetPanelLayout.actions` becomes EXTRA
+  actions — the layout always appends the standard close itself (keeping
+  `onClose` for remote panels). Mechanical migration of the 5 panels.
+- **check-standards / ESLint rules for `*/sheets/panels/*.svelte`** (AST via
+  svelte-eslint where needed, grep rules suffice for most):
+  1. file MUST contain `<SheetPanelLayout` (anatomy ownership)
+  2. `contentClass` MUST NOT contain `overflow` (scroll ownership is the layout's)
+  3. raw `<label` forbidden inside panel files → `PrimeField`/`FormLabel`
+  4. `PrimeField` `control` snippet MUST destructure `{ id }` (AST rule)
+  5. `$t(a || b)` i18n fallbacks forbidden in `entity-list/` shared code —
+     kills D6-class entity leaks
+  6. `data-testid` required on `Button`, `DropdownMenu.Trigger`, row-action
+     `<button>` inside panels (doc rule finally enforced)
+  7. `DropdownMenu.Trigger`→`Button` select-anatomy forbidden in panels once
+     the dispatcher lands (tasks 7-10) — use the resolved control
+- **Codify commit-close semantics**: FORM panels either always
+  `closeSheet()` on commit or declare `keep_open` — one documented decision,
+  not per-panel accident (decision needed: filters probably SHOULD keep open
+  — the user wants to watch the table update behind the sheet).
+- **PrimeField**: thread `id` structurally (context/let-typing) so a panel
+  cannot drop it — or the AST lint above catches it.
+
+### A.7 Pieces already verified reusable
 
 - `shellNav.modules` (`$lib/shell/modules-shell.svelte.ts:146`) — app-wide reactive census, importable by sheet panels directly (no prop drilling). Same payload `EntityFormPage` receives via prop.
 - `ComboSelect` — `mode:"single"|"multi"`, `display:"detailed"|"badge"`, `iconField`/`iconColorField`/`descriptionField`/`secondaryField` — the subject anatomy AND badge anatomy are both first-class.
