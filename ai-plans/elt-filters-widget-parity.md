@@ -23,6 +23,11 @@
 | 14 | `type:"ref"` filterable columns (found: `job_run.schedule_subject`) → entity-ref options surface: `options_source:"entity.ref"` derived from `col.ref.entity`, fetch target `/list` (value=uid, label=display_field) | ⏳ not done | — | candidate phase-2 if heavy — text input acceptable interim |
 | 15 | E2E: subject combo in both tabs (options carry icon+desc+subject), boolean tri-state wire `=true/false`, badge multi → IN/OR-chain wire shape, icon on standard labels | ⏳ not done | — | mandatory per workflow |
 | 16 | svelte-check + check-standards + unit tests (new: serializer IN-generalization, boolean ops, surface control map) | ⏳ not done | — | |
+| 17 | **Ghost help icon bug** — `PrimeField.resolvedHelp`: `MetaColumn` without `tooltip*` keys → `isMetaTooltipHelp=false` → FieldHelp branch returns all-undefined truthy object → icon renders, tooltip never opens (ID/NAME etc.) | ⏳ not done | — | verified `prime-field.svelte:114-129` + `FormLabelWithPriorityHelp:62` `{#if text}` |
+| 18 | PrimeField help surface flag — meta path gates on `show_form_tooltip`; list-surface consumers (filters) must gate on `show_list_tooltip` → `help_context: "form"\|"list"` prop (default `"form"`), FiltersPanel passes `"list"` | ⏳ not done | — | same contract, correct surface flag |
+| 19 | **Header help icon position** — `TableHeader.svelte:83-89` already renders `FormLabelWithPriorityHelp` gated `show_list_tooltip`; move it right-most (after the sort affordance — last in the header flex) | ⏳ not done | — | verify `CardField.svelte:51` same anatomy on cards |
+| 20 | **Hint copy lies** — `job.entities.job_trigger.hints.event_subject` ×7 langs says "…or type an event name" while `allow_create:false` → JH patch fixing copy (drop the type clause); `target_subject` already correct | ⏳ not done | — | DB rows verified live |
+| 21 | Invariant: `options_source:"census.*"` + `allow_create:true` → construction/enrollment error (census vocab is closed by definition — `allow_create` meaningful only for non-census sources) | ⏳ not done | — | enforcement, not convention |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 
@@ -77,7 +82,42 @@ Advanced tab additionally: boolean falls into `default` branch of
 - `advancedFilters`: array→`IN`/`NOT IN`; `BETWEEN`→`value[start]/value[end]`; `contains|startsWith|endsWith`→ILIKE patterns.
 - Consequences: (a) subject fields must emit `=`/`IN`, not ILIKE; (b) multi-select filter controls just produce arrays — the serializer already knows IN; (c) generalizing "array → IN" beyond badge makes the OR-chain redundant.
 
-### A.5 Pieces already verified reusable
+### A.5 Three more anomalies (reported + root-caused 2026-11-20)
+
+**A.5.1 Ghost help icon on standard-filter labels (bug, live).**
+`FiltersPanel` passes `help={col}` to `PrimeField`. In
+`prime-field.svelte:111-130`: a `MetaColumn` WITHOUT `tooltip*` keys fails
+`isMetaTooltipHelp` → falls into the `FieldHelp` branch → returns
+`{text: undefined, priority: undefined, title: undefined, labelKey: undefined}`
+— a **truthy** object → `helpIcon` renders `FormLabelWithPriorityHelp`; its
+`{#if text}` (line 62) skips the content → **icon visible, tooltip never
+opens** (ID, NAME, every tooltip-less column). Fix: `resolvedHelp` returns
+`null` when neither `text` nor `labelKey` resolves.
+
+**A.5.2 Wrong surface flag for filter help.** `MetaTooltipHelp` gates on
+`show_form_tooltip` — the filters sheet is a LIST surface; the correct gate
+is `show_list_tooltip` (same contract, wrong flag read). `PrimeField` needs
+`help_context: "form" | "list"` (default `"form"` — existing callers
+unchanged); `FiltersPanel` passes `"list"`.
+
+**A.5.3 Header help icon exists but sits mid-line.** `TableHeader.svelte:83-89`
+already mounts `FormLabelWithPriorityHelp` for `col.tooltip &&
+col.show_list_tooltip !== false` — same component, same content as the form
+label (single truth already). The gap is positional: it renders between label
+and sort arrow; requested right-most (after the sort affordance). Card view:
+`CardField.svelte:51` renders the same gated icon — verify its anatomy matches.
+
+**A.5.4 Authored hint copy contradicts the closed vocabulary (live data bug).**
+`job.entities.job_trigger.hints.event_subject` in DB (all 7 languages, verified):
+*"…Scegli un evento disponibile **o digita il nome di un evento**."* — while the
+field is `options_source:"census.emits", allow_create:false` (free entry
+impossible). `target_subject`'s hint is already correct ("Available
+destinations depend on the active services"). Fix: JH patch rewriting the
+copy in 7 languages (drop the "or type" clause). Structural follow-up (task
+21): `census.*` + `allow_create:true` must be a construction error — the copy
+was wrong because nothing made the closed vocabulary visible to authors.
+
+### A.6 Pieces already verified reusable
 
 - `shellNav.modules` (`$lib/shell/modules-shell.svelte.ts:146`) — app-wide reactive census, importable by sheet panels directly (no prop drilling). Same payload `EntityFormPage` receives via prop.
 - `ComboSelect` — `mode:"single"|"multi"`, `display:"detailed"|"badge"`, `iconField`/`iconColorField`/`descriptionField`/`secondaryField` — the subject anatomy AND badge anatomy are both first-class.
@@ -178,7 +218,16 @@ Canonical `FILTER_OPERATOR_ICON: Record<FilterOperator, string>` in core
 4. `svelte-check 0/0`, `check-standards` clean, E2E green incl. new filter
    specs; serializer unit tests cover IN/NOT IN/`=` on `options_source`.
 5. Declaring `options_source`/`widget`/`allow_create` on a placement fails
-   at enrollment with a pointer to `meta.columns`.
+   at enrollment with a pointer to `meta.columns`; `census.*` +
+   `allow_create:true` fails likewise.
+6. No ghost help icon anywhere `PrimeField` is used — a column without
+   tooltip meta renders no `?` trigger (regression-guarded by a DOM test:
+   `id`/`name` rows contain zero `[aria-label="Help"]` nodes).
+7. Help icon on table headers sits right-most when `col.tooltip` +
+   `show_list_tooltip`; same component, same content as form/filter labels
+   (single truth — no third tooltip implementation).
+8. `job_trigger.hints.event_subject` no longer promises free entry in any
+   language; the combobox cannot create values anywhere (form OR filter).
 
 > **Lifecycle rules**: plans live here; only fully-done plans move to
 > `COMPLETED/` (one-way archive — nothing inside is ever revisited).
