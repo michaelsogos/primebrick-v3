@@ -8,7 +8,7 @@
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
 | 1 | `MetaColumn` gains `options_source` / `widget` / `allow_create` (core `entity-meta.ts`) — hoisted verbatim from `FormFieldPlacement`; closed unions typed | ⏳ not done | — | column owns its option vocabulary — entity semantics, not page layout |
-| 2 | `FormFieldPlacement` drops `options_source` / `widget` / `allow_create` (core `page-route.ts`) + nav-declaration/enrollment validator **rejects** them on placements (construction-time, never silent) | ⏳ not done | — | breaking change, coherent |
+| 2 | `FormFieldPlacement` drops `options_source` / `widget` / `allow_create` (core `page-route.ts`) + nav-declaration/enrollment validator **rejects** them on placements (construction-time, never silent) — **DECIDED: hard reject** | ⏳ not done | — | breaking change, coherent |
 | 3 | `job.meta.ts` columns: `event_subject`→`options_source:"census.emits"`, `target_subject`→`options_source:"census.callables"`, `payload_map`→`widget:"payload_map"`; `nav-declaration.ts` TRIGGER_FORM cleaned | ⏳ not done | — | `allow_create:false` moves too |
 | 4 | `FormFieldDispatcher` reads `column.widget/options_source/allow_create` instead of `placement.*` — behavior identical | ⏳ not done | — | same resolution, new source |
 | 5 | Extract census option derivation (`emitsOptions`/`callablesOptions` anatomy: `value/label/_desc/_sub/_icon/_icon_color`) from `EntityFormPage` → shared `$lib` helper reading `shellNav.modules`; form consumes it too | ⏳ not done | — | kills inline duplication, no prop drilling into sheets |
@@ -19,8 +19,8 @@
 | 10 | `FiltersPanel` advanced tab: value input replaced by dispatcher control, operator-aware (`BETWEEN`→pair, array-producing controls feed IN) | ⏳ not done | — | field selector icons already done ✅ |
 | 11 | Boolean filter control — tri-state (any / true / false) for both tabs; `getOperatorsForColumnType("boolean")` → `["=","!="]` (core `columns.ts` — currently falls into numeric `>,<,>=,<=`) | ⏳ not done | — | `>` on booleans is nonsense today |
 | 12 | `appendListFilterParams` (core `list-filter-params.ts`): `col.options_source` → `op:"="` (not ILIKE); ANY array value → `IN`/`NOT IN` (generalizes the badge-only OR-chain) | ⏳ not done | — | ILIKE on governed subjects is wrong (`a.b` matches `a.b.v2`) |
-| 13 | Operator icons — canonical `operator→icon` map in core `columns.ts` next to `getOperatorsForColumnType`; advanced operator combobox renders it | ⏳ not done | — | lucide names must be verified empirically before authoring |
-| 14 | `type:"ref"` filterable columns (found: `job_run.schedule_subject`) → entity-ref options surface: `options_source:"entity.ref"` derived from `col.ref.entity`, fetch target `/list` (value=uid, label=display_field) | ⏳ not done | — | candidate phase-2 if heavy — text input acceptable interim |
+| 13 | Operator icons — canonical `operator→icon` map in core `columns.ts` next to `getOperatorsForColumnType`; advanced operator combobox renders it. **DECIDED map** (all names verified in `@lucide/svelte` 1.59): `=`→`equal`, `!=`→`equal-not`, `>`→`chevron-right`, `>=`→`arrow-right-to-line`, `<`→`chevron-left`, `<=`→`arrow-left-to-line`, `contains`→`text-search`, `startsWith`→`list-start`, `endsWith`→`list-end`, `BETWEEN`→**`list-indent-increase`** (user pick) | ⏳ not done | — | one map in core — every surface reads it |
+| 14 | `type:"ref"` filterable columns (`job_run.schedule_subject`→`job_schedule`, `job_schedule.trigger_uuid`→`job_trigger`) → `options_source:"entity.ref"` derived from `col.ref.entity`. **Huge-resultset design (decided — infrastructure already native)**: ComboSelect exposes `onSearchInput`/`onLoadMore`/`loadingMore` hooks; `/list` accepts `search`/`search_in`/`page`/`page_size`/`total`. Build ONE `entity-options` delegate: fetch `/{entity}/list?page_size=50&page=n&search=q`, map rows → `{value: uid, label: display_field, icon?}`, append pages on scroll, debounced server-side search (never client-filter a partial set), `total` drives "other X records" affordance | ⏳ not done | — | no delegate exists today — hooks are native, wiring is new |
 | 15 | E2E: subject combo in both tabs (options carry icon+desc+subject), boolean tri-state wire `=true/false`, badge multi → IN/OR-chain wire shape, icon on standard labels | ⏳ not done | — | mandatory per workflow |
 | 16 | svelte-check + check-standards + unit tests (new: serializer IN-generalization, boolean ops, surface control map) | ⏳ not done | — | |
 | 17 | **Ghost help icon bug** — `PrimeField.resolvedHelp`: `MetaColumn` without `tooltip*` keys → `isMetaTooltipHelp=false` → FieldHelp branch returns all-undefined truthy object → icon renders, tooltip never opens (ID/NAME etc.) | ⏳ not done | — | verified `prime-field.svelte:114-129` + `FormLabelWithPriorityHelp:62` `{#if text}` |
@@ -32,7 +32,9 @@
 | 23 | FiltersPanel anatomy: `contentClass` scroll override removed (D1); `control({id})` threaded everywhere + DateWheelPicker id (D2); advanced labels → `PrimeField` (D3 — also unblocks icons/tooltips on advanced labels); customer-status fallbacks removed (D6); `X` double import, testids, fake-column fabrication cleaned (D9) | ⏳ not done | — | lands with tasks 7-10 refactor |
 | 24 | HEAD reset semantic decision: `resetAllFilters` currently live-commits (`onResetFilters`) bypassing draft→Apply — decide draft-only reset vs live reset, codify in sheets.md | ⏳ not done | — | D7 — contract gap |
 | 25 | **check-standards/ESLint rules for `*/sheets/panels/*.svelte`**: (1) `<SheetPanelLayout` root mandatory, (2) `contentClass` no `overflow`, (3) no raw `<label>`, (4) `PrimeField.control` must destructure `{id}`, (5) no `$t(a\|\|b)` entity fallback in `entity-list/`, (6) `data-testid` on interactive elements, (7) no DropdownMenu-as-select once dispatcher lands | ⏳ not done | — | the "PER SEMPRE" enforcement — prose → rules |
-| 26 | Commit-close semantics codified in sheets.md: FORM panels `closeSheet()` on commit OR declare `keep_open` — currently Filters=open vs BadgeValue=close by accident | ⏳ not done | — | one documented decision |
+| 26 | Commit-close semantics codified in sheets.md: FORM panels `closeSheet()` on commit OR declare `keep_open` — currently Filters=open vs BadgeValue=close by accident — **DECIDED: filters keep open** (user watches the table update behind the sheet) | ⏳ not done | — | one documented decision |
+| 27 | **Mode toggle → ButtonGroup** (user request): replace Switch+labels toolbar (`FiltersPanel:424-438`) with canonical `ButtonGroup segmented` (ViewModeToggle anatomy — ghost Button `icon+label`, `aria-pressed={active}`, `bg-foreground/10` active), **justified full-width** (`w-full` + `flex-1` buttons). Icons: standard→`list-filter`, advanced→`list-filter-plus` (verified lucide 1.59) | ⏳ not done | — | same anatomy as ELT view-mode toggle |
+| 28 | **Field search** (user request): `SearchInput` row in TOOLBAR below the toggle; `contains` (case-insensitive) match on `$t(col.label_key)` + `col.label_key` + `col.key`; empty → all fields. One derived `visibleFilterableColumns` feeds BOTH the standard list AND the advanced field selector (single filtered set, not two) | ⏳ not done | — | solves "too many filterable fields" |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 
@@ -201,7 +203,33 @@ matches the FORM-panel skeleton verbatim (sheets.md:149-153). The perceived
 - **PrimeField**: thread `id` structurally (context/let-typing) so a panel
   cannot drop it — or the AST lint above catches it.
 
-### A.7 Pieces already verified reusable
+### A.7 Huge-resultset combobox — what's already native (verified for Q2)
+
+The user asked whether ref-option lists need bespoke pagination/search or an
+old PoC exists. Verified:
+
+- **`ComboSelect` already ships the remote hooks** (`combo-select.svelte:136-149`):
+  `onSearchInput` (fires per keystroke — parent drives a remote source),
+  `onLoadMore` (infinite scroll near bottom → parent appends the next page),
+  `loadingMore` (trailing spinner row). The doc comment says verbatim:
+  *"Lets the parent drive a remote/async options source — standard ComboSelect
+  stays the same component, only `options` is refilled by the delegate."*
+- **`/list` already accepts everything needed**: `search`, `search_in`,
+  `page`, `page_size` and returns `total` (`useEntityList.svelte.ts:360-398`
+  builds the same params; `ListResponse.total` is bigint).
+- **What does NOT exist**: a delegate that wires the two — no composable
+  fetches `/{entity}/list` into ComboSelect options today (the `onSearchInput`
+  consumers found are the ELT SearchBar — a different contract). The old PoC
+  intent = these native hooks; the missing piece is ONE shared
+  `entity-options` composable (search → `?search=q`, scroll → next `page`,
+  rows → `{value:uid, label:display_field, icon?}`, `total` → "other X
+  records" affordance). Server-side search only — never client-filter a
+  partial page (that would lie about completeness).
+- Ref columns found: `job_run.schedule_subject`→`job_schedule`
+  (`filterable:true`), `job_schedule.trigger_uuid`→`job_trigger` (filterable
+  by default — `default_visible:false` but no `filterable:false`).
+
+### A.8 Pieces already verified reusable
 
 - `shellNav.modules` (`$lib/shell/modules-shell.svelte.ts:146`) — app-wide reactive census, importable by sheet panels directly (no prop drilling). Same payload `EntityFormPage` receives via prop.
 - `ComboSelect` — `mode:"single"|"multi"`, `display:"detailed"|"badge"`, `iconField`/`iconColorField`/`descriptionField`/`secondaryField` — the subject anatomy AND badge anatomy are both first-class.
