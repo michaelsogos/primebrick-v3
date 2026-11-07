@@ -821,3 +821,225 @@ Per-service wire types (`AiModel`, `AiCerebellum`, `JobSchedule`…) live in
 contract types (shared subpath or bundled into its remote chunk's
 `host-contract`), FE imports from the owning module — not a central copy.
 `component_key` registry for host-rendered custom pages stays task 14.
+
+## 2026-11-19 — UX doctrine fixes + enable↔soft-delete design
+
+### Done this session
+- `MetaColumn.color` → ICON tint only (badges stay `secondary` muted); canonical census values: src `zap`/`amber-500`, dst `send`/`sky-500` (same as create-form `subject_combo`).
+- Filter condition chips use canonical FilterBar anatomy + translated ops (`system.entities.list.operators.*` via op-vocabulary map `eq→=`…); `exists` op key seeded.
+- Cell links: ghost-hover bg + persistent underline + `text-primary` (`CELL_LINK_CLASS`, one const).
+- `ref_count`/`runs`: grouped `count(*)` in `decorate()` — shows 0 explicitly.
+- `<key>_name` display convention: universal in `TableCell` (was audit-gated only) — created_by/updated_by resolve display names.
+- Auto-derived system columns → `system.common.fields.*` shared dict (BE patch `20261119000000`, applied + signed). Per-entity audit keys are dict duplication (33 hand-declared keys → migrate).
+- `MetaColumn.null_label` contract; `next_run` → "Trigger disabilitato" when `enabled=false` (JH patch `20261115000000`, applied + signed).
+- SparklineBars: always exactly 10 fixed-width slots (right-aligned tail); `skipped` → `fill-neutral-400`.
+- `ScheduleSpecCell`: prose first, spec badge second.
+- REGRESSION FIX: `actions-route.actorOf` fabricated `user:<email>` actors — DAL convention is `user_profiles.uuid`/`"system"`; fixed to `ctx.user.id`. Leftover bad rows exist in DB (e2e actors too) — writers now correct.
+- Verified: delete/restore ALWAYS funnel through confirm dialogs (`useDialogs.openDeleteDialog` sole entry; impl only from `confirmDeleteRow`); step-up MFA = optional layer, off by default (BE 403 → dialog → retry).
+
+### Pending
+- **#9 JSON explorer**: `format:"json"` generic → braces CTA + "Visualizza" label → right Sheet; inside: `JsonValueEditor` readonly + new third "explorer" tree view in `json-code-block`. `filter`/payload_map keep specific renderers.
+- **#8** subject display_name text beside badge (needs census `display_name` in module contract).
+- **Lint additions**: rules to catch contract elusions (TBD inventory).
+- **Docs**: agent/dev/user updates for all new contracts (`color`, `null_label`, `ref` conventions, common-fields dict, soft-delete GUARD, crud_override).
+- BE metas: migrate 33 hand-declared audit `label_key`s to common keys (JH `job_trigger`/`job_schedule` done this session).
+- e2e actor strings (`e2e-admin`) — same audit convention violation as `user:` (test infra).
+
+## 2026-11-19 (cont.) — #16 soft-delete-as-disable EXECUTED
+
+### Done
+- **`enabled` column dropped** (`job_trigger_entity`, JH patch `20261117000000` — applied live: 44 disabled→deleted rows migrated, column dropped, signed).
+- **`deleted_at` IS the disable**: engine `loadTrigger`/`onEvent`/`refresh` gate on row presence (deleted rows never load); `jobs.service` `next_run` gate → `deleted_at == null`; `TRIGGER_FILTERABLE` − `enabled`; nav `default_value` removed.
+- **Standard CTAs with chrome**: `meta.actions_overrides` on `job_trigger` — `delete.single/bulk` → "Disattiva"+`square`+destructive; `restore.single/bulk` → "Attiva"+`play`+warning. Label keys seeded (7 langs, same patch).
+- **FE chrome contract**: `EntityAction.label_key/icon/text_color` → `EntityRowActions.delete_chrome/restore_chrome` → `TableRow` menu renders chrome (icon via `DynamicIcon`, `text_color` on item+icon). Defaults unchanged when no override.
+- **Custom enable/disable RPC routes DELETED** (`/actions/enable-trigger`, `/actions/disable-trigger`) — standard delete/restore does the work; `afterWrite` publishes `jobs.ctl.triggers.changed`, engine re-derives. `setTriggerEnabled` → `setTriggerDeleted` (repo `delete`/`restore`, canonical `deleted_by`).
+- **`crud_action` override mechanism** (SDK, prior session): `entity_op.crud_action` merges an RPC route into the standard `meta.actions` entry (endpoint+chrome) — the documented override path for cases like users+cascade. Triggers don't need it (standard ops suffice).
+- **Verified**: `tsc` clean, 93/93 JH tests, check-standards clean, svelte-check clean; served meta contract verified at source (`jobTriggerMeta` — no `enabled` col, overrides present, `next_run` null_label on `deleted_at`, zap/amber-500 + send/sky-500).
+- JH restarted on 3006 after crash on entity hot-reload; stack alive (3001/3003-3007/5173).
+
+### Still pending
+- Browser E2E of the live table (needs authenticated session — MFA flow).
+- `run_stats` sparkline on restored trigger rows; ghost-row/restore UX manual check.
+- Docs (agent/dev/user) for soft-delete-as-disable GUARD + chrome override + `crud_action`.
+
+## 2026-11-20 — sheet-system enforcement + cell UX corrections + deletion-filter E2E
+
+### Done
+- **Sheet drift made impossible at lint time**: `no-restricted-imports` blocks now COMPOSE
+  shared ban fragments per file scope (B1 vendor → B2 +sheet → B3 infra+switch →
+  B4 +switch → B5 routes+chrome → B6 allowlisted routes). Root cause of the
+  silent bypass: flat config is last-match-wins per rule — each later block's
+  options REPLACED earlier ones, so the vendor/sheet bans were dead code
+  (proven: only the last block's `Switch` ban fired). Union fragments +
+  `mergeBans()` fix it structurally; probes flag `Sheet` from `@primebrick/ui`
+  and `ui/sheet/*` paths, while SHEET_INFRA dirs stay exempt.
+- **JsonViewerPanel** (`entity.jsonViewer`): registered in `SHEET_PANEL_IDS` +
+  `SheetPanelPropsMap` + `SheetHost`; canonical `SheetPanelLayout` anatomy
+  (braces icon matching the CTA, `SheetHeaderAction` explorer/raw toggle,
+  `Sheet.Close`). `JsonCellViewer` is now a CTA-only component →
+  `openSheet('entity.jsonViewer', { value })`. Direct `Sheet.Root` mount removed.
+- **src/dst badges**: display name (census `label_key`, same source as the
+  create-form combo) renders INSIDE the badge; the raw subject path lives in
+  the canonical black `Tooltip` — repetitive tooltip when no display name is
+  by design. Icon tint via `colorCssFromToken` inline style (Tailwind JIT
+  never sees meta strings).
+- **Filter condition chips**: badge keeps FilterBar prose anatomy (bold field
+  + translated op + italic value); hover shows the canonical black `Tooltip`
+  with that condition's own JSON fragment pretty-printed.
+- **Text-link CTA style** (ref_count executions, viewer CTA):
+  `CELL_TEXT_LINK_CLASS` = foreground text + `hover:bg-accent` (ghost token)
+  + `hover:underline` — no persistent underline, no invented bg.
+- **`filteredEntityListHref(census, entity, terms)`** — standard deep-link
+  builder: entity name + wire terms → canonical `filters[i][...]` URL;
+  `filteredListHref`/`reverseRefHref`/`entityRefHref` route through the same
+  term writer. Documented in `docs/ai/entity-meta-schema.md`.
+- **Translations seeded** (BE patch `20261120000000`, applied + signed):
+  `app.common.explorer`, `app.common.raw` ×7 langs; `app.common.view` ×7
+  verified already live in `public.translations`.
+- **Deletion-filter regression — NOT a code bug**: new E2E
+  `job-triggers-deletion-filter.spec.ts` proves ONLY/INCLUDED/EXCLUDED
+  re-query with correct `deleted_records` AND the service honors it
+  (`deletedTotal + nonDeletedTotal === allTotal`). User's observation was the
+  pre-`deletionFilter={true}` bundle (param skipped → identical rows).
+- Region/Priority mystery resolved: seed had pointed the demo trigger at a
+  nonexistent subject (`e2e.source.dispatched`) → census misses → raw field
+  fallback. Re-pointed at `crm.customer_high_value`; `subjectFieldLabel` now
+  walks nested `properties` and uses `title ?? description`.
+
+### Verified
+- eslint probes: Sheet name + path imports flagged outside infra; infra files clean.
+- `npx eslint` clean on all touched files; svelte-check 0/0.
+- Vitest: entity-links 7/7, list-filter-params 8/8.
+- Playwright chromium: deletion-filter spec 1/1 pass.
+
+### Pending
+- E2E for the JSON viewer panel (sheet open via registered id) + nats badge
+  tooltip display-name rendering once a session auths as admin.
+- Docs (dev-guide mdx + user-guide) for soft-delete-as-disable, `crud_action`,
+  `filteredEntityListHref`, sheet-panel registration rules.
+- BE metas: remaining hand-declared audit `label_key`s → `system.common.fields.*`.
+
+## 2026-11-20b — virtual-column crash: root cause triplo + recovery design (TIC, approved study)
+
+### Empirical findings — WHY `sort_key=next_run` produced a 500 + 15s crash loop
+
+**`next_run` is a DECORATED virtual, not a projected one.** `JobTriggersService`
+overrides `list`/`get` (`jobs.service.ts:203-213`): `svc.list()` returns the
+page, then `decorate(rows)` mutates row objects adding `last_run`, `runs`,
+`next_run` — two extra governed queries (grouped `job_runs` max/count +
+`job_schedules` mirrors) + pure-TS `nextScheduleFire(schedule_spec)`.
+The keys exist only on the wire; `ORDER BY`/`WHERE` on them → PG 42703 → 500.
+How it passed every guard: the decoration uses `getDal().findAll` +
+`Project.expr` on REAL columns of other tables (legal); `row.next_run = ...`
+is legal on `JobTriggerEntity & Record<string, unknown>`; meta `virtual:true`
+is honest but does not encode *query capability*. No lint can see it — the
+contract itself lacks the distinction.
+
+**Two kinds of `virtual` exist in the platform today, unmarked:**
+- **Projected** — `cfg.list.aggregates` (`entity-service.ts:356-380`): LEFT
+  JOIN + `Project.expr` + groupBy inside the list query → real result column.
+  Precedent: `organizations.user_count` (`COUNT(u.id)`, declared
+  `sortable:false, virtual:true`). ORDER BY on the alias works natively;
+  WHERE needs a master-query wrapper / HAVING.
+- **Decorated** — post-page TS mutation (JH `decorate()`): `runs`, `last_run`,
+  `next_run`, `run_stats` on triggers; `live`, `drift` on schedules. Never
+  in SQL → non-queryable, period.
+
+**Server-side asymmetry (the missing enforcer):**
+- Filters ARE gated: `translateFilterConditions(entity, filters,
+  { allowedFields: cfg.list.filterableKeys })` — undeclared field rejected.
+- `sort_key` is NOT gated: `entity-service.ts:390` sends it straight into
+  `field(cfg.entity, sort_key as never)` → `ORDER BY <arbitrary string>`.
+  No `sortableKeys` config exists. Any FE/meta drift = production 500s.
+- `isColumnSortable`/`isColumnFilterable` are fail-open (`!== false`) —
+  virtuals need explicit opt-out today (`user_count` is the lone correct one).
+
+**The ~15s self-crash loop:** `useServiceAvailability.stamp` =
+`status:last_health_check_at` — every service heartbeat mutates it.
+`useEntityList.svelte.ts:592-603` refetches when `avail && changed &&
+_state.error` — designed for down→up recovery, but JH is ONLINE (500 is
+app-level) → degenerates into retry-every-heartbeat while error persists.
+Docstring claim "once per real change" is wrong: stamp changes every ~15s.
+
+**Why the page never healed:** `persistState` writes `skSort` to
+sessionStorage — survives F5; every bootstrap replays the poisoned sort.
+Only closing the tab clears it. Same poisoning path exists for
+filters/search/page_size.
+
+### Approved design — `lastKnownGood` + reset (generic list-error recovery)
+
+- `_state.lastGoodConfig` = snapshot `{sortKey, sortDir, page, pageSize,
+  filterValues, advancedFilters, search, searchInKeys, deletionFilterMode}`
+  taken on every successful `loadRows` (memory-only; applying it re-writes
+  the persisted keys via `persistState` → self-un-poisoning).
+- Default ELT error view gains two actions (same ghost CTA style):
+  **"Ripristina configurazione precedente"** (only when a lastGood exists —
+  absent on failed first bootstrap) and **"Reimposta vista"** (clears all
+  `sk*` keys + meta defaults + refresh = first load).
+- Covers ANY failed list call (sort, filter, search, paging) — not just the
+  virtual-column class. Two new i18n keys ×7.
+
+### Fix candidates queued (ARCH + ENFORCER, post-study)
+- `sortableKeys` in entity-service list config (symmetric with
+  `filterableKeys`) → undeclared `sort_key` → 400, never SQL.
+- `virtual` kind in meta contract: `projected` (queryable, sortable OK;
+  filterable when wrapper lands) vs `decorated` (fail-closed) — replaces
+  ambiguous `virtual: true`.
+- `isColumnSortable`/`isColumnFilterable` → fail-closed for decorated
+  virtuals (explicit `sortable:true`/`filterable:true` opt-in only).
+- JH `runs`/`last_run` → `aggregates` projections (the same SQL decorate()
+  already builds) → honestly sortable; `next_run`, `run_stats`, `live`,
+  `drift` stay decorated → declared non-queryable.
+- Recovery effect → one-shot on `available` false→true transition only.
+- Master-query wrapper in query-builder so projected columns become
+  filterable too (HAVING/WHERE-on-alias) — separate larger task.
+
+### Remaining queued UI work (user-reported, this round)
+- Keyboard-focus row border: always rendered (invisible→primary) to kill the
+  2px flick; primary gradient + `rounded-md` (input-standard radius).
+- Bulk "Elimina" on triggers → map to disarm-all RPC + dialog "tutte vs
+  selezionate" (choice box); chrome override icon+label (precedent: exports
+  dialog on customers).
+- Column-selector + "Cerca in" panels: field icons, alignment-safe for
+  iconless fields; standard filters panel: icon left of label; advanced
+  filter field+operator comboboxes: icons.
+- src/dst `event_subject` in standard+advanced filters must render the same
+  subject combobox as create/update form (census-driven), not a raw text
+  input — audit ALL fields rendered with the wrong widget.
+- E2E sorting sweep: all columns visible → ASC/DESC/NONE per column → assert
+  request params + compare result order with live DB.
+
+### 2026-11-20c — next_run equivalence suite + cron truth (verified)
+
+**SQL↔TS equivalence PROVEN**: `primebrick-workspace/temp/next-run-sql-equivalence.cjs`
+— 28/28 cases identical (epoch ms) between core `nextScheduleFire()` and the
+candidate `@Calculated` SQL expression: all units, exact-boundary ±1ms,
+first-fire, negative elapsed, NULL armed_at, TZ offsets, multi-space,
+`@at` no-space edge, cron/garbage → NULL.
+**The suite caught a real drift**: PG timestamptz keeps µs, JS Date truncates
+to ms → sub-ms `armed_at`/`now` shifts `floor(elapsed/iv)` at exact
+boundaries (up to a FULL interval off). Fix inside the expr:
+`date_trunc('milliseconds', ...)` on base AND now — mandatory, now proven.
+
+**Cron truth — NO second interpreter needed**: NATS maintains
+`Nats-Schedule-Next` on the stored schedule message with the server-computed
+next fire (ADR-51, nats-server #7170, docs.nats.io headers ref) for
+recurring schedules; `@at` singles get `purge` post-fire. The engine already
+reads stored messages (`readStoredSchedule`). Design upgrade:
+`job_schedules.next_run_at` PHYSICAL column, engine-materialized at arm /
+after each fire / cleared on disarm → covers cron + @every + @at with the
+scheduler's own truth, zero interpretation. Trigger `next_run` then =
+calculated subquery on the mirror — sortable/filterable honestly.
+Fallback (no engine work): calculated expr for @every/@at + NULL for cron
+(today's exact semantics).
+
+**Meta contract (agreed)**: `MetaColumn.kind` — physical (default) |
+`calculated` (expr lives as `@Calculated` on the entity class prop; DAL
+projects it in list/get; sortable+filterable default ON, opt-out allowed) |
+`virtual` (post-query enrichment — decorate(); sortable+filterable FORCED
+OFF; declaring `sortable:true`/`filterable:true` on a virtual column is a
+construction-time error — validator + lint, impossible to build, not just
+detectable). `isColumnSortable`/`isColumnFilterable` become kind-aware.
+WHERE on calculated: v1 substitutes raw expr (scalars); aggregates need
+HAVING/master-wrapper (separate task). `sortableKeys` server-side gate
+(400, never SQL) — symmetric with existing `filterableKeys`.
