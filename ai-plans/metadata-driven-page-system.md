@@ -1100,3 +1100,32 @@ HAVING/master-wrapper (separate task). `sortableKeys` server-side gate
 - Languages CTA → inner-right via canonical trailing mechanism.
 - ENFORCEMENT (open — see chat): make the item anatomy + CTA-count rule construction-time
   (component contract), not a review-time hope.
+
+### Optional row data (icon / desc / tooltip) — the wire contract (decided 2026-11-08)
+
+These are **row data, not meta** — the meta describes the entity, not the row, and
+mirroring row content in meta would be a 1:1 DB echo. The wire is the standard list
+response: physical columns travel in the row JSON; the meta only *detects* them via
+`columns_map` (DB columns are auto-reflected — zero meta duplication).
+
+| Attr | Wire | Source |
+|---|---|---|
+| `icon` | physical `icon` column (raw lucide name — icons are NOT i18n) | per-entity opt-in column, like `label_key` — never on `DictEntityBase` |
+| `desc` | **convention-derived** — `<label_key>.description` | the row's label_key IS its i18n address; descendants hang on the same stem |
+| `tooltip` | **convention-derived** — `<label_key>.tooltip` | same suffix composition (analogy to `.description`) |
+| non-keyed dicts (`name_local` family) | raw `description`/`tooltip` text columns | explicit column wins over derivation |
+
+**Label-key composition standard (seeded, already decided — evidence):**
+
+- Row label: `<ns>.entities.<tk>.rows.<code>` → `crm.entities.customer_type.rows.private`
+- Description: `<label-stem>.description` → `entities.ai_model.qwen3_4b.description`,
+  `entities.crm.pipeline.description`, `app.auth.*.description`
+- Field hints: `<ns>.entities.<tk>.hints.<name>` (+ `_title`) →
+  `entities.user_profile.hints.email_verified`
+
+Presence rule: `$t(k)` returns the raw key when missing → element renders iff
+resolved ≠ key. Absent data → absent element — never an invented fallback (icon,
+tooltip, desc alike; enforced by `icon-no-fallback` in check-standards).
+
+Derivation uses the LIVE `values[display_field]`: re-pointing `label_key` to a
+`custom.*` key keeps derived keys inside `custom.*` — write boundary preserved.
