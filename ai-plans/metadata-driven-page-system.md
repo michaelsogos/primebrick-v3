@@ -1169,3 +1169,28 @@ customer_accounts, customer_contacts, customer_consents, customer_links)
 with ZERO audit writes — same empty-history gap for child rows.
 Backfilling those needs a migration-provenance decision (action=INSERT
 with changed_by=migration? or the original row's actor) — user's call.
+
+### Seed audit-trail — enforcement (2026-11-08)
+
+Two levels, per user direction (lint + patcher code only, tests are the
+second net):
+
+1. **check-standards `seed-audit-trail`** (sdk tool) — scans
+   `db-meta/patches/*.sql`: `INSERT INTO s.t` where `snapshot-entities.json`
+   marks `s.t` `isAuditable` and the file lacks the `s.t_audit` INSERT →
+   violation. Verified live: flags `customer_types` seed, passes
+   `contact_types` seed that carries its audit rows.
+   `seed_audit_exempt` in `.devin/check-standards.json` grandfathers the 3
+   shipped violating files (crm seed_dictionaries, legal_forms_iso20275,
+   customer_flat_to_children — data remediated by the backfill patch).
+2. **`runMigrations` enforcer** (`assertSeedAuditTrail` in dal-pg
+   `engine.ts`) — pre-SQL, per pending patch: collects `INSERT INTO s.t`
+   targets, probes `to_regclass('s.t_audit')` in the catalog; audited
+   target without its audit INSERT → patch `failed` BEFORE anything
+   executes, `degraded` + ordering stop (same lane as a SQL error).
+   Escape: `-- pb:no-audit-trail` pragma (third patch pragma, next to
+   `requires-review`/`no-transaction`).
+
+Both honor the pragma; `primebrick_database_patches` and `*_audit`
+targets are never flagged. Doc: dal-pg `migrations.mdx` patch-semantics
+bullet. Engine tests cover fail/apply/pragma/no-twin (22/22).
