@@ -1148,3 +1148,24 @@ settings/config namespace — they are **audit vocabulary** → `app.common.*`:
 - `ConfigListRow` re-pointed (6 sites); `DictRow` L3 rebuilt to the same
   sentence anatomy. Convention documented in `docs/ai/patterns.md`
   (list-item audit line + dict-row optionals wire contract).
+
+### Seed audit-trail rule (enforced 2026-11-08 — user-raised)
+
+Version-history on dict rows opened EMPTY: the dict seeds inserted rows
+but never wrote `<table>_audit` — SQL seeds bypass the DAL so
+`@AuditTrail` never fires. Rule (now in dal-pg `migrations.mdx`): **every
+seed INSERT must be followed by the matching audit rows** — INSERT
+action, `initial-setup`, full-column delta, `WHERE NOT EXISTS` idempotent.
+
+Backfill `20261202000000_crm_dict_audit_backfill.sql` covers the 10 CRM
+dict tables (customer_types, company_dimensions, legal_forms,
+local_address_types, qualifications, marketing_qualifications,
+contact_types, account_kinds, customer_link_types, consent_types) —
+signed + applied; version-history sheet verified populated E2E.
+
+OPEN GAP (flagged, not fixed): `20261125000000_customer_flat_to_children`
+migrated customer rows into child tables (local_addresses,
+customer_accounts, customer_contacts, customer_consents, customer_links)
+with ZERO audit writes — same empty-history gap for child rows.
+Backfilling those needs a migration-provenance decision (action=INSERT
+with changed_by=migration? or the original row's actor) — user's call.
