@@ -1129,3 +1129,22 @@ tooltip, desc alike; enforced by `icon-no-fallback` in check-standards).
 
 Derivation uses the LIVE `values[display_field]`: re-pointing `label_key` to a
 `custom.*` key keeps derived keys inside `custom.*` — write boundary preserved.
+
+### Audit-line sentence keys → `app.common.*` (decided 2026-11-08)
+
+DictRow's LINE-3 audit was rendering `system.common.fields.updated_at`/
+`updated_by` pairs — field-label vocabulary, muted, two separate pairs —
+vs the reference `ConfigListRow` sentence anatomy (`text-primary`
+connectors + italic muted values, who only rides with when).
+
+User verdict: reuse the sentence keys BUT move them out of the
+settings/config namespace — they are **audit vocabulary** → `app.common.*`:
+
+- `system.settings.configurations.lastUpdatedPrefix` → `app.common.lastUpdatedPrefix`
+- `system.settings.configurations.lastUpdatedByMid` → `app.common.lastUpdatedByMid`
+- Patch `20261201000000_audit_line_keys_app_common.sql`: DELETE from
+  `system.translations`, INSERT into `public.translations` ×7 langs
+  (en-US included — old keys lacked it; signed dev-micha-2, applied).
+- `ConfigListRow` re-pointed (6 sites); `DictRow` L3 rebuilt to the same
+  sentence anatomy. Convention documented in `docs/ai/patterns.md`
+  (list-item audit line + dict-row optionals wire contract).
