@@ -1194,3 +1194,14 @@ second net):
 Both honor the pragma; `primebrick_database_patches` and `*_audit`
 targets are never flagged. Doc: dal-pg `migrations.mdx` patch-semantics
 bullet. Engine tests cover fail/apply/pragma/no-twin (22/22).
+
+### Children audit backfill — CLOSED (2026-11-08)
+
+`20261203000000_crm_children_audit_backfill.sql` backfills the 3 tables
+`flat_to_children` populated (local_addresses 140, customer_contacts
+268, customer_accounts 35 — verified 1:1 vs row counts). Provenance
+rule (user-stated): **the trail author is the actor stamped in
+`created_by`/`updated_by`** → `changed_by = t.created_by`,
+`changed_at = t.created_at` for INSERT events. `'initial-setup'` stays
+the seed-time convention only (config_entries precedent); a migration
+is not a seed.
