@@ -1043,3 +1043,60 @@ detectable). `isColumnSortable`/`isColumnFilterable` become kind-aware.
 WHERE on calculated: v1 substitutes raw expr (scalars); aggregates need
 HAVING/master-wrapper (separate task). `sortableKeys` server-side gate
 (400, never SQL) — symmetric with existing `filterableKeys`.
+
+## 2026-11-08 — Dict list-item anatomy (USER-DICTATED SPEC) + drift evidence
+
+### The spec (verbatim requirements — contract, not suggestion)
+
+**Row = 3-line list item, near-identical to the config-entries row (`ConfigListRow`):**
+
+- **LINE 1**: `CHECKBOX | ICON | DISPLAY_NAME | TOOLTIP-ICON | TAGS` → far right: `CHEVRON UP/DOWN` + item-menu.
+  - Version is **NOT** a tag — the **dict key** (`code`) is a tag.
+- **LINE 2**: `DESC` — rendered only when the meta provides a description; **hidden entirely** when absent.
+- **LINE 3**: `VERSION BADGE | LAST UPDATE | WHEN | WHO` (audit line).
+- **1.1** The dict key is **not editable after creation** → it renders as a **TAG**, never a field.
+- **1.2** The only field in the row is **VALUE** — for dict entities always `label_key`
+  (config entries inherit the same concept; their value control varies by `type` internally).
+- **1.3** ORDER is conveyed by **visual position** — no numeric input, no number printed as label.
+- **1.4** The page must be **very close to the config entries list page**.
+
+**Item-menu / CTA evaluation (user-dictated):**
+
+- `EDIT` — absent on dict pages: the page itself IS the editor. Valid while the dict entity
+  exposes only VALUE for update; **revisit if a dict entity ever needs >1 editable field.**
+- `PREVIEW PANE` — does not apply (ELT-only surface).
+- `DELETE` — currently the ONLY item CTA.
+- `VERSION HISTORY` — opens from the version badge (same UX as forms); never in the menu.
+- No custom actions / other entity actions assumed.
+- **RULE: when the item menu has exactly ONE CTA, render that action's icon directly
+  (no 3-dot menu); only when >1 CTA render the dropdown menu.** Deleted rows: delete→restore,
+  still a single CTA → direct icon.
+
+**Field-chrome rule violated (user-dictated):**
+
+- Auxiliary CTAs on an input/combo go **inner-right** — canonical mechanisms already exist:
+  `input-group` addon family (`input-group-addon`, `input-group-button`, `align="inline-end"`),
+  `input/input-chrome.ts` trailing-icon classes, and `ComboSelect`'s own `trailing` snippet.
+  **Never** a sibling button outside the control.
+
+### Drift evidence (what was actually built vs spec — verified 2026-11-08)
+
+| Spec | Built (violation) |
+|---|---|
+| version badge → LINE 3 audit zone; dict `code` = the tag | version badge next to title; `code` rendered as an editable field (since made readonly — still a field, not a tag) |
+| LINE 2 desc conditional | no desc line at all |
+| LINE 3 `version | updated | when | who` | audit partially present; version badge misplaced on LINE 1 |
+| ICON + TOOLTIP-ICON + TAGS on LINE 1 | missing entirely |
+| one VALUE field only | per-column labeled `FormFieldDispatcher` grid (form-card anatomy) — `sort` numeric input included |
+| order = visual position | `sort` editable numeric input + printed value |
+| CTA rule 1→icon / >1→menu | undo+trash inline ad hoc — correct only by accident, rule unenforced |
+| languages CTA inner-right (trailing) | sibling `<Button>` OUTSIDE the ComboSelect (`TranslationKeyCell.svelte:85-118`) |
+| near-identical to ConfigListRow | stacked mini-form ~4-5 lines tall; nothing matches |
+
+### Pending
+
+- Rebuild `DictRow`/`DictDraftRow` to the 3-line anatomy above (spec-first, no invention).
+- CTA evaluation: single-CTA → direct icon; future >1 → menu (design decision recorded).
+- Languages CTA → inner-right via canonical trailing mechanism.
+- ENFORCEMENT (open — see chat): make the item anatomy + CTA-count rule construction-time
+  (component contract), not a review-time hope.
