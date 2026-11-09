@@ -23,7 +23,7 @@ So every guard here targets the agent failure modes specifically:
 inventing a parallel key shape instead of reusing the grammar, writing
 seed SQL that bypasses the service boundary, assuming a namespace
 instead of looking up the owner table. 1,328 non-snake keys + 14
-cross-schema rows + one dangling `config.*` namespace are the fossil
+cross-schema rows + 56 dangling `config.*` referrers are the fossil
 record of unenforced conventions.
 
 Concretely: keys are THE CONTRACT between code and vocabulary —
@@ -45,7 +45,7 @@ construction** on every write path — and lets downstream features
 | `system` | `system.entities.<entity\|sub>.*` + `system.settings.*` | 788 | 461 |
 | `crm` | `crm.entities.<entity>.<facet>.<leaf>` | 688 | 449 |
 | `job` | `job.entities.*` + `job.jobs|config|events|module.*` | 127 | 4 |
-| `emailsender` | `es.entities.*` + `es.callable|providers|templates|nav|module.*` | 68 | 27 |
+| `emailsender` | `emailsender.entities.*` + `emailsender.callable|providers|templates|nav|module.*` | 68 | 27 |
 | `ai` | `ai.entities.*` + `ai.console|docs|config|nav|module.*` | 172 | 14 |
 | `webhook` | `webhook.entities.*` | 0 | 0 |
 | `custom` | (empty — contract `custom.entities.<entity>.rows.<code>`) | 0 | 0 |
@@ -139,13 +139,48 @@ follow the key's semantic domain, and storage follows the namespace:
   `public.translations`** keeping the key (delete+insert preserving
   uuid/version/audit — `UPDATE` can't cross schemas).
 
-**`config.*` dangling namespace — resolved to convention:**
-`config.service_client_shield_secret.{label,description}` (1 row,
-`group_key=security_parameters`, `reserved=true`) — `config` is not a
-valid namespace; the same `security_parameters` group already uses
-`system.settings.config.auth.*` (cf. `gateway_secret_header`) →
-rename both columns to `system.settings.config.auth.service_client_shield_secret.{label,description}`
-AND create the 2×7 `system.translations` rows (today they render raw).
+**`config.*` dangling namespace — 56 referrers, resolved to convention
+B (`system.settings.config.<group>.<param>.*`) — user-approved.**
+
+Census: `config.*` referrers appear in `config_entries` of **6 schemas**
+(public 1, crm 10, ai 20, job 10, emailsender 7, webhook 8) — 24 distinct
+params, all rendering raw today. The decisive evidence for B: **the DB
+already contains dangling B-shaped referrers** — public's own
+`config_entries` rows point at `system.settings.config.infra.nats_url.*`
+and `system.settings.config.auth.gateway_secret_header.*` whose keys
+were never seeded. The convention was already chosen; the seeds are the
+gap. B is also the dominant live pattern: **~37 B referrers + 157
+existing keys vs 2 A referrers + 16 keys** (usage ratio ≈ 18:1).
+
+The governing axiom (user-articulated): **the key's namespace = the
+domain that owns the vocabulary, not the schema that owns the row**.
+`config_entries` labels are settings-domain vocabulary → `system`,
+uniformly — `nats_url` is the same platform concept in 5 services, not
+"crm vocabulary" (that reading would duplicate one label ×5 and
+mis-attribute ownership — exactly what the institutionalized color
+semantics' `seg[0]=owner` is designed against).
+
+Final map (empirical, per-param):
+
+| Block | Group | Action |
+|---|---|---|
+| `auth_mode` ×3, `auth_roles_path` ×3 | `auth` (keys EXIST — 5/3 facets) | referrer rewrite only, 0 new rows |
+| `nats_url`, `http_port`, `service_base_url`, `be_base_url`, `service_code` ×22 | `infra` (group already referenced by public — 0 keys seeded) | rewrite + create 5 params ×2 facets ×7 langs = **70 rows** |
+| `service_client_shield_key` (+webhook's `client_key`) ×3 | `auth` | rewrite + create 3 params = **42 rows**; also fill public `service_client_shield_key.label_key/description_key` (currently NULL) |
+| `service_client_shield_secret` ×5 | `auth` | rewrite + create |
+| `service_client_shield_secret_header` (+`gateway_secret_header` ×3) ×5 | `auth` — `gateway_secret_header` is the canonical segment (public's B-referrer already points there; row name differs — same pattern as public) | rewrite + create |
+| `llm_*` ×3, `embedding_*` ×5, `rate_limit_*` ×3, `redact_pii` (ai-only ×12) | `ai` (new group) | rewrite + create **168 rows** |
+| `ai.config.ai_assistant_model.*` ×8 keys (label/desc + `qwen2.5_1.5b`/`qwen3_1.7b`/`qwen3_4b` ×2) | `ai` | **move** ai.translations → system.translations as `system.settings.config.ai.ai_assistant_model.*` + rewrite 1 referrer |
+| `job.config.reconcile_interval_ms.*` ×2 keys | `job` (new group) | move → `system.settings.config.job.*` + rewrite 1 referrer |
+
+The two pre-existing A-shape keys (`ai.config.*`, `job.config.*`)
+converge to B — no concurrent conventions survive. Totals: **~280 new
+rows**, 10 distinct key moves (×7 langs = 70 rows), **~62 referrer
+rewrites** (56 `config.*` + 2 A-pattern + 2 A-referrers + 2 NULL fill;
+public's 2 dangling B-shape referrers stay as-is — their targets are
+the created keys). Verified: every
+`system.settings.config.{ai,job,infra,auth.…}` target space is
+empty — zero collisions.
 
 **Also camelCase group segments in scope**: `system.settings.config.
 typeConfig|protocolSelect|phonePrefixSelect|currencySelect` → snake.
@@ -182,10 +217,10 @@ typeConfig|protocolSelect|phonePrefixSelect|currencySelect` → snake.
 
 **New anomalies found in census:**
 
-- `config.*` **dangling namespace** — `config_entries.label_key` holds
-  `config.service_client_shield_secret.label`-style keys that exist in NO
-  translations table → renders raw key today. W2 must either map them to
-  a real namespace or create the rows.
+- `config.*` **dangling namespace** — 56 `config_entries` referrers in
+  6 schemas point at `config.<param>.*` keys that exist in NO
+  translations table → renders raw today. RESOLVED → convention B
+  (full map in the namespace section above).
 - `type_config` JSONB embeds camelCase keys
   (`app.common.validation.invalidEmail`, `tooLong`) — the JSON scan is
   part of the migration, not just flat columns.
@@ -195,27 +230,36 @@ typeConfig|protocolSelect|phonePrefixSelect|currencySelect` → snake.
 ### W1 — Referrer index: DONE (census above; the 758+28 source literals
 and `type_config` JSONB cells are the actual rewrite surface)
 
-### W2 — Key + referrer migration — ONE atomic tx patch
+### W2 — Key + referrer migration — patch family, ONE tx each
 
-**Ordering is mechanical, not a choice**: `type_config` JSONB cells and
-`config_entries` rows in `public` reference keys living in other schemas
-→ any per-schema split leaves a window where referrers dangle. So ONE
-single-segment `tx` patch (engine `engine.ts:334-351`: BEGIN → all
-statements → COMMIT, strongest form):
+**Verified empirically**: zero rename+referrer pairs cross schema
+boundaries — the only foreign-schema embedded referrer
+(`app.common.validation.required` inside `ai.config_entries.type_config`)
+is already snake_case and is not renamed. So the topology respects BOTH
+ownership AND atomicity:
 
-1. All key renames — `UPDATE <schema>.translations SET key='<new>' WHERE
-   key='<old>'` preserving uuid/version/audit (1,328 keys).
-2. Cross-schema moves — delete+insert preserving identity (14 rows).
-3. All referrer rewrites — `config_entries` flat columns + `type_config`
-   JSONB (`jsonb_set` on `label_key`/`error_label_key`/`values.*.label_key`),
-   `role_mappings.label_key`, `service_registry.label_key`,
-   `ai_models.*_key`, dict `label_key` columns.
-4. `config.service_client_shield_secret.*` → `system.settings.config.auth.
-   service_client_shield_secret.*` + create the 14 translation rows.
-5. `move{Up,Down}` → `app.common.move_{up,down}`.
-6. **CHECK constraints LAST** — `ALTER … ADD CONSTRAINT` at the end of
-   the same tx: PG validates against already-renamed rows; any surviving
-   violation rolls the WHOLE patch back (fail atomic, never partial).
+- **be-v3 patch** (registry `public`, single `tx` segment — engine
+  `engine.ts:334-351`): owns every cross-schema op, precedent exists
+  (be patches already write `system.*` under the public registry):
+  1. `app.*`/`system.*` renames (public+system rows)
+  2. 14-row moves (both schemas are be-owned)
+  3. ~280 new `system.translations` rows (`infra`×5, `auth`×3, `ai`×12)
+  4. 10-key moves — `INSERT INTO system.translations … FROM ai/job.translations`
+     + `DELETE` + rewrite their `config_entries` referrers
+  5. ALL ~62 `config.*` referrer rewrites across 6 schemas (new keys are
+     created in THIS tx → impossible to dangle)
+  6. public `type_config` JSONB + `role_mappings`/`service_registry` +
+     `ai_models.*_key` referrer rewrites
+  7. NULL `service_client_shield_key` label fill
+  8. **CHECK constraints on public+system LAST** — PG validates against
+     already-renamed rows; violation = whole-tx rollback
+- **per-service patches** (crm, ai, job, emailsender, webhook — one tx
+  each, order-independent): own-schema key renames + own-schema referrer
+  rewrites (dict `label_key` → renamed keys = mandatory intra-schema
+  co-move) + own CHECK constraint last.
+
+Service `config.*` refs stay dangling until be's patch lands — same as
+today, never a regression; patches apply in any order.
 
 Source rewrites ship in the same changeset (758 FE + 28 US `t()` literals,
 2 meta keys, `DictRow`/`TableFooter` callers) — code and DB must not
@@ -296,3 +340,41 @@ Palette is designed on the cleaned grammar: every segment is
 `[a-z0-9_]+` — case/style checks are unnecessary in `keySegmentClass()`.
 `page_title`/`list`/`version_history` under `entities` stay violet
 (subject position — uniform rule, no entity allowlist).
+
+---
+
+## TURN LOG — state after commit 07df540/458501b/07688ac (all verified, none committed yet)
+
+### Execution state — DONE this turn
+
+| Layer | State |
+|---|---|
+| W4a core `translation-keys.ts` | grammar helpers + tests — **uncommitted** |
+| W4b dal `assertTranslationKeyGrammar` | engine + tests — **uncommitted** |
+| W4c be router/service guards | `assertKeyNamespace`+grammar, zod `TranslationKeySchema` (reused `app.common.validation.dotted_key`) — **uncommitted** |
+| W5 sdk lint | `i18n-key-grammar` on `*_key`/`t()`/SQL tuples + `panel-footer-start` — **uncommitted** |
+| 6 SQL patches | generated, engine-validated, **dry-run OK** (be + crm/ai/job/emailsender/webhook): 1,389 renames, ~280 config rows, repatriations, CHECK last — **uncommitted** |
+| `FILTER_OPERATOR_KEY` | core map (DSL-aligned `eq/neq/gt/gte/lt/lte`) + 4 callsites + test — **uncommitted** |
+| Source rewrites | **1,013 literals / 145 files** (fe+be+ui+us src+fe/src) — **uncommitted** |
+| `app.common.select_time` | dangling literal `selectTime` → seeded 7 langs in be patch + literal fixed |
+| TranslationEditorPanel | anatomy per TOC: coverage (ratio+missing chips) as LINE 2, no gray frame, readonly EN preview, footer CTAs right — **uncommitted** |
+| `GRADIENT_ICON_PATHS/STOPS` | new `paths.ts` vocab; killed duplicated star/amber/ext-link/faro inline geometry; special-icons.mdx entry — **uncommitted** |
+| AI suggestion preview | flag + inline text + inline gradient-check accept, no AiIcon/label/X — **uncommitted** |
+
+### Verified green
+- lint: fe clean (735→0), all 5 us clean, be = only 9 pre-existing `schema-honest-format`
+- typecheck: be/ui/crm/ai/job/emailsender/svelte-check fe+us-fe = 0 errors
+- core tests 126/126, dal 27/27
+
+### Service-state diagnosis (the "CRM down" report — REAL findings)
+- All stack UP: FE 5173→200, BE 3001→401(auth), US `/health` → ok:true db+nats on 3003/3005/3006/**3007(crm)**
+- Blanket 403 on US API paths = **client-shield GATEWAY mode by design** (`service_client_shield_secret_header` required; `/health` is the only public route) — NOT a crash
+- No crash/loops: 4 US bun processes stable since 07/11 21:05
+- **AI :3004 `ok:false` — `llm` check fails** ("Unable to connect"): the local LLM endpoint (ollama) is down — external dep, not the service
+- All listeners on `[::1]` IPv6-loopback → `server.listen(port)` no-host in `sdk/http/http-server.ts:221`; netstat IPv4 rows miss them (my earlier "nothing listening" was a lazy truncated read)
+
+### Decisions pending
+1. **Apply 6 patches to dev DB** — dry-run verified, awaiting approval
+2. **openapi.ts 9× `format:`** fix — separate plan `lint-red-openapi-format.md` (P2 baseline + P3 CI)
+3. **IPv6 bind** — proposal: `hostname` opt in `HttpServerOptions`/`Bun.serve` + `server.host` vite; default `127.0.0.1` (IPv4 loopback — matches dev usage + makes netstat honest), env opt-in `::1`/`::` when needed. Mechanism seam exists — needs your go.
+4. **E2E** — Playwright suites after apply (would fail on raw keys now — correct signal)
