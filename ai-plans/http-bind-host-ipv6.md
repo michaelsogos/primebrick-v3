@@ -9,7 +9,13 @@ scans and exposed on every interface. Every dev service was on `[::1]`.
 Policy (ONE implementation, `resolveHttpBindHost` in sdk `http-server.ts`):
 
 - `http_bind_host` config_entries row wins (US only — opt-in for `::`, `::1`,
-  `0.0.0.0`, LAN IP). No seed shipped: absent = platform default.
+  `0.0.0.0`, LAN IP). No seed shipped: absent = platform default. Empty/blank
+  rows count as absent — `listen(port, "")` would re-bind `::`.
+  `config_entries.key` is a free UNIQUE string (no FK to a param catalog) —
+  the row can be created via SQL or the config UI
+  (`/system/settings/configurations/create`). If a seed is ever added it
+  needs `system.settings.config.infra.http_bind_host.*` label/description
+  translation rows.
 - absent → `0.0.0.0` under `NODE_ENV=production` (containers/LB need reachable
   socket — IPv4 wildcard, never implicit IPv6); `127.0.0.1` otherwise.
 - env-policy: no new env var — `NODE_ENV` is in the permitted platform set.
@@ -42,6 +48,9 @@ Policy (ONE implementation, `resolveHttpBindHost` in sdk `http-server.ts`):
 ## Incident during rollout
 
 `touch` on 4 US `src/index.ts` (to force watcher reload) killed the `bun
---hot` processes — hot reload did not survive the dist swap. Restored via
-`Start-Process bun --conditions=development --hot src/index.ts` per service;
-all healthy after ~18s. CRM had already reloaded cleanly on the source edit.
+--hot` processes — hot reload did not survive the dist swap (hypothesis:
+`pnpm build` rewrote `dist/` mid-flight and the watchers re-imported an
+inconsistent module graph; their stdout lives in hidden terminals and the
+`temp/*-dev.log` files are stale from Nov 4, so the crash line is
+unrecoverable). Cold restart with the new dist is clean — all 4 booted
+healthy on 127.0.0.1. CRM had already reloaded cleanly on the source edit.
