@@ -378,3 +378,24 @@ Palette is designed on the cleaned grammar: every segment is
 2. **openapi.ts 9× `format:`** fix — separate plan `lint-red-openapi-format.md` (P2 baseline + P3 CI)
 3. **IPv6 bind** — proposal: `hostname` opt in `HttpServerOptions`/`Bun.serve` + `server.host` vite; default `127.0.0.1` (IPv4 loopback — matches dev usage + makes netstat honest), env opt-in `::1`/`::` when needed. Mechanism seam exists — needs your go.
 4. **E2E** — Playwright suites after apply (would fail on raw keys now — correct signal)
+
+---
+
+## TURN LOG — stack repair + apply + E2E (this turn)
+
+### Done
+- **6 patches applied** to dev DB — `pnpm db:migrate` per service, all `applied:1, failed:0` (be 1+111skip, ai 1+13, crm 1+19, emailsender 1+15, job 1+37, webhook 1+6)
+- **Census: 0 violations** on 20,678 translation rows across 8 schemas (canonical core grammar — status codes `409`, `1.7b`, `power_level.1` are LEGAL segments)
+- **7 stale Redis dict cache keys deleted** → rebuilt from patched DB; `crm.entities.*.fields.snake` keys serve correctly (verified `select_time` in dict payload)
+- **Registry repaired**: all 5 US `migration_failed → online` after clean respawn. Root cause: processes booted 11:43 while MANIFEST was unsigned → `migrationState.degraded` latched true in-memory, heartbeats kept reporting `checks.db_migration.ok=false` → `deriveStatus` precedence → rows stuck. CLI `db:migrate` apply does NOT refresh in-process state; re-register requires respawn (no admin transition route for stale status — noted as doc gap)
+- **openapi.ts 9× `format:` fixed** — canonical honesty matrix (`_by$`→uuid, `_uri(s)$`→uri): `redirect_uris[]`×2, `redirect_uri`, `created_by`/`updated_by`/`deleted_by`×2. `check-standards: clean` — be lint fully green for the first time since Nov 6
+- **E2E green**: `entity-dict-page` 3/3 (dict archetype, editable row + Modified status, sheet anatomy badge/chips/EN gate/AI review) + `smoke`+`auth-login-boot` 8/8 (login form, redirect, logout, session-expired). Earlier red run = mid-restart churn, now stable
+
+### Process notes (the "casino" post-mortem)
+- `bun --hot` reload on `dist/` rewrite = graph-incoherent crash (Nov 8 incident) — documented safe path: respawn via Start-Process, never `touch` to force reload
+- `netstat` on Windows under-reports Bun IPv6→IPv4 dual-stack listeners — trust `/health` probes, not netstat
+- service.register/heartbeat flow verified empirically: shield-enrolled UA `primebrick-*/x.y.z`, `client_shield_registry` rows `self-enroll`, gen:0 static keys
+
+### Pending
+- W6 docs batch (propose text first) · translate-all preview anatomy · dict-page batch (TableFooter/i18n keys/TranslationKeyCell/save gate/aria/read-only code/bulkRevert)
+- openapi lint permanence: P2 baseline file + P3 CI (see `lint-red-openapi-format.md`)
