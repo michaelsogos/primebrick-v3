@@ -396,6 +396,10 @@ Palette is designed on the cleaned grammar: every segment is
 - `netstat` on Windows under-reports Bun IPv6→IPv4 dual-stack listeners — trust `/health` probes, not netstat
 - service.register/heartbeat flow verified empirically: shield-enrolled UA `primebrick-*/x.y.z`, `client_shield_registry` rows `self-enroll`, gen:0 static keys
 
-### Pending
-- W6 docs batch (propose text first) · translate-all preview anatomy · dict-page batch (TableFooter/i18n keys/TranslationKeyCell/save gate/aria/read-only code/bulkRevert)
-- openapi lint permanence: P2 baseline file + P3 CI (see `lint-red-openapi-format.md`)
+### Pending (refreshed 2026-11-10b)
+- W6 docs batch (propose text first) · dict-page batch (TableFooter/i18n keys/TranslationKeyCell/save gate/aria/read-only code/bulkRevert)
+- ~~translate-all preview anatomy~~ — superseded by the V3 sheet anatomy; see `translation-editor-sheet-redesign.md` TURN LOG (per-row suggestion previews, float icons)
+- openapi lint permanence: P2 baseline file + P3 CI (see `lint-red-openapi-format.md` — the 9 format fixes themselves are LANDED, `check-standards: clean` verified 2026-11-10)
+- RFC 7807 error-extras pipeline now end-to-end (sdk `toValidationError` → `extra.issues` → FE `ApiListError` → `ErrorsPanel`/`RfcErrorDialog`) — if future i18n validation errors carry `extra` they will surface automatically; see `metadata-driven-page-system.md` tasks 31/40
+- **MANIFEST signatures for `20261205000000_i18n_key_snake_cleanup` uncommitted in 4/5 services** (verified 2026-11-10b): ai, crm, emailsender, webhook working trees carry the signed entry but the commit never landed — same hole job-handler had (fixed `a030351`). Patch file committed + manifest unsigned = inconsistent db-meta state; each needs the manifest commit.
+- **Registry `migration_failed → online` requires respawn** — no admin transition route for stale status (doc gap, carried into metadata-driven-page-system residual (h)).

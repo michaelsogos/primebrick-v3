@@ -25,7 +25,7 @@
 > `events.emits` module declaration feeds subject pickers; pilot =
 > `/system/job/rules/create` host-rendered, `RuleFormPage.svelte` deleted.
 
-## Status: 🟡 IN PROGRESS — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST · deep drift audit 2026-11-05 (16 tasks verified done-in-reality; table corrected)
+## Status: 🟡 IN PROGRESS — Plan date: 2026-10-19 00:12 UTC / 02:12 CEST · deep drift audit 2026-11-05 · session 2026-11-10 (tasks 31–40: RFC-extras pipeline, `listColumnKeys`, system-column flag derivation + actor-join query surface, anti-restatement enforcer; residual: Date-pgType decision at task 37, job-handler `enabled` drift at 38, DAL test debt at 39) · session 2026-12-22 (task 37 closed — `jsType:"instant"` semantic pin wired into pgType cascade + `synchronizableType` callsite fix, 27 props; task 38 closed — drift was stale, column already absent) · session 2026-11-10b (type-audit closed: jsonb `jsType:<Ctor>` class-revival + `@Calculated{pgType,nullable}` + lint named-annotation/multi-line rules — 0 drift, 586/586 DAL tests; **NEW: tasks 31–36 marked done but implementing code sits UNCOMMITTED in working trees**, see residual block below)
 
 > **Deep audit 2026-11-05 (empirical, code-verified):** the route layer,
 > contract types, archetype renderers, census, catch-all and remote-chunk
@@ -42,6 +42,28 @@
 > refs in `EntityTablePage`/`useEntityList`); (d) hardening: AuditBar
 > extraction, census↔impl check, /ws presence decision, ui extraction of
 > EntityTablePage/useEntityList, useEntitySync v2.
+>
+> **⚠️ UNCOMMITTED DONE-WORK (verified 2026-11-10b, blocks nothing but lands
+> nowhere until staged):** the implementing code of tasks 31–36 exists only
+> in working trees — sdk `rpc-router/entity-router/entity-field-validator/
+> nats-routes` (+42), core `columns.ts` `listColumnKeys` (+18), dal
+> `entity-service`/`query-builder` (+51) + UNTRACKED
+> `entity-service-actors.test.ts`, us-v3 73 files (task-32/36 list-config +
+> dead-flag removal, +364/−873), be-v3 MANIFEST (4 signed patches:
+> combo_count, powered_switch, easy/meaning_hint) + generated docs, fe-v3
+> dict-page batch in flight (TableFooter/TranslationKeyCell deletions +
+> renames). A `git clean` loses the "done" column entirely.
+>
+> **Session 2026-11-10b additions (type-audit fallout, new residual):**
+> (e) dict entities are heterogeneous — 9/10 re-declare `sort` locally vs
+> one real `DictEntityBase` subclass (`CustomerTypeEntity`) — same parallel
+> pattern as `config_entry.reserved`; consolidation is a decision, not a
+> fix. (f) `@Calculated` gained `pgType`/`nullable` (this session) but NOT
+> `jsType` — a class-valued projection can't declare revival today.
+> (g) `db:check` runs in `prebuild` only — stale snapshots shipped twice
+> (job-handler `enabled`/`next_run_at`); a pre-commit or commit-time gate
+> would have caught it. (h) `primebrick_db migration_failed → online` needs
+> a process respawn — no admin transition route exists (doc gap).
 
 > **Drift reconciliation 2026-10-28:** parts of this plan already landed via
 > `entity-form-archetype-pilot.md`, `root-page-skeleton.md` and the package
@@ -127,6 +149,16 @@
 | 28 | Extraction waves + publish wiring: types→core, validators/helpers→core, components/composables→ui | ⏳ partial | — | packages ship with `publishConfig` (core 3.2.0, ui 3.3.0); **`EntityTablePage`/`useEntityList`/`EntityFormPage` are still FE-local** — the "first ui citizens" extraction never happened; a remote chunk needing a table archetype can't import it today (host-rendered archetypes don't need it — the need shrank but the letter stands) |
 | 29 | Entity-sync channels v2: unified `useEntitySync` surface; extract dedicated sub-plan from Part J | ⏳ partial | — | `useSyncChannel.svelte.ts` exists as the per-channel primitive (BroadcastChannel refresh, entity-named); unified v2 surface + dedicated sub-plan never materialized |
 | 30 | `EntityAction.endpoint` extension (BE+FE closed-schema) → FE write dispatch uses declared endpoints | ✅ done | 2026-11-05 | delivered by `COMPLETED/schedule-lifecycle-actions`: `RpcRoute.entity_op` → `meta.actions[].endpoint` emitted by `makeServiceRoutes`; FE `handleCustomAction`/`handleBulkCustomAction` dispatch via `serviceApiPrefix`+`ep.path`; `ENTITY_SERVICE_MAP` no longer needed for writes |
+| 31 | RFC 7807 validation errors: human-readable `detail` + native `extra.issues` + severity `HIGH` — `toValidationError` (structural `e.issues` detection, sdk stays zod-free) wired across `rpc-router`/`entity-router`/`nats-routes`/`entity-field-validator` + `error-detail-stringify` lint rule | ✅ done | 2026-11-10 | repro-verified live (same request path as the user's broken 400): `detail` = `path: message` join, `extra.issues` → `JsonTableViewer` table; permanent E2E `fe/src/e2e/rfc-error-extras.spec.ts` (intercept 400 → ErrorsPanel → View Details → issues rendered) |
+| 32 | `listColumnKeys(columns)` in `@primebrick/core` `columns.ts` — sort/search/filter wire key-sets derived from RESOLVED `xMeta.columns`, replacing duplicated `*_SORT/SEARCHABLE/FILTERABLE_KEYS` consts in list-config (18 modules: 16 crm + 2 ai) | ✅ done | 2026-11-10 | fixes `sort_key=updated_at` rejection (key set outlived the meta); bogus keys still fail closed; audit cols now correctly inside FILTERABLE (latent 400 on `created_by`/datetime filters fixed) |
+| 33 | System-column query-flag derivation rewrite (dal `column-constraints.ts`): `uuid` all-ON; `id` NEVER emitted in meta.columns (join/fkey plumbing only — authored `id` → throw, excluded from `sortableUniverse` unless it IS the uid); `version` filterable/!searchable/!sortable; audit actors all-ON; `type:"date"\|"datetime"` default `searchable:false` — **type-aware, not phys-aware**: un-pinned business `Date` props infer `"text"` at runtime (annotation pipeline is static-only), the authored/derived meta type is the only honest signal | ✅ done | 2026-11-10 | 63/63 `column-constraints.test.ts`; defaults verified on resolved crm/job metas |
+| 34 | Actor-column query surface via the existing `user_profile` join: `search`/`search_in` on `created_by`/`updated_by`/`deleted_by` resolves `COALESCE("<alias>".display_name, base.<col>::text)` ILIKE; `sort_key=<actor>` → `ORDER BY "<actor>_by_name"` (already-projected alias) | ✅ done | 2026-11-10 | `entity-service.ts` — without the mapping every `?search=` on an auditable list was a latent 42883; 5/5 `entity-service-actors.test.ts` on real PG (name match, `system` raw fallback, name-order asc/desc) |
+| 35 | General ILIKE/LIKE text-cast in `renderFilterExpr` — non-text pg columns render `CAST(col AS text)` (was hardcoded `key==="uuid"` only) | ✅ done | 2026-11-10 | kills the 42883 class for `version`/actor/datetime explicit filters; required by task 33's searchable semantics |
+| 36 | Anti-restatement enforcer in `withColumnConstraints`: authored query flag equal to the derived default → throw ("author flags only to narrow or to override a derived false") | ✅ done | 2026-11-10 | ~290 dead flags removed across 33 meta/list-config files (116+176); 5 be-v3 `uuid filterable:true` deleted for free (now the default); 0 throws on full rescan; batch-script comment-collapse collateral repaired manually in 3 crm list-configs + 2 job.meta entries |
+| 37 | Runtime `Date`→`timestamptz` resolution **without files/reflection** — user-chosen option E: `jsType:"instant"` is the code-level semantic pin for business Date props. Added `JS_TYPE_PINS` level (`instant→timestamptz`, `decimal→numeric`, `vector→vector`) in `inferPgTypeFromEntityColumn` cascade (explicit pgType → semantic pins → **jsType** → annotation → text); `jsType` added to `EntityColumnTypeHints` + wired in `getEntityPersistenceMeta`. **Bonus fix found same class:** `synchronizableType` was declared in hints but never passed at the callsite — `last_synced_at` resolved `"text"` despite the pin existing (now wired). `jsType:"instant"` added to 29 Date props (13 be-v3 + 14 us-v3 + `mcp_oauth_client` manual `created_at`/`updated_at` caught by the new lint). **Enforcement:** `entity-date-type-declared` rule in `check-standards.ts` (consumer profile) — Date-annotated column props must carry `jsType:`/`pgType:` or a semantic-pin decorator, else the column silently resolves `"text"`; shared `ENTITY_PROP_OPTIONAL` regex extended to `[?!]` (`prop!: T` props escaped both entity rules before) | ✅ done | 2026-12-22 | served meta verified live: `disarmed_at`/`fired_at`/`expires_at`/`armed_at`/`next_run_at` now `type:datetime pg_type:timestamptz searchable:false`; `last_synced_at` `timestamptz` via pin; 44/44 meta resolve, 570/570 DAL tests; `@Calculated` `last_run`/`next_run` left out (driver-OID hydration, not in meta.columns) |
+| 38 | ~~job-handler `db:check` drift~~ — **verified already resolved**: `information_schema` on the live DB shows no `enabled` column anywhere in `job` schema; entity comment confirms intentional removal ("disable = soft-delete") | ✅ done | 2026-12-22 | drift entry was stale — closed after live-DB check |
+| 39 | DAL test-suite debt (verified pre-existing — 33 fail on HEAD vs 18 with the change): `test/benchmark/bulk-benchmark.test.ts` ×6 `MissingVersionError` — the bulk version guard (352f339) postdates the test, which never re-fetches `version` after `addMany`; `entity-capability-mixins` composed-instance fails on HEAD | ⏳ not done | — | real residual → also tracked in `dal-v3-bulk-expected-version.md` |
+| 40 | Extend `extra` payload to more SDK error classes (e.g. `NotFoundError {entity, uuid}`) — the RFC extras pipeline now carries `extra` end-to-end to the Error Detail Viewer; more error kinds should feed it | ⏳ not done | — | offered in session, not yet scoped |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->

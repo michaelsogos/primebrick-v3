@@ -1,5 +1,16 @@
 # Plan: be-v3 red lint (schema-honest-format) — evidence, fix, prevention
 
+## Status: 🟡 PARTIALLY DONE — updated 2026-11-10
+
+- ✅ §3 fix **LANDED** (Nov 8–9 i18n cleanup session): 9× `format:` declared per
+  the honesty matrix — `redirect_uris[]`×2 + `redirect_uri` → `uri`,
+  `created_by`/`updated_by`/`deleted_by`×2 → `uuid`.
+  **Verified today**: `check-standards: clean [profile=consumer]` — be gate
+  fully green for the first time since Nov 6.
+- ⏳ **P2** baseline-file mode in `check-standards` — NOT done (tool has no
+  baseline support yet).
+- ⏳ **P3** CI-on-push gate — NOT done (still zero repos with a workflow).
+
 ## 1. Evidence — why the gate was red and why nobody noticed
 
 Timeline (git-verified):
