@@ -1,5 +1,20 @@
 # ELT `type:"ref"` Cell — Sheet Detail + External List CTA
 
+## Recon refresh 2026-12-22 — post-H3 + drift-closure, verified empirically
+
+**Landed since this plan was written (all verified in code):**
+- H3 uuid-PK migration DONE — every ref value IS a `uuid`; `local_address_id`→`local_address_uuid`, `contact_id`→`contact_uuid`, `customer_id`→`customer_uuid` in crm list-configs. G2 fully resolved; `ref.value_field` leftovers (`value_field:"uuid"` on `customer_accounts`) are now vestigial duplicates of the default — teardown candidate, not a blocker.
+- `entity.record` NOT in `SHEET_PANEL_IDS`; `CellAffordance`/`EntityRecordSheet`/`EntityFormSurface`/`MetaValueCell` do not exist; `MetaColumn.ref` has no `presentation` field — Phases 3-5 all greenfield, no partial work to salvage.
+- **POC path confirmed**: `user_profile` route decls exist (`list`/`detail`/`create`, `module-nav-meta.ts:82-84`) but carry NO `page_props.form` → fallback layout IS exercised, as planned.
+- Audit `*_by` columns are NOT authored — auto-derived in `withColumnConstraints` (`column-constraints.ts:355-405`): `type` resolved from pgType (currently `text`), `options_source:"audit.actors"` + `audited` injected there, label `system.common.fields.*`. **The `@Ref` injection point is this exact block** — `phys.refEntity` → `type:"ref"` + `ref:{entity}` — same "class fact, never authored" doctrine as `audit.actors`.
+- `created_by_name`/`updated_by_name`/`deleted_by_name` joins already serve resolved display names (`entity-service.ts:346-348`) — cells show names today, they just aren't links yet.
+- Decorator home: `@AuditableField`/`@DeletableField` on mixins in `dal/src/entities/entity-base.ts`; persistence slot = `ColumnRegistration` (`entity-decorators.ts:79`). `@Ref` takes the entity NAME string (`"user_profile"` lives in BE — dal cannot thunk a class it doesn't own); meta-only ref, no DDL FK (audit actor = app-level join by design, cross-schema).
+
+**Simplifications the new state allows:**
+- Business-key ref resolution (`schedule_subject` etc.) unchanged — still `filter_field`→`rows[0].uuid`→GET.
+- `ref.value_field`/`"id"` vocabulary deletion becomes pure teardown (no consumers left post-H3).
+- Baseline/CI gate (`check-standards`) is now live on all repos — new FE code is gated from the first commit.
+
 ## Objective
 
 When a column is decorated `type:"ref"` (lazy refs via `uuid`, strong FKs via `id`),
@@ -250,11 +265,31 @@ uuid→PK uuidv7, `id` removal, `*_id`→`*_uuid` FK conversion, `@Ref`
 decorator, `meta.uid` teardown — **gate: this must land before the
 record sheet supports id-FK refs; uuid refs work today**
 
-### Phase 3 — Record sheet + form surface (fe-v3) — POC FIRST
-- **POC**: `created_by`/`updated_by` cells in the CRM customers list →
-  `@Ref(user_profile)` on the `Auditable`/`Deletable` mixin →
-  `entity.record` sheet shows the user_profile via **fallback layout**
-  (no `page_props.form` on user_profile — the intended first test)
+### Phase 3 — Record sheet + form surface — POC FIRST
+**Order: contract (dal+core) → fe machinery → cell anatomy**
+
+- **3a. `@Ref(entity)` decorator** (dal `entity-decorators.ts`): writes
+  `refEntity` on `ColumnRegistration`; applied to `created_by`/`updated_by`
+  (Auditable) + `deleted_by` (Deletable) in `entity-base.ts` → every
+  entity inherits `type:"ref" → user_profile` for free.
+- **3b. Injection in `withColumnConstraints`**: auto-derive block emits
+  `type:"ref"` + `ref:{entity: phys.refEntity}` when the class declares it;
+  authored restatement banned (same doctrine as `audit.actors`).
+- **3c. `MetaColumn.ref.presentation?: "link"|"badge"`** (core contract +
+  `withColumnConstraints` validation) — default `"link"`.
+- **3d. `EntityFormSurface.svelte`** — extract chrome-agnostic surface
+  from `EntityFormPage` (schema + placement grid + dispatcher + superform
+  + optimistic `version` PUT); EntityFormPage refactors onto it.
+- **3e. `EntityRecordSheet.svelte` + `entity.record` registry**: resolve
+  value→uuid (direct for uuid refs; `filter_field`→`rows[0].uuid` for
+  business-key), census `page_props.form` or fallback layout, read-only
+  = all fields disabled + pencil toggle, sheet-header `_blank` CTA,
+  loading/404/403/deleted states + i18n patch + redis DEL.
+- **3f. Sheet-context flag** for the `_blank`-only in-sheet rule.
+- **3g. `CellAffordance.svelte`** shared text+trailing-icon anatomy;
+  `TableCell` ref branch → text→`entity.record` sheet, `ExternalLink`→
+  filtered list `_blank`; `JsonCellViewer` → same anatomy (`braces`
+  trailing, →`entity.jsonViewer`); `route:"none"`→label, null→`-`.
 - `EntityFormSurface.svelte` — extract chrome-agnostic form surface
   (schema + placement grid + dispatcher + superform + version PUT) —
   EntityFormPage refactors onto it; sheet renders it disabled-by-default
@@ -266,17 +301,12 @@ record sheet supports id-FK refs; uuid refs work today**
 - Sheet-context propagation for the in-sheet `_blank`-only rule
 - loading/404/403/missing-deleted states + i18n patch + redis DEL
 
-### Phase 4 — Cell anatomy (fe-v3)
-- `CellAffordance.svelte` — shared text+trailing-icon anatomy
-- TableCell `type:"ref"` → CellAffordance (text→sheet, `ExternalLink`→
-  filtered list `_blank`)
-- `JsonCellViewer` → CellAffordance (`braces` trailing hover, →jsonViewer sheet)
-- `route:"none"` → label only; null → `-`; ref_count untouched
+### Phase 4 — merged into 3g (cell anatomy ships WITH the POC)
 
 ### Phase 5 — Coverage + tests
-- audit `*_uuid`/`*_id` columns → `type:"ref"` where missing
-- `ref.presentation` contract in core meta + constraints validation
-- E2E `ref-cell-sheet.spec.ts` + unit tests + svelte-check
+- audit `*_uuid` columns → `type:"ref"` where missing (`*_id` no longer exists)
+- `ref.value_field`/`"id"` vocabulary teardown (vestigial post-H3 — no consumers)
+- E2E `ref-cell-sheet.spec.ts` + unit tests + svelte-check + check-standards green
 
 ## Files touched (fe-v3 unless noted)
 
