@@ -558,3 +558,24 @@ dangling `*_uuid` post-rewrite.
 **Every phase**: fresh-baseline apply = live catalog; row-count
 parity; orphan scans empty; db:check + check:standards + tests green
 → commit.
+
+**Phase-1 status — DONE all modules 2026-01-13**
+
+| Module | Commit | Notes |
+|---|---|---|
+| dal | `d8fc80a` | `ColumnDefault` enum + auto-rule uuid→`uuidv7()` |
+| emailsender | `025fcaf` | `sender_log.uuid` added; 4 col defaults swapped |
+| job-handler | `cf795de` | defaults only (all entities had uuid) |
+| ai | `8d308b6` | `docs_kb.uuid` + `docs_ingest_log.uuid` added (5742+28930 backfilled) |
+| crm | `318616f` | 18 col defaults swapped |
+| be | `c750198` | `auth_events.uuid` + `mfa_action_authorizations.uuid` (4933+1) + 15 defaults |
+
+- All applied on live via patch engine, `applied` recorded, 0 security events per module.
+- Excluded (not entities / flagged junk): `dal_test_*`,
+  `primebrick_database_patches*`, `auth_configurations`,
+  `ai_models_test_scores_backup_20260921`.
+- Partitioned `ai_conversations`: parent ALTER covers partitions.
+- Phase-2 watch-list (bigint `*_id` refs seen): crm 8 physical FKs,
+  `mfa_action_authorizations.user_profile_id`,
+  `sender_log.entity_id` (twin `entity_uuid` already populated),
+  `audit.entity_id` everywhere (twin populated).
