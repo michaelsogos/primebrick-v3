@@ -8,10 +8,10 @@ Commit after every turn of changes. No workarounds.
 | # | Item | Source plan | Decision |
 |---|---|---|---|
 | ~~D1~~ | check-standards permanence: P2 baseline + P3 CI, extended to ALL repos | lint-red-openapi-format / i18n | **DONE** — see below |
-| D2 | dict-page batch (TableFooter, i18n keys, TranslationKeyCell, save gate, aria labels, read-only code, bulkRevert) | i18n-key-snake-case | recon first — some items may already exist |
+| ~~D2~~ | dict-page batch | i18n-key-snake-case | **DONE** — recon: TableFooter = documented composition (same sub-components, no dup logic); i18n `app.common.move_*` seeded; TranslationKeyCell/save gate/read-only code badge/bulkRevert already landed. Real gap = aria labels on icon controls → fe `056f2fe` |
 | ~~D3~~ | registry migration_failed→online stale state | i18n + metadata-driven-page-system | **DONE** sdk `5b4b2da` — A+B+C landed (see below) |
 | D4 | W6 docs batch (translation-key conventions + migrations/sdk/us docs) | i18n | propose text first per doc rules |
-| D5 | bind address | i18n | DECIDED: always IPv4. dev=127.0.0.1, prod=0.0.0.0. No options, no env opt-in |
+| ~~D5~~ | bind address | i18n | **DONE** sdk `6719174` — `resolveHttpBindHost()` param-free (0.0.0.0 prod / 127.0.0.1 dev); `hostname` option + unseeded `http_bind_host` row removed — no opt-in exists |
 | — | translate-all preview | i18n | abandoned — superseded by V3 sheet anatomy |
 | — | login auto-refresh hang | session | user: skip |
 | — | ELT phases 3-5 | elt-ref-cell-sheet-plan | AFTER drift closure (user chose "a") |
