@@ -62,8 +62,11 @@
 > `jsType` — a class-valued projection can't declare revival today.
 > (g) `db:check` runs in `prebuild` only — stale snapshots shipped twice
 > (job-handler `enabled`/`next_run_at`); a pre-commit or commit-time gate
-> would have caught it. (h) `primebrick_db migration_failed → online` needs
-> a process respawn — no admin transition route exists (doc gap).
+> would have caught it. (h) `primebrick_db migration_failed → online` —
+> RESOLVED 2026-11-11 (sdk `5b4b2da`): the admin transition route always
+> existed (`system/db-migration/*`); the real gaps were a boot-time-wired
+> 503 gate + lost onReady. Now: live-read gate + deferred init + heartbeat
+> auto-recovery — self-heal without respawn.
 
 > **Drift reconciliation 2026-10-28:** parts of this plan already landed via
 > `entity-form-archetype-pilot.md`, `root-page-skeleton.md` and the package

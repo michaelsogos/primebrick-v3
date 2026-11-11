@@ -1,0 +1,89 @@
+# Drift-closure batch — close all residual plan drift
+
+2026-11-11. Goal: zero drift left behind across the 5 recent plans.
+Commit after every turn of changes. No workarounds.
+
+## Inventory (deduplicated)
+
+| # | Item | Source plan | Decision |
+|---|---|---|---|
+| D1 | check-standards permanence: P2 baseline + P3 CI, extended to ALL repos | lint-red-openapi-format / i18n | user: "a tutti i repo" |
+| D2 | dict-page batch (TableFooter, i18n keys, TranslationKeyCell, save gate, aria labels, read-only code, bulkRevert) | i18n-key-snake-case | recon first — some items may already exist |
+| ~~D3~~ | registry migration_failed→online stale state | i18n + metadata-driven-page-system | **DONE** sdk `5b4b2da` — A+B+C landed (see below) |
+| D4 | W6 docs batch (translation-key conventions + migrations/sdk/us docs) | i18n | propose text first per doc rules |
+| D5 | bind address | i18n | DECIDED: always IPv4. dev=127.0.0.1, prod=0.0.0.0. No options, no env opt-in |
+| — | translate-all preview | i18n | abandoned — superseded by V3 sheet anatomy |
+| — | login auto-refresh hang | session | user: skip |
+| — | ELT phases 3-5 | elt-ref-cell-sheet-plan | AFTER drift closure (user chose "a") |
+
+## D3 — "reboot without shutdown" (self-healing migration recovery)
+
+### Empirical findings (verified 2026-11-11, sdk source)
+
+- Admin remediation surface ALREADY EXISTS: `makeDbMigrationRouteHandler` →
+  `GET /api/v1/system/db-migration/status`, `POST .../retry`, `.../approve`,
+  `.../resolve`, `.../drift-check` (migration-routes.ts). Mounted always when
+  `dbPatches` configured; in degraded it is the ONLY reachable surface.
+- `rerun()` (migration-routes.ts:35-50) mutates shared `MigrationBootState`
+  live → heartbeat healthCheckFn reads `migrationState.degraded` live
+  (create-microservice.ts:684-690) → 30s heartbeat → BE derives `online`.
+  Registry side self-heals without restart already.
+- **Bug A**: the 503 domain gate (create-microservice.ts:795-811) wraps
+  routeHandler ONCE at boot with `if (migrationState.degraded)` — the flag is
+  never re-read per request. A successful retry flips state but traffic stays
+  walled forever. The "without restart" documented at :684 does not deliver.
+- **Bug B**: `onReady` is skipped on degraded boot (:869) and never re-run —
+  after unlatch the service would serve traffic with zero subscribers/init.
+- Turn-log claim "re-register requires respawn — no admin transition route"
+  (i18n-key-snake-case-cleanup.md) was WRONG: the route exists; the missing
+  pieces were our awareness + bugs A/B.
+
+### Implementation (user-approved scope A+B+C)
+
+- **A**: 503 gate reads `migrationState.degraded` per-request (wrap whenever
+  `dbPatches` configured, cheap boolean check) — any unlatch path reopens
+  traffic immediately.
+- **B**: deferred onReady — when recovery flips degraded→false, run the
+  skipped `onReady(ctx)` exactly once (guarded). Shared by admin routes and
+  auto-recovery via `onRecovered` callback.
+- **C**: auto-recovery on heartbeat cadence (30s, user chose): when degraded
+  → `retryFailedPatches` + `runMigrations` (same trust gating — pending_review
+  stays human), in-flight guard against overlapping ticks; on success →
+  unlatch + deferred onReady. Reuses existing mechanisms only; no new routes.
+
+### Files — LANDED sdk `5b4b2da` (2026-11-11)
+
+- `src/microservice/db-migration-step.ts` — `rerunMigrations` shared core
+  + `makeRunOnceInit` memoized deferred init
+- `src/http/migration-routes.ts` — routes funnel through rerunMigrations;
+  `onRecovered` hook on degraded→clean flip
+- `src/microservice/create-microservice.ts` — live-read 503 gate;
+  `attemptMigrationRecovery` on every heartbeat while degraded;
+  deferred init = onReady + callable census re-register
+- Tests: 9 new, 516/516 + check-standards clean
+- **Residual**: dev-guide docs for remediation surface + auto-recovery
+  (propose text per doc rules — folded into D4 W6 docs batch);
+  live degraded-boot rehearsal not staged (would need an injected failing
+  patch — mechanics covered by unit tests)
+
+## Order
+
+1. D3 registry self-heal (active thread — decided + scoped)
+2. D1 P2+P3 lint permanence all repos
+3. D2 dict-page batch
+4. D5 IPv4 bind (decided contract)
+5. D4 W6 docs (propose → approve → write)
+6. Close plans → move to completed/ as each reaches zero drift
+7. ELT phases 3-5 (after drift zero)
+
+## Acceptance
+
+- Degraded service self-heals within one heartbeat after the DB is fixed
+  (CLI-applied patch or signed manifest): registry → online AND domain
+  traffic served AND onReady init ran — without process restart.
+- No auto-approval of pending_review patches (human gate preserved).
+- check-standards: new violations fail, declared baseline doesn't; gate
+  present on every repo CI.
+- All dict-page batch items implemented or verified already-done.
+- `server.listen` binds 127.0.0.1 in dev / 0.0.0.0 in prod — deterministic.
+- W6 docs landed after user text approval.
