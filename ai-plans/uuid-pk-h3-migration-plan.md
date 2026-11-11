@@ -488,3 +488,73 @@ registry in `emailsender` schema.
   `payload-schema-honesty` test (`to` array↔scalar compat — from
   the `schemas→text[]` session, commit `356a0da`-era, unrelated to
   db-meta).
+
+---
+
+## Phase 2 — UUIDv7 conversion (agreed rules, 2026-01-13)
+
+Per-module atomic cycle, one commit per phase turn. Order: emailsender
+(pilot) → job-handler → ai → crm → be.
+
+**Phase 1 — uuid columns (per module)**
+- `ColumnDefault` enum = closed vocabulary of accepted SQL default
+  expressions (`UUID_V4_DEFAULT_GENERATED`→`gen_random_uuid()`,
+  `UUID_V7_DEFAULT_GENERATED`→`uuidv7()`); `@Column({default: …})`
+  maps enum → `defaultSql` → patch emits `DEFAULT <expr>`. Unknown
+  defaults = declaration-time type error, never a bad patch.
+- Convention flipped: auto-rule `uuid + key/unique` now yields
+  `uuidv7()` (canonical for new columns); `default:` enum only for
+  explicit/non-standard declarations.
+- Entities without `uuid` get it declared (`@Unique() @Column`) →
+  patch emits `ADD COLUMN uuid DEFAULT uuidv7() NOT NULL` — volatile
+  default backfills per-row, in place (PG11+).
+- Existing v4 uuid values are NEVER regenerated in phase 1 — only
+  the column default swaps (default comparison is a differ blind
+  spot → the `ALTER COLUMN … SET DEFAULT uuidv7()` statements are
+  handwritten in the migration patch).
+- Audit tables keep their own bigint `id` (partman PK
+  `(id, changed_at)`, internal only — not entities). Their
+  `entity_uuid` is already dual-written alongside `entity_id`.
+
+**Phase 2 — reference discovery (per module)**
+Triple scan, not `@Ref` only: `@Ref` decorators + bigint `*_id`
+columns + live FK constraints (crm holds 8 physical FKs). Output:
+reference catalog. `audit.entity_id` skipped (already twin of
+`entity_uuid`).
+
+**Phase 3 — reference backfill (per module)**
+- Only bigint `*_id` refs need `*_uuid` backfill via
+  `JOIN target ON ref_id = target.id`.
+- Naming law: uuid lives only in `*_uuid` columns — a `*_id` column
+  holding uuid values is forbidden drift.
+- Existing `*_uuid` refs = zero work (uuid values never change).
+- Gates: `ref_id NOT NULL AND ref_uuid IS NULL` orphan count must be
+  0; join-count parity vs `*_id` population.
+
+**Phase 4 — entity declaration + patches (per module)**
+`@Key() uuid` replaces `@Key() id`; `id` field dropped; generated
+patch re-verified entity↔live↔baseline (all three drifts clean).
+Typecheck drives the code migration: every `.id`/`findById`
+call-site that breaks gets converted.
+**findById must die** — only `findByUUID(value: string)` remains;
+input validated as well-formed uuid + **version 7** (enforcer at the
+boundary, not docs).
+
+**Phase 5 — drops (per module)**
+Order: drop FK constraints on `*_id` → drop `*_id` columns → PK swap
+`id`→`uuid` → drop `id` + owned identity sequence → audit tables
+drop `entity_id` (twin `entity_uuid` already complete).
+
+**Phase 6 — v4→v7 PKEY rewrite (per module)**
+Consequence of the v7-only enforcer: existing v4 PKs are rewritten.
+One transaction per service: build `old_uuid→new_uuid` map → rewrite
+all `*_uuid` refs via map join → rewrite PK values → enforcer live.
+`uuid`-typed columns discoverable via information_schema (exhaustive
+scan mandatory); **jsonb-embedded uuids (audit `delta`, log
+payloads) are historical snapshots — NOT rewritten** (join keys are
+columns, not embedded values). Gates: `count(old)=count(new)`, zero
+dangling `*_uuid` post-rewrite.
+
+**Every phase**: fresh-baseline apply = live catalog; row-count
+parity; orphan scans empty; db:check + check:standards + tests green
+→ commit.
