@@ -368,3 +368,37 @@ it_it, fr_fr, es_es, de_de, pt_pt, en_us — public `app.*` + system
   check-standards clean. marker-persister.test.ts 2/6 = pre-existing
   NATS-timing flake under parallel load (passes isolated, unrelated
   to db-meta).
+
+**E7. Step-1 job-handler baseline — DONE 2026-01-13 (commit us-v3 `5995b70`)**
+
+38 patches → 3 (`0001_job_schema` / `0002_seed_config` /
+`0003_job_translations`), registry in `job` schema.
+
+- **Audit-trail semantic alignment (user-approved)**: `@AuditTrail()`
+  declared on `JobTriggerEntity` only — the single real audit (148
+  live rows: INSERT/UPDATE/SOFT_DELETE/RESTORE where soft-delete =
+  disable, restore = re-enable). `job_schedules_audit` +
+  `job_runs_audit` are **excluded from the baseline**: schedules is a
+  derived NATS mirror ("not auditable state" — hardDelete, stated in
+  schedule-service.ts), runs is an execution log (the row IS the
+  history). Both tables are empty by construction — engine writes
+  never inject an audit port; routes were read-only. Route decls now
+  `auditable:false` for schedule/run (endpoint `/:uuid/audit` and its
+  always-empty UI history panel honestly disappear). Live tables kept
+  (empty) — flagged for uuid-phase drop.
+- **Ideological bug recorded**: `isAuditableEntity` = `@AuditTrail`
+  OR any `isAuditable` column → the `Auditable` mixin alone
+  advertises trail capability. Patch 0010 had created tables for all
+  three to silence the resulting read-path error — repairing the
+  symptom instead of the contract.
+- Supplement: `job.translations` (serial-style id — NOT identity;
+  pg_dump `--data-only` of it needs no OVERRIDING) + 5 DB-only
+  indexes (`job_runs_{created,schedule,status}`, `job_schedules_
+  {service,status}`).
+- Generator gap #2: does not emit `CREATE EXTENSION pg_partman` (nor
+  the `CREATE SCHEMA partman` prerequisite) — handwritten, same as
+  crm. Candidate fix: emit when audit/partitioned tables are generated.
+- Verified: fresh-DB apply = live catalog (modulo the two excluded
+  audit tables + legacy partition names + unique-constraint-vs-index
+  equivalents); apply → 3 skipped, 0 security events; db:check,
+  standards, 206/206 tests clean.
