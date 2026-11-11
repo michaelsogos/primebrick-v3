@@ -788,3 +788,22 @@ though unreferenced); F (DAL v7 boundary enforcer implemented).
   accepted end-to-end.
 - Verified: tsc clean, 598/598 dal tests, be boundary-integration
   9/9 with rebuilt dist.
+
+**Phase 6b — actor text-column repair — DONE 2026-11-11 (be patch `20261111210000_actor_uuid_repair.sql`)**
+
+- Gap found post-6: `created_by`/`updated_by`/`deleted_by`/`changed_by`
+  are TEXT (uuid serialized) — outside 00012's `*_uuid` ref graph →
+  pre-rewrite user uuids orphaned → `*_by_name` display join dead.
+- Patch rebuilds old→new user map from provable sources only:
+  (A) `user_profiles_audit` delta `uuid.old/new` + stale `entity_uuid`
+  grouped by `idp_code` → current profile uuid (live preferred over
+  deleted re-provisions); (B) seed contract `uuid := idp_code` —
+  uuid-shaped `idp_code` ≠ `uuid` maps to the row's uuid (recovers
+  seed-created profiles never audit-inserted: Test Admin/Test User/…).
+- Rewrites every `*_by` column (incl. `applied_by`/`resolved_by`,
+  text/varchar/uuid) across ALL schemas + partman children — match-only;
+  unmapped actors stay dangling as history (e.g. `15c706ec`, e2e
+  ephemerals). Gate: zero map-matching actor values left.
+- Live repair verified: 78 rows rewritten, `changed_by` joins resolve
+  ("Prime Admin" back); `changed_by` proven structurally drift-free —
+  same `actor` param feeds `*_by` and audit `changedBy` in repository.
