@@ -623,6 +623,7 @@ is always handwritten per module.
 | job-handler | us-v3 `ab6ac01` | DONE — patch `0005_uuid_pk_swap` + audit `entity_id` drops |
 | ai | us-v3 `7f67d58` | DONE — patch `0005_uuid_pk_swap`, 9 tables, partitioned conversations |
 | crm | us-v3 `b7c3a54` + dal `671bcbc` | DONE — patch `0006_uuid_pk_swap`, 17 tables + 8 `*_id` ref drops + FK rebuild |
+| be | be-v3 `b3d14b1` + dal `db87244` | DONE — patch `00000000000011_uuid_pk_swap`, 14 tables + 4 `user_profile_id` drops + audit `entity_id` drops |
 | dal | `3cc5f08` | audit writer: `entity_id` optional (uuid-PK safe) |
 | sdk | `6e09d5e` | `MarkerAuditParams.entityId` → `bigint \| null` |
 | be | `853ace0` | audit port/helper mirror alignment |
@@ -677,6 +678,32 @@ is always handwritten per module.
   `model_id`/`ai_cerebellum` `model_id` stay string business keys
   (HF repo ids — NOT surrogate refs); `ai_config_entries_deleted_at_idx`
   flagged junk dropped.
+- **be lessons**: `config_entries` table was renamed from
+  `auth_configurations` — live PK kept the old name
+  `auth_configurations_pkey` (DROP by name, ADD renames canonical);
+  `auth_configurations_audit_*` partitions/index objects are orphans of
+  the same rename but attach to `config_entries_audit`. Two more
+  declaration-level bases hid `id`: `ConfigEntityBase` (dal `db87244`)
+  like `DictEntityBase` before — grep entity FILES misses base-class
+  PKs; detector = generated drift patch trying to RE-ADD `id`.
+  **DAL RETURNING visibility bug (dal `db87244`)**: `buildReturningClause`
+  stripped the PK from write results (bigint id not JSON-safe) — with
+  uuid as PK the public uid disappeared from POST/PUT responses on EVERY
+  migrated module; caught by BE boundary test. Fixed: strip only while
+  `hasSurrogateId(meta)`. **Audit-write silent skip**: `repo.add` calls
+  `auditPort.writeAudit().catch(logger)` (fire-and-forget); the
+  RETURNING clause emitted ALL `AuditLogEntity` columns incl.
+  `entity_id` → PG error on migrated audit tables → swallowed → 201
+  with no audit row. Fixed both ports: `returning: [id]` projection.
+  Service refactor: `getIdByUuid`/`getUuidById` bridges deleted
+  (`assertExistsByUuid`), `updateProfileById` → `updateProfileByUuid`,
+  `getMe` counts pass `userUuid` directly (sessionState for flag only);
+  `config-entries` update match by uuid (`Record<string,unknown>` hid
+  it from typecheck — grep `.id` detector); `AuthEventRow.id` → `uuid`
+  on the wire. uuid_uq all bare indexes except
+  `client_shield_registry_uuid_uq` (constraint). No physical FKs at all
+  in be — ordering free. 4 `*_user_profile_uuid_idx` mirrors replace the
+  dropped `*_user_profile_id_idx` access paths.
 - **emailsender lessons**: legacy PK names (`email_config_pkey` …) live
   on live — `ADD PRIMARY KEY (uuid)` auto-names canonical `<table>_pkey`;
   DROP COLUMN `id` removes pkey+identity+sequence atomically; two
