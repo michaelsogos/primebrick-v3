@@ -7,7 +7,7 @@ Commit after every turn of changes. No workarounds.
 
 | # | Item | Source plan | Decision |
 |---|---|---|---|
-| D1 | check-standards permanence: P2 baseline + P3 CI, extended to ALL repos | lint-red-openapi-format / i18n | user: "a tutti i repo" |
+| ~~D1~~ | check-standards permanence: P2 baseline + P3 CI, extended to ALL repos | lint-red-openapi-format / i18n | **DONE** — see below |
 | D2 | dict-page batch (TableFooter, i18n keys, TranslationKeyCell, save gate, aria labels, read-only code, bulkRevert) | i18n-key-snake-case | recon first — some items may already exist |
 | ~~D3~~ | registry migration_failed→online stale state | i18n + metadata-driven-page-system | **DONE** sdk `5b4b2da` — A+B+C landed (see below) |
 | D4 | W6 docs batch (translation-key conventions + migrations/sdk/us docs) | i18n | propose text first per doc rules |
@@ -65,6 +65,34 @@ Commit after every turn of changes. No workarounds.
   (propose text per doc rules — folded into D4 W6 docs batch);
   live degraded-boot rehearsal not staged (would need an injected failing
   patch — mechanics covered by unit tests)
+
+## D1 — lint permanence — LANDED 2026-11-11
+
+- **Tool zero-dep** (sdk `5f7549c`): `HONEST_FORMAT_HINTS` extracted to
+  `core/src/honest-format-hints.ts` (core `59e1e6c`, re-exported from
+  field-validation); check-standards imports it by sibling-relative path —
+  runs on bare checkouts, no install.
+- **Baseline mode**: `.devin/check-standards-baseline.json` — identity
+  file+rule+line-text (line numbers excluded), count-aware; declared
+  suppressed, new fails, stale warns. `--write-baseline` regenerates.
+- **Vendored drift killed**: stale 404-line copies in dal + core deleted
+  (dal `30dd3c2`, core commit same) — scripts repointed to canonical.
+- **Extended coverage us**: dal-access + layer-repo-import activated on
+  all 5 services → 48 pre-existing violations declared in baselines
+  (us `878b378`: crm 1, ai 11+4 layer-repo, job 29, emailsender 7).
+- **fe**: 31 sheet-panel violations declared (`1db3aaa`).
+- **decimal**: wired script+exempts (`47df878`) — leaf package, extJson*
+  structurally unavailable → 3 standards-exempt comments.
+- **P3 CI**: `check-standards.yml` on all 8 repos — push/PR to
+  develop+main; zero-install layout (self + sdk@develop + core@develop
+  siblings + setup-bun); us = matrix ×5 services; core self-checkout
+  doubles as hints source.
+- **Caveat**: workflows go green once `feature/elt-keyboard-legend`
+  merges to develop (the baseline-capable tool lives there until then).
+- **Pre-existing finding (out of scope)**: dal/core/sdk/ui release
+  `ci.yml` publish lanes die at `pnpm install` — `workspace:*` deps
+  unresolvable on standalone checkout (empirically verified). Publish-
+  version pinning strategy is a separate decision.
 
 ## Order
 
