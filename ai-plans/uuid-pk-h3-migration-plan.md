@@ -334,3 +334,37 @@ Discoveries that shaped the work (record for later phases):
 - **Live mark-applied** — baseline file names reuse 0001-0003; registry
   `content_sha256` updated in place (applied-state semantics), old
   patch rows retained as history.
+
+**E6. Step-1 be baseline — DONE 2026-01-13**
+
+be surface: schemas `public,system,custom`, one registry in `public`,
+127 patches → **9 baseline files**:
+`00000000000000_init_database` (extensions + 23 entity tables incl.
+audit parents + handwritten translations×3 supplement) /
+`00000000000001-00000000000007_seed_translations_{locale}` (en_gb,
+it_it, fr_fr, es_es, de_de, pt_pt, en_us — public `app.*` + system
+`system.*` per file) / `00000000000008_seed_config` (27
+`public.config_entries` + canonical audit trail + setvals).
+
+- Fresh-DB apply: all 9 clean (public.translations 7214,
+  system.translations 6892, config 27+27 audit, 8 partman configs).
+- Scratch-vs-live catalog: residual diffs all expected — baseline-only
+  = entity-intent audit tables live lacks (`mfa_action_authorizations`,
+  `user_invitations`, `user_mfa_factors`, `user_passkeys` audits +
+  partitioned `user_profiles_audit`); live-only = dead/junk objects
+  (`auth_configurations(+audit)`, `dal_test_*`, engine-owned,
+  stale part_config entries) — intentionally excluded, flagged for
+  cleanup decision in the uuid phase.
+- **Zero live FKs in be** — all references are uuid columns without
+  physical FK constraints (nothing for the supplement; `@Ref` still
+  declares them for meta/UX in phase 2).
+- **Zero CHECK diffs except translation key-shape** (folded into the
+  handwritten translation DDL).
+- Seed boundary: `config_entries` = pure seed; org/user/role/auth_*/
+  service_registry/client_shield_registry = runtime — excluded.
+- Live registry: 7 sha UPDATEs (same-name files) + 2 INSERTs
+  (`..._en_us`, `..._seed_config` — new names, old rows kept as
+  history); `apply` → 9 skipped, 0 security events; `db:check` clean;
+  check-standards clean. marker-persister.test.ts 2/6 = pre-existing
+  NATS-timing flake under parallel load (passes isolated, unrelated
+  to db-meta).
