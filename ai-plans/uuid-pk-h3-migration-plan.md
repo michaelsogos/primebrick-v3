@@ -620,6 +620,28 @@ is always handwritten per module.
 | Module | Commit | Notes |
 |---|---|---|
 | emailsender | us-v3 `3c5a920` | DONE — pilot, patch `0006_uuid_pk_swap` |
+| job-handler | us-v3 `ab6ac01` | DONE — patch `0005_uuid_pk_swap` + audit `entity_id` drops |
+| dal | `3cc5f08` | audit writer: `entity_id` optional (uuid-PK safe) |
+| sdk | `6e09d5e` | `MarkerAuditParams.entityId` → `bigint \| null` |
+| be | `853ace0` | audit port/helper mirror alignment |
+
+- **DAL audit-writer fix landed** (`3cc5f08`): `AuditParams.entityId` →
+  `bigint | null`; extraction reads the `id` column only while present
+  (`auditEntityId` helper); the 4 bulk trail INSERTs emit `entity_id`
+  conditionally on `hasSurrogateId(meta)`; `AuditLogEntity.entity_id`
+  nullable; `findAuditPage`/`AuditRow` no longer project surrogate ids
+  (wire-clean); `makeTableAuditPort` + be `EntityAuditPort` omit the key
+  when null — both audit-table shapes coexist during the window.
+  SDK mirror `MarkerAuditParams.entityId` widened (`6e09d5e`) — bivariant
+  method-param assignability broke when `AuditParams.entityId` widened.
+- **jh lessons**: `*_uuid_uq` are CONSTRAINT-backed in jh (UNIQUE
+  constraint) → `DROP CONSTRAINT`, not `DROP INDEX` (emailsender's were
+  bare indexes — check `pg_constraint.contype='u'` per module).
+  `job_rules_audit_p*` partitions belong to `job_triggers_audit`
+  (legacy partition naming); `job_schedules_audit`/`job_runs_audit` are
+  real (empty) partman parents — `entity_id` dropped on all 3 parents.
+  jh suite flake: `service-routes` test times out at 5s under parallel
+  load (dynamic import), passes isolated — pre-existing environmental.
 
 - **emailsender lessons**: legacy PK names (`email_config_pkey` …) live
   on live — `ADD PRIMARY KEY (uuid)` auto-names canonical `<table>_pkey`;
@@ -628,14 +650,7 @@ is always handwritten per module.
   `SendEmailResponse.logId` removed from the wire (entityUuid/logUuid
   already existed); `config_entries_deleted_at_idx` junk dropped here;
   `translations` keeps `id` PK (non-entity store — decision: leave).
-- **DAL audit-writer gap (blocks auditable modules)**: repository writes
-  audit `entity_id` from `pk.sqlName` in 6 spots + hardcodes
-  `entity_id` in the 4 audit-trail INSERTs. After uuid-PK swap on an
-  auditable entity, that puts a uuid string into a `bigint NOT NULL`
-  column → write failure. Required DAL change before jh/crm/be/ai
-  phase-4: audit INSERT emits `entity_id` only when the entity still
-  carries an `id` column; per-module patch drops `entity_id` from its
-  `*_audit` tables (twin `entity_uuid` already 100% populated).
+- **DAL audit-writer gap — FIXED** (`3cc5f08`, see table above).
 
 **Phase-2+3 status — per module**
 
