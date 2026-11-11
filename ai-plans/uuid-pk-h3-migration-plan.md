@@ -621,6 +621,7 @@ is always handwritten per module.
 |---|---|---|
 | emailsender | us-v3 `3c5a920` | DONE — pilot, patch `0006_uuid_pk_swap` |
 | job-handler | us-v3 `ab6ac01` | DONE — patch `0005_uuid_pk_swap` + audit `entity_id` drops |
+| ai | us-v3 `7f67d58` | DONE — patch `0005_uuid_pk_swap`, 9 tables, partitioned conversations |
 | dal | `3cc5f08` | audit writer: `entity_id` optional (uuid-PK safe) |
 | sdk | `6e09d5e` | `MarkerAuditParams.entityId` → `bigint \| null` |
 | be | `853ace0` | audit port/helper mirror alignment |
@@ -643,6 +644,22 @@ is always handwritten per module.
   jh suite flake: `service-routes` test times out at 5s under parallel
   load (dynamic import), passes isolated — pre-existing environmental.
 
+- **ai lessons**: mixed uuid_uq flavors in one module — `ai_messages`/
+  `ai_conversations` constraint-backed (DROP CONSTRAINT), the rest bare
+  indexes (DROP INDEX); partitioned `ai_conversations` PK swap = parent
+  `ADD PRIMARY KEY (uuid, last_seen_at)` propagates to all partitions +
+  default; `@Unique` groups on uuid dropped from entities since the PK
+  covers uniqueness (partition-field member too — PK subsumes it);
+  `ai_messages`/`ai_feedback` are logical `@PartitionChildOf` children
+  (regular tables, plain PK (uuid)); audit `entity_id` dropped on
+  `ai_models_audit`/`ai_cerebellum_audit` parents → propagates to
+  partitions; audit-row `id` stays (GENERATED ALWAYS AS IDENTITY, own
+  internal seqs — not `*_id_seq%` leftovers: those were legit identity
+  backing seqs + `translations_id_seq`); `DocsSearchResult.id: bigint` →
+  `uuid: string` (chunk public identity on the search wire); `ai_models`
+  `model_id`/`ai_cerebellum` `model_id` stay string business keys
+  (HF repo ids — NOT surrogate refs); `ai_config_entries_deleted_at_idx`
+  flagged junk dropped.
 - **emailsender lessons**: legacy PK names (`email_config_pkey` …) live
   on live — `ADD PRIMARY KEY (uuid)` auto-names canonical `<table>_pkey`;
   DROP COLUMN `id` removes pkey+identity+sequence atomically; two
