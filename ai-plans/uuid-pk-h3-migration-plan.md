@@ -733,3 +733,58 @@ be tables were clean. Post-apply: 9 passkeys (1 live user), 0 orphans,
 0 uuid↔id mismatches; `db:check` clean; standards clean; typecheck
 clean; 2 flaky NATS-timing failures in `marker-persister.test.ts`
 (pre-existing, unrelated).
+
+**Phase-6 status — v4→v7 value rewrite — DONE 2026-01-13**
+
+Approved decisions: A1 (be patch owns cross-schema
+`ai.ai_telemetry.user_uuid` via its own map — stale user uuids
+preserved); B (no forced logout — Casdoor JWT/passkeys unaffected,
+stale client-side uuids may need a reload); C (dangling refs =
+historical, preserved verbatim — gate is match-preservation, not
+zero-v4); D (translations `uuid` realigned to v7 for coherence even
+though unreferenced); F (DAL v7 boundary enforcer implemented).
+
+| Module | Commit | Patch | Scope |
+|---|---|---|---|
+| emailsender | us-v3 `4871280` | `0007` | 3 PK + sender_log.{provider,template}_uuid + translations |
+| job-handler | us-v3 `dfb3ee6` | `0006` | 4 PK + schedules.trigger_uuid + translations; audit entity_uuid: 91 live→v7, 57 dangling preserved |
+| ai | us-v3 `6c31869` | `0006` | 6 PK (incl. 9 conversation partitions) + 3 refs + translations; telemetry.user_uuid deferred to be (A1) |
+| crm | us-v3 `ceadab0` | `0007` | 17 PK + 19 refs + cloned_from self-ref + translations; 8 FK drop→map→recreate in-tx; dynamic gates |
+| webhook | us-v3 `7ced39c` | `0003` | module never migrated: entity `@Key() uuid` + swap PK + uuidv7 default + v4→v7 in one patch (uuid not on wire) |
+| be | be-v3 `8a845e4` | `00000000000012` | 10 public PK + system.client_shield_registry + 5 user refs + cross-schema `ai.ai_telemetry.user_uuid` + translations |
+
+- Dangling baselines preserved verbatim: auth_events 3694,
+  user_profiles_audit 255, customers_audit 286, job_triggers_audit 57,
+  user_preferences.user_uuid 1 (deleted user's prefs — legit).
+- Post-rewrite invariant: ZERO v4 in any PK or live-matching ref;
+  every remaining v4 = historical dangling.
+- **crm lesson**: FK `ON UPDATE NO ACTION` blocks PK rewrite → drop 8
+  FKs before map, recreate after (semantics preserved); dynamic
+  gate-loop over (table,col,target) triples kept the patch readable.
+- **webhook lesson**: module sat outside the phase-4+5 module list —
+  its patch fuses swap+rewrite; `custom.translations` (0 rows) already
+  uuidv7-default → zero work.
+
+**v7 boundary enforcer — DONE (dal, commit pending)**
+
+- `types/uuid.ts`: `isUuidV7`/`toUuidV7` (RFC 4122 layout + v7 + variant)
+  and `newUuidV7` (RFC 9562 §5.7 app-side generator — same layout as
+  PG `uuidv7()`).
+- Detection rule: the public uid = the `sqlName === 'uuid'` column,
+  not `isKey` — legacy entities (bigint PK + unique uuid) stay covered.
+- Boundaries guarded: `findByUUID`, `resolveMatchConditions` (single
+  write selectors), `resolveBulkMatchColumns` (bulk, uniform-batch
+  rule kept), `add`/`addMany` (app-injected uid values).
+- Hidden v4 sources found & fixed at generation: `entity-service.ts`
+  `create` fallback uuid and `clone()`'s new uuid → `newUuidV7()`.
+  Temp-table name suffixes keep `randomUUID` (names, not values).
+- Test fixtures migrated: `dal_test_*`/`test_bench_*` DDL defaults →
+  `uuidv7()` + ALTER realign for pre-existing tables; `randomUUID()`
+  → `newUuidV7()` (4 files, ~25 sites); 36 literal fixtures → v7
+  shape (version nibble flip, deterministic); `type-matrix` codec
+  literal + `entity-service-actors` actor strings left (not uid).
+- New `test/uuid-v7-enforcement.test.ts` (12 tests): v4/malformed
+  rejected at findByUUID, add/addMany, single+bulk selectors; v7
+  accepted end-to-end.
+- Verified: tsc clean, 598/598 dal tests, be boundary-integration
+  9/9 with rebuilt dist.
