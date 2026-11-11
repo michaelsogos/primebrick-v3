@@ -441,3 +441,50 @@ us-v3 `814f32f`, be `d95bac6`)**
 - Verified: fresh-DB apply = live catalog (modulo exclusions);
   apply → 3 skipped, 0 security events; db:check/standards clean;
   27/27 ai + 586/586 dal tests green.
+
+**E9. Step-1 emailsender baseline — DONE 2026-01-13 (commit us-v3 `5110ba9`)**
+
+16 patches → 4 (`0001_emailsender_schema` / `0002_seed_config` /
+`0003_seed_email_templates` / `0004_emailsender_translations`),
+registry in `emailsender` schema.
+
+- **Audit map clean by requirement**: all 4 entities carry
+  `Auditable` columns but no `*_audit` trail — explicitly documented
+  in `templates.service.ts` (auditPort suppressed). No drift.
+- **`@Unique()` promoted on `provider`** (user decision) —
+  `providers_provider_uq` now entity-emitted.
+- **Canonical names replace legacy rename artifacts** (user
+  decision): live `email_config_*` → `providers_*`,
+  `config_pkey` → `config_entries_pkey`,
+  `email_templates_communication_log_*` → `sender_log_*`,
+  `translations_uuid_key` → `translations_uuid_uq`. Live keeps
+  legacy names — equivalent variant, normalized implicitly when the
+  uuid phase rebuilds constraints.
+- **`config_entries_deleted_at_idx` excluded** (user decision):
+  plain btree on an 8-row table — `0001`-era boilerplate, never
+  justified. Flagged for uuid-phase drop with `dal_test_*`,
+  `auth_configurations`, `job_schedules_audit`, `job_runs_audit`,
+  `ai_models_test_scores_backup_20260921`.
+- **6 system email templates = seeds** (user decision):
+  `invitation_welcome`, `otp_verification`, `password_changed`,
+  `passkey_activated`, `passkey_removed`, `admin_unauthorized_alert`
+  (all en-US, created_by='system'). Never historically seeded, but
+  be auth invokes them by `template_code` and `email-service.ts`
+  throws when absent — required for a working fresh install.
+- **Runtime data excluded**: `brevo` provider (E2E artifact —
+  api_key='fake', 127.0.0.1 endpoint), `e2e_probe`/`customer_high_value`
+  templates, all `sender_log` rows, `verify-provider` (deleted).
+- **Extraction lesson**: `grep "^INSERT"` on pg_dump output truncates
+  multi-line INSERT statements (literal newlines inside string
+  values) — corrupted the first templates extract ("trailing junk
+  after numeric literal"). Use noise-line filtering
+  (`grep -vE "^--|^SET|^\\|^$"`) instead.
+- Live-only DEFAULT residue (blind spot, same class as crm):
+  `config_entries.type='string'`, `config_entries.reserved=false`
+  not entity-declared — baseline = entity intent, live keeps them.
+- Verified: fresh-DB apply = live catalog (8 config + 518
+  translations + 6 templates); apply → 4 skipped, 0 security
+  events; db:check + standards clean. Pre-existing failure:
+  `payload-schema-honesty` test (`to` array↔scalar compat — from
+  the `schemas→text[]` session, commit `356a0da`-era, unrelated to
+  db-meta).
