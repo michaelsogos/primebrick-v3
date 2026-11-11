@@ -611,6 +611,32 @@ parity; orphan scans empty; db:check + check:standards + tests green
   `GENERATED ALWAYS AS IDENTITY` on uuid — invalid DDL. Identity now
   int-family only; uuid keys get `DEFAULT uuidv7()` via `defaultSql`.
 
+**Phase-4+5 status — per module (fused per-module turn)**
+
+The differ never emits DROPs nor PK changes (by design: destructive =
+WARN-only; `isPrimaryKey` captured but not compared) — the pk-swap patch
+is always handwritten per module.
+
+| Module | Commit | Notes |
+|---|---|---|
+| emailsender | us-v3 `3c5a920` | DONE — pilot, patch `0006_uuid_pk_swap` |
+
+- **emailsender lessons**: legacy PK names (`email_config_pkey` …) live
+  on live — `ADD PRIMARY KEY (uuid)` auto-names canonical `<table>_pkey`;
+  DROP COLUMN `id` removes pkey+identity+sequence atomically; two
+  redundant uuid_uq on providers dropped; `SendEmailSchema.entityId` and
+  `SendEmailResponse.logId` removed from the wire (entityUuid/logUuid
+  already existed); `config_entries_deleted_at_idx` junk dropped here;
+  `translations` keeps `id` PK (non-entity store — decision: leave).
+- **DAL audit-writer gap (blocks auditable modules)**: repository writes
+  audit `entity_id` from `pk.sqlName` in 6 spots + hardcodes
+  `entity_id` in the 4 audit-trail INSERTs. After uuid-PK swap on an
+  auditable entity, that puts a uuid string into a `bigint NOT NULL`
+  column → write failure. Required DAL change before jh/crm/be/ai
+  phase-4: audit INSERT emits `entity_id` only when the entity still
+  carries an `id` column; per-module patch drops `entity_id` from its
+  `*_audit` tables (twin `entity_uuid` already 100% populated).
+
 **Phase-2+3 status — per module**
 
 | Module | Commit | Refs migrated | Orphans |
