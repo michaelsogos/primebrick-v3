@@ -610,3 +610,24 @@ parity; orphan scans empty; db:check + check:standards + tests green
 - **Gap fixed (dal `5b7c301`)**: `@Key` on a uuid column would emit
   `GENERATED ALWAYS AS IDENTITY` on uuid — invalid DDL. Identity now
   int-family only; uuid keys get `DEFAULT uuidv7()` via `defaultSql`.
+
+**Phase-2+3 status — per module**
+
+| Module | Commit | Refs migrated | Orphans |
+|---|---|---|---|
+| crm | `f7ffd82` | 8/8 (`*_uuid` twins + FK mirror, partial idx) | 0 |
+| be | `b780ed4` | 4/4 (cols only — be has no physical FKs) | 9 deleted* |
+| emailsender | — | 0 needed (refs already `*_uuid`) | — |
+| job-handler | — | 0 needed | — |
+| ai | — | 0 needed | — |
+
+\* **be live-data anomaly (user-approved deletion)**: 9 of 18
+`user_passkeys` rows carried `user_profile_id` pointing at hard-deleted
+`user_profiles` rows (ids 56–897, users created+used Sep–Oct 2026,
+since hard-deleted — be's no-FK design allowed the dangling). Dead
+credentials of nonexistent users — deleted inside patch
+`00000000000010` before backfill, then orphan assert passed. Other 3
+be tables were clean. Post-apply: 9 passkeys (1 live user), 0 orphans,
+0 uuid↔id mismatches; `db:check` clean; standards clean; typecheck
+clean; 2 flaky NATS-timing failures in `marker-persister.test.ts`
+(pre-existing, unrelated).
