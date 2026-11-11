@@ -335,3 +335,25 @@ record sheet supports id-FK refs; uuid refs work today**
 9. Null ref → plain cell, no affordances; `route:"none"` → label only
 10. No field-name heuristics; routes census-resolved; filter wire format canonical
 11. E2E green; svelte-check clean; no regressions on ref_count
+
+## TURN LOG — 2026-12-22
+
+### Phase 3a-3c LANDED (contract layer)
+- **3a `@Ref` decorator** — dal `entity-decorators.ts`: `refEntity` slot on
+  `ColumnRegistration` + `EntityPersistenceMeta` pass-through + `@Ref(entity)`
+  applied to `created_by`/`updated_by`/`deleted_by` on `Auditable`/`Deletable`
+  mixins (`entity-base.ts`). Every entity inherits refs → `user_profile`.
+- **3b injection** — `withColumnConstraints` auto-derive emits `type:"ref"`
+  + `ref:{entity}`; `injectDerived` force-injects on authored entries;
+  authored `ref`/`type`≠"ref" on @Ref columns → throw (class-fact doctrine);
+  system-col type validator resolves `refEntity`→`"ref"`.
+- **3c `ref.presentation?: "link"|"badge"`** — core `MetaColumn.ref`, `"link"`
+  default per the decided contract.
+- **Tests**: 4 new cases in `column-constraints.test.ts` (auto-derive, authored
+  tuning keeps ref, restatement/contradiction throws, domain @Ref) —
+  69/69 file, **602/602 dal suite**, tsc+standards clean, builds green.
+- **Live-verified**: crm `customerMeta` serves all three actor columns as
+  `type:"ref"` + `ref:{entity:"user_profile"}` + `audit.actors` vocab.
+- Commits: dal `224043a`, core `3523acc`.
+- **Interim anatomy note**: cells already render (badge single-link → user
+  detail `_blank`) until Phase 3g's CellAffordance lands — working, not final.
