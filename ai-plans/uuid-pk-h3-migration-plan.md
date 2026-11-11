@@ -402,3 +402,42 @@ it_it, fr_fr, es_es, de_de, pt_pt, en_us — public `app.*` + system
   audit tables + legacy partition names + unique-constraint-vs-index
   equivalents); apply → 3 skipped, 0 security events; db:check,
   standards, 206/206 tests clean.
+
+**E8. Step-1 ai baseline — DONE 2026-01-13 (commits: dal `06f160b`,
+us-v3 `814f32f`, be `d95bac6`)**
+
+14 patches → 3 (`0001_ai_schema` / `0002_seed_config` /
+`0003_ai_translations`), registry in `ai` schema.
+
+- **E3 "drift" demystified**: the recorded diff was cosmetic — live
+  `docs_kb_repo_path_chunk_idx_key` ≡ entity `_uq` (same columns,
+  constraint-style name) and `vector_cosine_ops` was already declared
+  via `@Index({opclass})`. The diff-JSON entries are differ blind
+  spots (no name-aliasing, no opclass normalization), NOT DDL drift.
+- **Generator bug #3 FIXED (dal `06f160b`)**: composite `@Unique`
+  groups silently dropped — group reconstruction read column-level
+  `uniqueIndexName` (absent in snapshot) while `t.indexes` already
+  holds the full group. Now emitted from `t.indexes`. Also caught
+  be's `user_preferences_user_key_uidx` retroactively — be baseline
+  amended + re-signed (commit `d95bac6`).
+- **`nullsNotDistinct` added to `UniqueOptions`** (`@Unique(name,
+  order, {nullsNotDistinct:true})` → `CREATE UNIQUE INDEX … NULLS
+  NOT DISTINCT`): required by `ai_cerebellum.dtype` (nullable member —
+  (key, model, NULL) must conflict). Declared on the order-0 member.
+- **Generator gap #4**: `vector` extension not emitted when `vector(n)`
+  columns exist — handwritten (with `pg_partman` + its `partman`
+  schema prerequisite, same as crm/jh).
+- Seed hygiene: `partition_maintenance_schedule` (created_by='test',
+  E2E runtime row with built-in `@daily` default) excluded;
+  `ai_models_test_scores_backup_20260921` flagged for uuid-phase drop.
+- Supplement: `ai.translations`, `ai_feedback_rating_check`,
+  partial-unique `one_default_per_assistant_uq` (unique+WHERE not
+  expressible — `@Index` has `where` but no `unique` flag), 9
+  DB-only lookup indexes.
+- Differ blind spots noted: unique-constraint-vs-index name
+  equivalence (`_key` vs `_uq`), opclass normalization in column
+  lists, `NULLS NOT DISTINCT` comparison (declaration emitted but not
+  diff-compared yet).
+- Verified: fresh-DB apply = live catalog (modulo exclusions);
+  apply → 3 skipped, 0 security events; db:check/standards clean;
+  27/27 ai + 586/586 dal tests green.
