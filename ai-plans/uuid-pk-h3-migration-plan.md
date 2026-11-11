@@ -622,6 +622,7 @@ is always handwritten per module.
 | emailsender | us-v3 `3c5a920` | DONE — pilot, patch `0006_uuid_pk_swap` |
 | job-handler | us-v3 `ab6ac01` | DONE — patch `0005_uuid_pk_swap` + audit `entity_id` drops |
 | ai | us-v3 `7f67d58` | DONE — patch `0005_uuid_pk_swap`, 9 tables, partitioned conversations |
+| crm | us-v3 `b7c3a54` + dal `671bcbc` | DONE — patch `0006_uuid_pk_swap`, 17 tables + 8 `*_id` ref drops + FK rebuild |
 | dal | `3cc5f08` | audit writer: `entity_id` optional (uuid-PK safe) |
 | sdk | `6e09d5e` | `MarkerAuditParams.entityId` → `bigint \| null` |
 | be | `853ace0` | audit port/helper mirror alignment |
@@ -644,6 +645,22 @@ is always handwritten per module.
   jh suite flake: `service-routes` test times out at 5s under parallel
   load (dynamic import), passes isolated — pre-existing environmental.
 
+- **crm lessons**: `*_uuid_fkey` constraints DEPEND on the bare
+  `*_uuid_uq` indexes (`pg_depend`) — `DROP INDEX` on a referenced
+  unique index fails (CASCADE would kill the FKs); mandatory order:
+  drop `*_uuid_fkey` → PK swap + index drop → recreate FKs with the
+  original CASCADE/RESTRICT semantics. The differ emitted a real
+  entity↔live patch for `customer_uuid NOT NULL` drift — folded into
+  `0006` Phase D (generated file deleted, still unapplied). Wire
+  surface: children DTOs (`customer_account`/`contact`/`link`/
+  `local_address`) accepted `*_id: bigint` — flipped to `*_uuid:
+  z.string().uuid()`; list-config keys + `ref.value_field`/`filter_
+  field` + `depends_on` pivots renamed; 8 `fields.*_id` translation
+  keys renamed inside the patch (24 rows, 3 langs). `DictEntityBase`
+  (DAL `671bcbc`) declares `@Key() uuid` — `customer_types` derives
+  its PK from the base (only DictEntityBase consumer in the workspace).
+  Typecheck does NOT catch zod-DTO drift (schemas don't type against
+  entities) — grep `*_id` is the detector for wire surfaces.
 - **ai lessons**: mixed uuid_uq flavors in one module — `ai_messages`/
   `ai_conversations` constraint-backed (DROP CONSTRAINT), the rest bare
   indexes (DROP INDEX); partitioned `ai_conversations` PK swap = parent
