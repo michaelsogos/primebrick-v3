@@ -579,3 +579,34 @@ parity; orphan scans empty; db:check + check:standards + tests green
   `mfa_action_authorizations.user_profile_id`,
   `sender_log.entity_id` (twin `entity_uuid` already populated),
   `audit.entity_id` everywhere (twin populated).
+
+**Phase-2 discovery — COMPLETED (evidence, 2026-01-13)**
+
+- **`@Ref`/`@ForeignKey` usage = ZERO** — no entity declares them;
+  `*_uuid` refs are plain `@Column`. Discovery = column/FK scan only.
+- **`*_id` bigint refs — the full work list (12)**:
+  - crm (8): `customer_accounts.{contact_id,customer_id,
+    local_address_id}`, `customer_consents.customer_id`,
+    `customer_contacts.customer_id`, `customer_links.
+    {child_customer_id,parent_customer_id}`, `local_addresses.customer_id`
+  - be (4): `mfa_action_authorizations.user_profile_id`,
+    `user_invitations.user_profile_id`, `user_mfa_factors.
+    user_profile_id`, `user_passkeys.user_profile_id`
+- **`*_uuid` refs already in place (21)** — phase-3 zero-work:
+  ai 5, crm 9, emailsender 3, job 1, be 2.
+- **audit tables**: EVERY `*_audit` has `entity_id` + `entity_uuid`
+  both populated 100% (verified on all services) → phase 5 = bare
+  `DROP COLUMN entity_id`, zero backfill.
+- **`sender_log.entity_id/entity_uuid` both NULL on all 13 rows** —
+  polymorphic ref unused so far (otp/verify emails aren't about a
+  business entity row). Legit, not drift.
+- **`*_id` non-bigint = business keys, not refs**: `model_id` (varchar),
+  `client_id` (varchar), `credential_id` (text) — legit names.
+- **uuid hygiene verified**: every entity-table `uuid` is NOT NULL +
+  has a unique index; only exception is flagged junk
+  `ai_models_test_scores_backup_20260921` (nullable, no unique).
+- **`meta.uid` machinery exists** — public uid vs surrogate PK split
+  already in the contract layer.
+- **Gap fixed (dal `5b7c301`)**: `@Key` on a uuid column would emit
+  `GENERATED ALWAYS AS IDENTITY` on uuid — invalid DDL. Identity now
+  int-family only; uuid keys get `DEFAULT uuidv7()` via `defaultSql`.
