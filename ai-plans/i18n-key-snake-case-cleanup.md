@@ -373,11 +373,11 @@ Palette is designed on the cleaned grammar: every segment is
 - **AI :3004 `ok:false` — `llm` check fails** ("Unable to connect"): the local LLM endpoint (ollama) is down — external dep, not the service
 - All listeners on `[::1]` IPv6-loopback → `server.listen(port)` no-host in `sdk/http/http-server.ts:221`; netstat IPv4 rows miss them (my earlier "nothing listening" was a lazy truncated read)
 
-### Decisions pending
-1. **Apply 6 patches to dev DB** — dry-run verified, awaiting approval
-2. **openapi.ts 9× `format:`** fix — separate plan `lint-red-openapi-format.md` (P2 baseline + P3 CI)
-3. **IPv6 bind** — proposal: `hostname` opt in `HttpServerOptions`/`Bun.serve` + `server.host` vite; default `127.0.0.1` (IPv4 loopback — matches dev usage + makes netstat honest), env opt-in `::1`/`::` when needed. Mechanism seam exists — needs your go.
-4. **E2E** — Playwright suites after apply (would fail on raw keys now — correct signal)
+### Decisions pending — RESOLVED 2026-11-11
+1. ~~**Apply 6 patches to dev DB**~~ — DONE (TURN LOG below: applied 1/0 failed per service)
+2. ~~**openapi.ts 9× `format:`**~~ — DONE: fixes landed, `check-standards: clean`. Permanence (P2 baseline + P3 CI) tracked in `lint-red-openapi-format.md`
+3. **Bind address** — DECIDED 2026-11-11: always IPv4, no options. Dev = `127.0.0.1`, prod = `0.0.0.0`. Implementation in drift-closure batch
+4. ~~**E2E**~~ — DONE (TURN LOG below: dict-page 3/3 + smoke/auth 8/8)
 
 ---
 
@@ -401,5 +401,5 @@ Palette is designed on the cleaned grammar: every segment is
 - ~~translate-all preview anatomy~~ — superseded by the V3 sheet anatomy; see `translation-editor-sheet-redesign.md` TURN LOG (per-row suggestion previews, float icons)
 - openapi lint permanence: P2 baseline file + P3 CI (see `lint-red-openapi-format.md` — the 9 format fixes themselves are LANDED, `check-standards: clean` verified 2026-11-10)
 - RFC 7807 error-extras pipeline now end-to-end (sdk `toValidationError` → `extra.issues` → FE `ApiListError` → `ErrorsPanel`/`RfcErrorDialog`) — if future i18n validation errors carry `extra` they will surface automatically; see `metadata-driven-page-system.md` tasks 31/40
-- **MANIFEST signatures for `20261205000000_i18n_key_snake_cleanup` uncommitted in 4/5 services** (verified 2026-11-10b): ai, crm, emailsender, webhook working trees carry the signed entry but the commit never landed — same hole job-handler had (fixed `a030351`). Patch file committed + manifest unsigned = inconsistent db-meta state; each needs the manifest commit.
+- ~~**MANIFEST signatures for `20261205000000_i18n_key_snake_cleanup` uncommitted in 4/5 services**~~ — RESOLVED 2026-11-11: `7bae552` committed the signed manifests for ai, crm, emailsender, webhook
 - **Registry `migration_failed → online` requires respawn** — no admin transition route for stale status (doc gap, carried into metadata-driven-page-system residual (h)).
