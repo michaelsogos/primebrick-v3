@@ -537,6 +537,26 @@
   open (measured per-frame), 1→0 on pop; post-Escape `entity-record-sheet`
   still visible, dialogs:1; second Escape closes normally. svelte-check
   0/0.
+- **FOLLOW-UP (three stack bugs reported by user — all fixed)**:
+  1. Re-clicking the version badge re-stacked: the CURRENT right pane was
+     copied into `secondary` — the record slot was lost (two version
+     panes). Fixed in `openSheet`: `secondary ?? {…}` keeps the original
+     left pane.
+  2. Any internal dialog close (SheetPanelLayout's `Sheet.Close` X,
+     outside click) unmounted BOTH panes: `open` was a one-way prop —
+     `sheetState.open` stayed true while bits-ui unmounted → reopen dead.
+     Fixed: `bind:open` + `onSheetOpenChange` re-asserts `open=true`
+     after a stacked pop (`wasStacked`) — every close affordance now pops
+     ONE pane at a time; `onInteractOutside` gets the same veto as
+     Escape.
+  3. Pane-touch flag: the badge click counted as "interacting with the
+     left pane" → the NEXT close would have killed the record. Fixed:
+     `$effect` resets `closeTargetSecondary` whenever `secondary`
+     changes (a fresh stack is not a pane touch).
+  Regression tests added in `sheet-manager.test.ts` (re-stack keeps the
+  original left pane; pop restores it). Verified live: double badge →
+  record stays left; X on right → record survives (dialogs:1); close →
+  ref-cell reopen works; Escape → pop → re-stack works.
 
 ---
 
