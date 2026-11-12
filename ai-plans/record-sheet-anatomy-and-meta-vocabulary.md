@@ -461,6 +461,18 @@
   Live fallback unreachable today (every `entity.record` ref-cell lands
   on user_profile which has `page_props.form`) — render test stands in.
 
+## B13. uid row → field anatomy (label over badge) — ✅ DONE
+
+- **WHERE**: `EntityRecordSheetBody.svelte` uid block.
+- **WHY**: uid label+badge sat side-by-side in a flex row — a one-off
+  anatomy; user wants the standard label→control stack everywhere.
+- **WHAT done**: `space-y-2` wrapper like every `EntityFormField` —
+  `Label for="record-sheet-uid-badge"` on the label row, the outline
+  badge (with inner copy CTA) in the control slot below.
+- **HOW verified**: live sheet → `label[for]` bounds y73/x1553 vs badge
+  y98/x1553 — label directly above, left-aligned as every field label.
+  Evidence: `d:\git\primebrick\temp\uid-field-anatomy.png`.
+
 ---
 
 # PART 3 — TRAPS / INVARIANTS (empirical, this session)
