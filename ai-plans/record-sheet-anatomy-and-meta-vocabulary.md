@@ -438,6 +438,29 @@
   `aria-disabled` trigger. Evidence:
   `d:\git\primebrick\temp\combo-disabled-badge.png`.
 
+## B12. Sheet fallback field order — `order` contract, not array index — ✅ DONE
+
+- **WHERE**: `primebrick-fe-v3/src/lib/entity-list/sheets/EntityRecordSheetBody.svelte`
+  `allColumns`; `primebrick-v3-core/src/columns.ts` `orderedColumns`.
+- **WHY**: the fallback form surface iterated `meta.columns` in raw
+  array order while the canonical contract says array position MUST NOT
+  matter (sticky → normal → audited, each by `order`). AND the helper's
+  `a.order - b.order` comparator returned NaN on absent `order`,
+  corrupting the whole sort (V8 measured: `[b(5),x,a(1)] → [b,x,a]`).
+- **WHAT done**: `orderedColumns` sort key is now `order ?? index`
+  (order drives; array index is the last-resort fallback — stable sort
+  keeps undefined-order columns at their slot). The sheet body now
+  partitions the ORDERED list, so form surface AND audit section both
+  honor the contract.
+- **WHEN**: this turn (pending commit).
+- **HOW verified**: core `columns.test.ts` +5 cases (order wins, group
+  order, index fallback, no NaN poisoning, empty) — 17/17; FE
+  `record-sheet-order.test.ts` +4 render cases vs `EntityFormField` stub
+  (order over array, sticky first, index fallback, uid/audited/version
+  partition + ordered audit `dt`s) — 4/4. svelte-check 0/0 both repos.
+  Live fallback unreachable today (every `entity.record` ref-cell lands
+  on user_profile which has `page_props.form`) — render test stands in.
+
 ---
 
 # PART 3 — TRAPS / INVARIANTS (empirical, this session)
