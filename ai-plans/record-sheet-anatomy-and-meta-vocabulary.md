@@ -792,3 +792,148 @@ map no longer emits. This is exactly why type-check ≠ verification.
 - Temp probe files all deleted (rule now forbids the pattern — B4).
 - This plan lives at
   `primebrick-workspace/ai-plans/record-sheet-anatomy-and-meta-vocabulary.md`.
+
+---
+
+# PART 5 — TIC deep-dive: clone audit / pseudo-user / hero / version cell / audit ordering (2026-11-12 session 3)
+
+Status: **ANALYSIS COMPLETE — awaiting user decisions**. No implementation
+until PROCEED. All findings verified by source inspection.
+
+## 1. CRM clone fields — EMPIRICAL FINDINGS
+
+- `crm_customers.cloned_from` EXISTS (`uuid`, nullable) — a ref to the
+  SOURCE customer record (`customer_entity.ts:93`,
+  `snapshot-entities.json:424`). It is a plain `@Column` — **not audited**,
+  renders in the normal column group.
+- `cloned_at` / `cloned_by` DO NOT EXIST anywhere (entity, patches,
+  snapshot) — the clone ACTOR/timestamp was never persisted.
+- Consequence: making "clonato da" an audit field needs BOTH:
+  - `cloned_from` → authored `audited: true` in customer meta (it's a ref
+    to the same entity — `ref: { entity: "customer" }` shape, TBD entity name)
+  - NEW physical columns `cloned_at` + `cloned_by` → **new db-meta patch**
+    (never edit shipped ones), entity fields, meta entries
+    (`type:"datetime"` + `type:"ref", ref:{entity:"user_profile"},
+    audited:true`) — the `suspended_by` authored pattern verbatim
+    (`user-profiles.meta.ts:39`: plain uuid column, ref+audited authored
+    in meta, no `@Ref` decorator needed).
+- DECISION NEEDED: does "clonato da" mean the SOURCE customer
+  (`cloned_from`, existing) or the ACTOR (`cloned_by`, to be created)? Or
+  both as an audit triple `cloned_at`/`cloned_by`/`cloned_from`?
+
+## 2. Audit machinery — EMPIRICAL FINDINGS (the "how do we declare audit" answer)
+
+- **The marker already exists**: `MetaColumn.audited: true` —
+  `orderedColumns` (core `columns.ts:56`) partitions
+  sticky → normal → audited; `EntityListTable.svelte:183` places the
+  audited group LAST; `EntityRecordSheetBody.svelte:78` pins them to the
+  bottom audit accordion (`c.audited===true && key!=='version'`).
+- Standard audit fields are MIXIN-injected: `Auditable()` in
+  `dal/entities/entity-base.ts` adds `created_at/created_by/updated_at/
+  updated_by/version` (`@AuditableField`, actors carry `@Ref("user_profile")`);
+  `Deletable()` adds `deleted_at/deleted_by`.
+- Derived audit columns get `order: 1000 + derivedIdx`
+  (`column-constraints.ts:441`) in entity-declaration order (mixin fields
+  register parent-first → orders 1000–1004; `version` declared last in the
+  mixin → highest). AUTHORED custom audit (`audited:true`, orders 14/18/19)
+  therefore already sorts BEFORE standard audit — "custom first" is de
+  facto today.
+- `audited` is also a class fact when injected (line 79,
+  `isAuditable||isDeletable` → audited:true) — a decorated entity field
+  needs no authored flag; an UNDECORATED custom field (like `suspended_by`)
+  gets audit status only via authored `audited:true`.
+
+## 3. Pseudo-user / missing-user — EMPIRICAL FINDINGS
+
+- Ref cell path: `TableCell.svelte:271` `CellAffordance` text-click →
+  `openSheet('entity.record', {entity, value, ref}, {stack:true})` —
+  `value` is the RAW ref (uuid OR a pseudo-id like `system`).
+- `EntityRecordSheet.load()` (`:262`): when `ref.filter_field == uid`
+  (user_profile refs) it skips the list lookup and hits
+  `GET /record/<value>` directly — a non-uuid `system` goes straight to the
+  API → error → `failed`/`notFound` → renders a bare
+  `<p class="text-sm">` line (`:358-360`). THAT is the observed crash-y
+  sheet.
+- No UUID validation exists in FE; `isUUID(v)` lives in
+  `@primebrick/dal-pg` (`types/uuid.ts` — RFC 4122 layout) which FE cannot
+  import. DECISION: put the shape test in `@primebrick/core` (env-neutral,
+  FE's contract package) — likely `isUuid`-style export.
+- States needed: value fails uuid-shape → WARNING hero "Questo è un
+  utente fittizio non censito nel sistema" (NO api call); value is uuid →
+  fetch → 404 → DESTRUCTIVE hero "Questo utente non è più disponibile nel
+  sistema". `failed` (network/500) is a third state — decide same
+  destructive hero with generic text or its own.
+- Entity-scope question: texts are user-specific; decide whether hero
+  text keys are per-entity (`entities_ns`) with a generic
+  record-not-found fallback, or user_profile-only special-casing.
+
+## 4. Generalized hero — EMPIRICAL FINDINGS
+
+- `LoadingWatermark.svelte` (`src/lib/components/auth/`) IS the canonical
+  anatomy: `icon` (Lucide component, `size-20`), `titleKey`, `hintKey`,
+  `animation: 'pulse'|'flip'`, `min-h-56` centered, muted text, animated
+  sky→indigo gradient stops on the icon.
+- Gaps vs the ask: auth-scoped path; NO severity (always gradient+muted);
+  icon prop is a Component (not a `DynamicIcon` name string); no
+  destructive/warning color path.
+- Natural design: promote to a shared `HeroMessage`/`StateHero`
+  (severity `'info'|'warning'|'destructive'`, icon, animation, title/hint)
+  — severity drives icon color (gradient / amber / destructive) and text
+  tone; `LoadingWatermark` either delegates to it or becomes its loading
+  alias. DECISION: new component home (`$lib/components/` vs
+  `@primebrick/ui`), icon prop type (component vs name string via
+  DynamicIcon), whether ELT load-error/empty states migrate to it now or
+  later.
+
+## 5. `version` column → history badge — EMPIRICAL FINDINGS + GAP
+
+- TableCell has NO version branch today — `version` (derived `type:
+  number`/`text`?) renders via the default path.
+- The sheet's `openVersionHistory` calls
+  `openSheet('entity.versionHistory', {entity, translationKey,
+  entities_ns, rowUuid, columns})` (`EntityRecordSheet.svelte:247-258`).
+- TableCell context TODAY: `row` (→ `row[metaUid]` = rowUuid ✓),
+  `getMetaUidContext()` (uid key ✓), `getEntitiesNsContext()`
+  (entities_ns ✓ — already set by EntityListTable:129). MISSING:
+  `entity` (API name) and `columns` (needed for the history diff).
+- Native fix (no workaround): add an `entity` context (and a columns
+  context or pass meta.columns through the existing audit-columns context
+  — actually `auditingColumns` context already carries MetaColumn[] which
+  may suffice if the history panel only needs audit columns — VERIFY
+  before deciding) via the same `context.ts` pattern. Then a `version`
+  branch in TableCell renders `<button><Badge>v{n}</Badge></button>`
+  (canonical anatomy, LEFT — cell content is left-aligned anyway) →
+  `openSheet('entity.versionHistory', …)`.
+- "Sempre ultima colonna, salvo diversa e volontaria specifica": the
+  mechanism EXISTS — derived order lands version last when the mixin
+  declares it last (true today), and `orderState`/`applyKeyOrder` user
+  reorder IS the voluntary override. To institutionalize: pin `version`
+  derivation order above all other derived audit columns (e.g. fixed
+  order constant) rather than relying on declaration position.
+
+## 6. Audit ordering — EMPIRICAL FINDINGS
+
+- Declaration mechanism: already exists = authored `audited: true`
+  (+ `@AuditableField` for injected). No name-inference needed — DO NOT
+  infer audit status from field names; the flag is the contract.
+- Desired order (custom audit → standard audit → version last) is de
+  facto TODAY via order<1000 customs vs 1000+ derived — but it's a
+  CONVENTION, not enforced: an authored custom audit with order>1000
+  would sort after standards; `version` is last only by mixin position.
+- Hardening options (DECIDE):
+  a) convention + doc: audit customs declare order < 1000; leave engine.
+  b) `orderedColumns` audit sub-ordering: audited group sorts
+     (authored/order<1000 first) → standard known-keys
+     (created_*→updated_*→deleted_*) → `version` pinned last by key —
+     deterministic regardless of authored orders.
+  c) meta vocabulary: an `audit_rank`/`audit_group` field — heavier
+     contract, most explicit.
+- `useAuditBox` name-prefix groupings (`created_*`, `updated_*`,
+  `deleted_*`, `last_synced_*`) are DISPLAY helpers inside the accordion —
+  the accordion itself already iterates the `audited` flag set (flag is
+  the partition), so custom audit fields DO appear; no gap there.
+
+## Open decisions for the user
+
+1. clone semantics: `cloned_from` audited only, or new `cloned_at` +
+   `cloned_by` patch too? (user_profile ref verbatim per
