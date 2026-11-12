@@ -491,6 +491,8 @@
 - **HOW verified**: live sheet → badge `lucide-file-key`, color
   `oklch(0.769 0.188 70.08)` (amber-500), bg `rgb(241,245,249)` (secondary).
   `svelte-check` 0/0 both repos. Evidence: `temp/uid-badge-filekey.png`.
+  Size bumped one step (xs → sm: text-sm, 14px glyphs, 26px height) —
+  the identity badge must not read smaller than field labels.
 
 ---
 
