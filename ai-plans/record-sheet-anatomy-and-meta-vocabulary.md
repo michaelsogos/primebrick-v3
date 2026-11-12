@@ -937,3 +937,30 @@ until PROCEED. All findings verified by source inspection.
 
 1. clone semantics: `cloned_from` audited only, or new `cloned_at` +
    `cloned_by` patch too? (user_profile ref verbatim per
+
+## Decisions taken (user, 2026-11-12 session 3)
+
+1. **Clone**: BOTH — `cloned_from` gets `audited: true` (immutable by
+   definition — `field-validation.ts:586` already treats audited as
+   non-client-writable), AND new patch adds `cloned_at`/`cloned_by`
+   (cloned_by → `ref:{entity:"user_profile"}` + audited, `suspended_by`
+   authored pattern verbatim).
+2. **isUUID** → `@primebrick/core` (env-neutral export).
+3. **Hero** → `@primebrick/ui`. Uses `getT()`/`$t` via the bridges.ts
+   mechanism — takes `title_key`/`hint_key` + `params`, icon + animation
+   props, severity scale info→destructive. LoadingWatermark anatomy is
+   the canonical reference.
+4. **Hero texts**: 2 keys, `{entity_singular}` interpolated via
+   `<ns>.entities.<translation_key>.singular` (same mechanism as
+   `entityPageTitle`, entity-meta.ts:78-81). IT:
+   "Questo è un {entity_singular} fittizio non censito nel sistema" /
+   "Questo {entity_singular} non è più disponibile nel sistema".
+5. **Version cell**: `column.key === 'version'` branch in TableCell
+   (by construction, no meta flag) → button+Badge canonical anatomy →
+   `openSheet('entity.versionHistory', …)` with the SAME inputs
+   `useRowActions.loadVersionHistory` already passes (entity,
+   translationKey, entities_ns, rowUuid, columns) — reached via a new
+   table-entity context (pattern of metaUid/entitiesNs contexts).
+6. **Audit ordering**: keep as-is (convention: authored custom audit
+   order<1000 precedes derived standard audit 1000+, version last by
+   mixin position).
