@@ -560,6 +560,30 @@
 
 ---
 
+## B17. horizontal scroll persistence drift — ✅ DONE
+
+- **WHERE**: `useScrollPreservation.svelte.ts` (every `EntityListTable`).
+- **WHY**: position persisted across reloads but landed drifted. Two
+  mechanisms: (a) the restore's own scroll events wrote back the
+  CLAMPED px while the table was still growing — the stored value
+  degraded a bit on every reload where the layout couldn't reach the
+  target immediately; (b) a raw px offset is a wrong anchor on an
+  auto-layout table — column widths depend on data/visibility/host
+  width, so the same px maps to a different column slice.
+- **WHAT done**: the stored format is now a FRACTION (0..1) of the
+  scrollable range (`scrollLeft / (scrollWidth - clientWidth)`) —
+  proportional anchor, survives width changes; legacy px (>1) restores
+  once and migrates on next write. Writes are suppressed until the
+  restore settles (1.5s bounded window), and the restore re-resolves
+  the fraction on EVERY resize so the px target tracks the still
+  growing scrollWidth instead of latching at the first reachable px.
+- **HOW verified**: live — scroll 196/391 → stored `0.5013`; reload →
+  196 restored; viewport narrowed (range 591) → restored at 296 =
+  fraction 0.5008 (px storage would have landed at 196 = 33%). Unit:
+  8/8 sheet-manager; svelte-check 0/0.
+
+---
+
 # PART 3 — TRAPS / INVARIANTS (empirical, this session)
 
 1. `--input` = sky-200 = the NORMAL border tint — never use it for
