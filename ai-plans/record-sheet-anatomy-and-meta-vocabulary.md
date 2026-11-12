@@ -494,6 +494,22 @@
   Size bumped one step (xs → sm: text-sm, 14px glyphs, 26px height) —
   the identity badge must not read smaller than field labels.
 
+## B15. copy CTA trailing-icon color drift — ✅ DONE
+
+- **WHERE**: `text-input.svelte` (2 CopyButton sites), `email-input.svelte`
+  (copy branch).
+- **WHY**: `cn(inputTrailingIconButtonClasses, "text-foreground")` appended
+  an override that won over the chrome's `text-muted-foreground` — the copy
+  icon read fully-foreground at rest while the uid badge CTA (and the
+  contract itself) wants muted → foreground on hover.
+- **WHAT done**: removed the `"text-foreground"` tail — the canonical
+  `inputTrailingIconButtonClasses` owns muted→hover + transition-colors.
+  url/phone inputs already hand-rolled the same semantics.
+- **HOW verified**: live sheet — rest `rgb(100,116,139)` (muted), hover
+  `rgb(2,8,23)` (foreground). 16/16 copy-cta unit tests green.
+
+---
+
 ---
 
 # PART 3 — TRAPS / INVARIANTS (empirical, this session)
