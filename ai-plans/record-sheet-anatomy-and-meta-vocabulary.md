@@ -512,6 +512,34 @@
 
 ---
 
+## B16. stacked sheets — push transition + Escape pop contract — ✅ DONE
+
+- **WHERE**: `SheetHost.svelte` (generic shell layer — every `stack:true`
+  open gets it: record → version history, ref-cell drill-through).
+- **WHY**: `sheetState.secondary` flipped two flex panes instantly — no
+  animation, no perceived "the new sheet pushes the old one left".
+- **WHAT done**: `pushPane` Svelte transition on the secondary pane —
+  `flex-grow 0→1` + fast fade + `overflow:hidden` so the right pane's
+  `flex-1` reflows in parallel (the record visibly slides left while
+  version history takes the right slot); `transition-[max-width]` on
+  `Sheet.Content` widens `sm:max-w-sm → sm:max-w-3xl` smoothly. Outro
+  runs free on pop.
+- **BUG found en route (pre-existing, verified on stashed old code)**:
+  Escape closed the WHOLE sheet even when stacked. `open={expr}` is a
+  one-way prop — bits-ui's internal close unmounts content regardless
+  of `sheetState.open` staying true; the `closeSheet()` pop ran but the
+  DOM was already gone. Fix: `onEscapeKeydown` veto on `Sheet.Content`
+  when `sheetState.secondary` — `preventDefault` + manager pop; the
+  left pane outros, record slides back. Single-pane Escape unchanged.
+  Restores the `ref-cell-sheet.spec.ts` contract ("Escape is the
+  canonical close path — the stack pops, nothing is lost").
+- **HOW verified**: live — flex-grow interpolated 0→0.98 over ~240ms on
+  open (measured per-frame), 1→0 on pop; post-Escape `entity-record-sheet`
+  still visible, dialogs:1; second Escape closes normally. svelte-check
+  0/0.
+
+---
+
 # PART 3 — TRAPS / INVARIANTS (empirical, this session)
 
 1. `--input` = sky-200 = the NORMAL border tint — never use it for
