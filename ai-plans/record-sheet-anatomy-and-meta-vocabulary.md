@@ -964,3 +964,28 @@ until PROCEED. All findings verified by source inspection.
 6. **Audit ordering**: keep as-is (convention: authored custom audit
    order<1000 precedes derived standard audit 1000+, version last by
    mixin position).
+
+## SHIPPED (session 3 implementation — all merged to develop + pushed)
+
+| # | Deliverable | Where | Verification |
+|---|-------------|-------|--------------|
+| D1 | `isUUID`/`UUID`/`toUUID` in `@primebrick/core` (`src/uuid.ts`), env-neutral | core `a25d56b` + extraction `1a34641` | build + tsc clean |
+| D2 | `StateHero` in `@primebrick/ui` — severity (`info`/`warning`/`destructive`), DynamicIcon name, `pulse`/`flip`/`none`, `title_key`/`hint_key`/`params` via `getT()`; doc page `state-hero.mdx` | ui `55ad68f` + docs | svelte-check 0/0, standards clean |
+| D3 | Record-sheet hero states — pseudo (non-uuid → warning `system.entities.record.pseudo_subject`), missing uuid (404 → destructive `.unavailable`), generic fail → destructive; `{entity_singular}` interpolation via `<ns>.entities.<tk>.singular` | fe `7c2b9ce` | **LIVE**: `system` cell → "Questo è un Utente fittizio non censito nel sistema"; fake uuid → "Questo Utente non è più disponibile nel sistema" (screenshot verified) |
+| D4 | `version` cell → canonical badge-drill in TableCell (`v{N}`, `data-testid="version-cell-badge"`), opens stacked `entity.versionHistory` via new `TableEntityContext` (entity/translationKey/uid/columns — same payload as row actions) | fe `7c2b9ce` | **LIVE**: 6 badges, "Versione" last column, sheet opens |
+| D5 | `Clonable` mixin + `CloneFieldType` enum in dal — `cloned_from` (uuid self-ref via `isClone` convention), `cloned_at` (instant→datetime), `cloned_by` (text + `@Ref("user_profile")` + `audit.actors`); derivation marks all `audited`, `COMMON_SYSTEM_FIELD_KEYS += cloned_*`; clone write-path stamps at/by | dal `00ca1ba`, `9db9f44`, `4844eb0` | 605/605 tests, served meta verified (all 3 audited, cloned_by ref+actors, cloned_at datetime) |
+| D6 | CRM: `CustomerEntity extends Clonable(Deletable(Auditable(EntityBase)))`, patch `0008` (+cloned_at timestamptz, +cloned_by text), snapshot regen + MANIFEST sign | us `168832a` | `snapshot-check: clean`, migrate applied |
+| D7 | Translation seeds: `system.entities.record.pseudo_subject`/`.unavailable` + `system.common.fields.cloned_*` ×7 locales | be `25a43c7` | migrate applied, signed |
+| D8 | Docs: ui `state-hero.mdx` + `_order.json`; dal `clone.mdx`/`entities.mdx` (Clonable, CloneFieldType, CLONE-audit correction); fe `entity-list-table.mdx` "built-in cell drifts" | ui/dal/fe develop | — |
+
+**Ordering note** (empirical, served meta): on `customer` the derived
+audit group is `created_at,created_by,updated_at,updated_by,version,
+deleted_at,deleted_by,cloned_from,cloned_at,cloned_by` — `version` sits
+at 1004, NOT last (mixin declaration order). Custom authored audit
+fields (order<1000) still precede it — the user's "custom-first" rule
+holds; "version strictly last" remains a convention, not enforced —
+kept per decision 6. Flag for a later revisit if it matters.
+
+**Trap found**: `created_by`/`updated_by`/`cloned_by` are **text**
+(they hold pseudo-actors like `system`/`e2e-setup`), only `cloned_from`
+is uuid — the pseudo-hero gate exists precisely for this vocabulary.
