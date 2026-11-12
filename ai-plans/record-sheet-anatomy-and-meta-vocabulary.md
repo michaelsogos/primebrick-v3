@@ -5,7 +5,10 @@
 > **WHEN** (commit / order), **HOW** (approach + verification evidence).
 > Items marked 🔴/⏳ must not be improvised — ask the user.
 
-## Status: 🟠 WIP — Plan date: 2026-11-12
+## Status: 🟠 WIP — Plan date: 2026-11-12 (TIC reconciliation — session 2)
+
+> **Session 2 reconciliation** (below): every claim is backed by live
+> evidence or check output — nothing is marked done on inspection alone.
 
 ---
 
@@ -253,63 +256,74 @@
   visually identical to the timeline `v{N}` badges.
   Evidence: `d:\git\primebrick\temp\version-badge-{canonical,history}.png`.
 
-## B3. Audit section — rejected twice, rebuild on the canonical grid
+## B3. Audit section — ✅ RESOLVED BY ALTERNATIVE (accordion + clean rows)
 
-- **WHERE**: `EntityRecordSheetBody.svelte:171-189`
-  (`bg-muted/50` band + single-column `dl` rows — called illegible).
-- **WHY**: the canonical anatomy exists — `FormPageLayout.svelte:55-181`
-  audit box; the sheet invented a weaker variant twice.
-- **WHAT**: rebuild as the FormPageLayout grid — `bg-muted/50 border-t`,
-  `grid grid-cols-[auto_1fr_1fr_1fr] gap-x-4 gap-y-2 text-xs`; version
-  badge `row-span-2` col 1; row 1 = [`deleted_at`|`updated_at`,
-  `created_at`, `ID: uid`]; row 2 = [`deleted_by`|`updated_by`,
-  `created_by`, `last_synced_at`]; labels `text-primary`, values `italic
-  text-muted-foreground`, `whitespace-nowrap` cells.
-- **HOW**: reuse `useAuditBox` helpers — `getCreatedFields`,
-  `getUpdatedFields`, `getDeletedFields`, `getSyncFields`,
-  `getVersionField`, `formatValue` (already instantiated in the body,
-  same source as FormPageLayout). STRONGLY prefer extracting the grid
-  as a shared component (it now exists in FormPageLayout AND the sheet
-  — a third copy is new drift); check `useAuditBox`'s return shape
-  first, then propose the shared component to the user.
+- **RESOLUTION**: the original plan prescribed rebuilding the audit
+  block as the FormPageLayout 4-column grid. The user instead iterated
+  to a DIFFERENT accepted end-state; "formal closure" here means only
+  that the plan text is updated to record the actual shipped anatomy —
+  no further code work is owed on B3 itself.
+- **WHAT shipped** (verified live each step):
+  1. `bg-muted/50` box + padding REMOVED from the `<section>` — commit
+     `7dc17a3`; live computed: `background:transparent, padding:0,
+     radius:0`. (The muted band was a copy of FormPageLayout's
+     full-bleed page footer, wrong context for an inline block.)
+  2. The separator became the canonical `Accordion` (`@primebrick/ui`,
+     same as DocsPanel/VersionsPanel): trigger = translated
+     `system.common.sections.audit` + chevron, `type="single"`,
+     **default collapsed**, content = the same `<dl>` — commit `1e075b8`.
+     Live: `aria-expanded=false`, `data-state=closed`, h=0 → click →
+     expanded with all audit fields.
+  3. Audit `<dd>` gets `truncate` + `title` (native tooltip with the
+     full value) — no wrap, no horizontal scroll.
+  4. `gap-y-2` leading = same rhythm as FormPageLayout's audit foot.
+- **Status**: closed. `record-sheet-order.test.ts` 4/4 kept green
+  (testid `entity-record-sheet-audit-section` preserved on the inner
+  section).
 
-## B4. Persistent E2E coverage — the "DOVE SONO TUTTI I E2E" rage
+## B4. Persistent E2E coverage — 🔴 STILL THE MAIN DEBT (rule now written)
 
 - **WHY**: every verification this session ran on temp probe specs that
-  were deleted after use — zero regression net for items 2-8.
-- **WHAT to write (permanent specs)**:
-  1. `ref-cell-sheet.spec.ts` additions — avatar preview (hex present,
-     `input#record-sheet-field-avatar_initials` absent); roles renders
-     ComboSelect multi (not JSON editor); uid badge anatomy (post-B1);
-     audit canonical grid (post-B3); 3-state chrome computed styles
-     (readonly → slate-family border + white bg; pencil → editable →
-     gradient border; disabled combo/switch → muted bg + grey border).
-  2. NEW `src/e2e/elt-scroll-persistence.spec.ts` — h-scroll survives
-     pagination, loading AND full reload (temp probe pattern: enable
-     hidden columns for overflow → scroll → reload → assert
-     `scrollLeft === stored`).
-  3. Avatar in LIST cell — enable `avatar_initials` via column picker on
-     the user_profile list → `MetaAvatar` in the cell. Needs the real
-     users-list route — `/system/settings/users` rendered chrome but
-     empty + "Session Expired" in one probe (verify route/permissions;
-     possibly the list is under a different census route).
-  4. `organizations/active` 200 regression — `page.request.get` after
-     `loginAsTestAdmin` (the proven in-session probe).
-- **WHERE**: `primebrick-fe-v3/src/e2e/`; helper `loginAsTestAdmin`
-  from `./helpers/admin-login`; user_profile sheet path: `/crm/customers`
-  → Columns → `columns-toggle-created_by` → click `ref-cell-created_by-text`
-  on a row where `created_by_name !== created_by`.
+  were deleted after use — zero regression net. Session 2 repeated the
+  same anti-pattern (all verifications live/manual or deleted probes).
+- **RULE ADDED (this TIC, user-mandated)**: "Tests are deliverables —
+  final specs from the first write" in `docs/ai/workflow.md` (ALL repos)
+  + "Final specs only — no temporary probes" in FE
+  `docs/ai/e2e-browser-session.md` + enforcement bullet. A deleted probe
+  deletes its proof; behavior verified only by a deleted probe counts
+  as UNVERIFIED.
+- **WHAT to write (permanent specs)** — the list grew with session-2
+  features:
+  1. `ref-cell-sheet.spec.ts` additions — avatar preview; roles
+     ComboSelect multi; uid badge anatomy (`file-key` icon, secondary
+     pill, copy CTA); audit accordion closed-by-default → expands;
+     3-state chrome computed styles; lifecycle status badge
+     (suspended/deleted + destructive title); version badge in the
+     right-aligned footer CTA group + opens stacked history.
+  2. Stacked-sheet LIFO — badge → history stacked → Escape/X pops ONE
+     pane → record survives → reopen works (B16 has unit tests, no E2E).
+  3. NEW `src/e2e/elt-scroll-persistence.spec.ts` — h-scroll survives
+     pagination, loading AND full reload (fraction anchor).
+  4. Avatar in LIST cell + live initials derivation in edit (save →
+     reload → persisted `avatar_initials`).
+  5. `organizations/active` 200 regression.
+  6. B8 roles cell renderer (destination-anatomy badges) once shipped.
+  7. ComboSelect multi-option checkbox canonical gradient states.
+  8. ColorSelector editable Eraser + readonly Copy.
+- **WHERE**: `primebrick-fe-v3/src/e2e/`; helpers `loginAsTestAdmin`,
+  `helpers/db.ts`.
 
-## B5. Translation language-code bug + definitive prevention (AWAITING GO)
+## B5. Translation language-code bug — ✅ CURE DONE / 🔴 PREVENTION OPEN
 
-- **WHY**: my earlier SQL patches inserted `'en'`, `'it'`, `'de'`,
-  `'nl'` — the real vocabulary is `'en-GB','en-US','it-IT','fr-FR',
-  'es-ES','de-DE','pt-PT'` (`'nl'` does not exist; `'en-US'` was
-  skipped). Nothing validated the codes → silent failure → raw keys on
-  screen: `system.entities.user_profile.fields.suspended`,
-  `.suspended_at`, `.suspended_by` in the sheet →
-  `ref-cell-sheet › sheet chrome — labels resolved` is RED.
-- **WHAT (proposed trio + corrective patch)**:
+- **CURE — DONE & VERIFIED**: corrective patch
+  `20261112190000_suspended_labels_bcp47_fix.sql` replaced the short
+  codes with the 7 real BCP-47 tags and DELETEd the dirty rows — live
+  DB confirmed **0 short-code rows left**, all `suspended*` labels
+  resolve ("Sospeso il:", "Sospeso da:", "Eliminato il:"…).
+  Redis cache invalidated for all 7 `system` dicts
+  (`translations:i18n:system:{lang}`) — the mandatory step from
+  `docs/ai/i18n.md` after direct SQL on `*translations` tables.
+- **PREVENTION — still open** (the trio that stops recurrence):
   1. DB CHECK constraint `translations.language IN (…)` — hand SQL
      can't err.
   2. `check-standards` lint scanning `db-meta/patches/*.sql` for
@@ -317,14 +331,9 @@
      vocabulary → CI gate.
   3. `SUPPORTED_LANGUAGES` constant in `@primebrick/core` — single
      source for lint + docs + BE.
-  4. Corrective patch: the 3 `suspended*` keys ×7 real languages; and a
-     better Italian label for `auth_method_enforcer_dismissed`
-     ("Verifica Metodo di Accesso Ignorata" rejected — propose
-     e.g. "Sblocco metodo di accesso" or ask the user for wording).
-- **WHERE**: be `db-meta/patches/` (new patch, NEVER edit a shipped one;
-  re-sign `MANIFEST.json`), core `src/`, repo lint config.
-- **HOW**: after patch, `sheet chrome` spec goes green; no
-  `system.entities.*` raw keys in the sheet dump.
+- **OPEN wording**: Italian label for `auth_method_enforcer_dismissed`
+  ("Verifica Metodo di Accesso Ignorata" rejected — still needs user's
+  pick).
 
 ## B6. `page_props.form` for user_profile — ✅ DONE (user-ordered)
 
@@ -347,27 +356,52 @@
   `test-results/idp-hidden-sheet.png`. Probe deleted (persistent spec
   still owed under B4).
 
-## B7. Input anatomy docs (user + dev) — mandated with item 2
+## B7. Input anatomy docs — ✅ SETTLED: dev-guide only (user decision)
 
-- **WHY**: the 3-state contract must be documented so no widget drifts
-  again ("ripetibile per costruzione o props, non custom css ogni
-  volta").
-- **WHAT**: user-guide + dev-guide entry — the three states (normal /
-  readonly / disabled), the two utilities (`border-readonly`,
-  `border-disabled`), the mandate "shared utilities, never ad-hoc CSS",
-  and the `--input` vs `--border`/`--muted` token note.
-- **WHERE**: `primebrick-fe-v3/docs/user-guide/` +
-  `docs/dev-guide/*.mdx` (ordering via `_order.json`); run the repo
-  `make-docs` skill (sveld extraction + surgical update) only after
-  the code is final.
+- **USER DECISION (session 2)**: input anatomy does NOT belong in
+  user-facing docs — it is a developer/AI contract. The dev-guide page
+  `docs/dev-guide/input-anatomy.mdx` already documents the 3-state
+  contract and is kept current; no `docs/user-guide/` entry is owed.
+- **Status**: closed by decision, no remaining work.
 
-## B8. Roles list-cell renderer — open design point (ASK)
+## B8. Roles list-cell renderer — 🟢 DESIGN DECIDED (session-2 user spec)
 
-- **WHY**: `roles` is `default_visible:false`; if enabled via column
-  picker the cell renders the raw jsonb array.
-- **WHAT**: needs a decision — a multi-badge cell anatomy using the
-  role label vocabulary, or keep it non-list-renderable. No precedent
-  chosen yet; do not improvise.
+- **USER SPEC**: same badge-list treatment as the job_trigger `filter`
+  column — a list of badges containing roles; each badge uses the
+  **destination-event anatomy** (NOT the filter chip color semantics):
+  `Badge variant="secondary"` + roles icon `user-key` (12px) + role
+  display name translated where possible, native `idp_role` as
+  fallback; raw code available in tooltip.
+- **WHERE the roles live**: `job_trigger.filter` is `RuleFilter[]`
+  (`{field, op, value}` — `job-trigger_entity.ts:69`,
+  `job.meta.ts:88` `format:"json"`). The roles case = a condition whose
+  `field` is a roles path (`roles` or `*.roles`) carrying a `value` of
+  one or more role codes — e.g. `{field:"payload.roles",
+  op:"contains", value:["administrators","hr"]}`.
+- **DESIGN** (matches the existing `TableCell.svelte` renderer):
+  - In the `format:"json"` conditions branch (~:217-234): when
+    `cond.field === 'roles' || cond.field.endsWith('.roles')` and
+    `cond.value` is a role-code string/array → render the field+op
+    preamble as text spans (keep the condition readable), then ONE
+    `Badge variant="secondary"` per role code: `DynamicIcon
+    name="user-key" size={12}` + label.
+  - Label resolution: role display name via `useActiveRoles`
+    (`idp_role` → `label_key` → `$t`; fallback = the raw `idp_role`
+    code). Tooltip keeps the canonical pretty-printed condition JSON.
+  - **Role resolver plumbing** — canonical context pattern (same as
+    `getAuditColumnsContext`/`getMetaUidContext`): `EntityListTable`
+    instantiates `useActiveRoles` ONCE lazily (`enabled` gated on a
+    `format:"json"` column presence), exposes the resolver via a new
+    `getActiveRolesContext()`; `TableCell` resolves labels through it —
+    no per-cell fetches, no singleton store drift.
+  - NOT metadata-driven beyond the field-path convention — the
+    `*.roles` path IS the discriminator (same family as `format`
+    conventions); inventing a `role_color` vocabulary was explicitly
+    ruled out by the user ("a differenza di filter dove il badge ha
+    una sua semantica dei colori").
+- **WHEN**: TOC phase after PROCEED — FE `TableCell.svelte` +
+  `entity-list-table/context.ts` + `EntityListTable.svelte` root;
+  persistent E2E per B4 item 6.
 
 ## B9. Control-state drift — ✅ DONE (user-ordered: "dovrebbero avere disabled", "immutable = disabled")
 
@@ -408,17 +442,26 @@
   (gradient-border normal state). Screenshots `3state-disabled.png` /
   `3state-edit.png`. Probe deleted — persistent spec still owed (B4).
 - **NOTE**: `collab.isConflicted` (EntityFormPage:591) still passes
-  `readonly` → conflict-locked fields keep the readonly chrome; flag
-  for user if conflicts should render disabled instead.
+  `readonly` → conflict-locked fields keep the readonly chrome.
+  **User deferred this to a later session ("per dopo")** — keep the
+  flag, no action now.
 
-## B10. `suspended` calculated flag on the form surface (question)
+## B10. `kind:"calculated"` semantics — ✅ SETTLED (user decision)
 
-- **WHERE**: `user-profiles.meta.ts:37` — `kind:"calculated"` boolean.
-- **WHY**: it renders as a disabled switch with a RAW label in the sheet
-  (label bug aside, a calculated projection may not belong on a form
-  surface at all).
-- **WHAT**: decide with the user — hide from form surfaces by contract,
-  or keep with proper label (after B5).
+- **USER DECISION (session 2)**: calculated fields are effectively
+  immutable — they stay VISIBLE on form surfaces but MUST render
+  **disabled** (not hidden, not readonly-with-white-bg). The semantic
+  contract is NOT open for reconsideration; the only remaining work is
+  verifying the dispatch honors it consistently + coverage.
+- **Current state**: `EntityFormField` already forces `fieldDisabled`
+  when `calculated` (B9's split — `disabled || calculated || (immutable
+  && mode!=='create')`), so the semantic IS in code. `suspended` on
+  `user_profile` never renders anyway — `page_props.form` (B6) omits
+  it by design.
+- **Remaining**: confirm every dispatcher branch passes `disabled` for
+  calculated columns (SwitchField covered; other control types to spot
+  -check) + persistent spec asserting a calculated field renders
+  disabled — under B4. No re-litigation of the decision itself.
 
 ## B11. ComboSelect disabled — inner badges invisible on muted field — ✅ DONE
 
@@ -584,6 +627,78 @@
 
 ---
 
+# PART 2.5 — SESSION-2 SHIPPED WORK (verified live, all released)
+
+> Everything here was verified empirically in the live stack AND shipped
+> through the release train (versions at the end). Details in git log.
+
+| # | Item | Key commits | Evidence |
+|---|------|-------------|----------|
+| C1 | Module-label timing fixed — launcher no longer flashes fallback "AI Assistant" before "AI" | fe (released) | live: label resolves once |
+| C2 | Copy CTA on disabled/readonly values (replaces Clear); Copy icons muted at rest → foreground on hover | fe | computed style live: muted `rgb(100,116,139)` → hover `rgb(2,8,23)`; 16/16 copy-cta tests |
+| C3 | Record-sheet fallback order = canonical `orderedColumns` (`order ?? index`, array index preserved) | core + fe | `columns.test.ts` 17/17, `record-sheet-order` 4/4 |
+| C4 | Version-history badge = native button + outline badge + primary border/hover + `v{N}` + tooltip | fe | live footer `v32`; moved to right-aligned CTA group (standards fix, this TIC) |
+| C5 | UUID anatomy: label above + full-width pill badge `h-9` + `file-key` icon (amber-500) + copy | fe | live: `lucide-file-key`, `oklch(0.769 0.188 70.08)`, bg secondary; uuid icon vocab fixed (`file-key` = entity uuid, `fingerprint*` = passkey only) — `icon-conventions` docs updated |
+| C6 | ComboSelect disabled: selected chips readable on muted field (`bg-background` pop) | ui `eb9ebef`-era | live `rgb(255,255,255)` inside `aria-disabled` trigger |
+| C7 | ComboSelect multi-option checkboxes = canonical primary **gradient** (`from-sky-400 to-indigo-400`, white 14px check, transparent checked border; unchecked `border-input bg-background` 4px) | ui `eb9ebef` | live computed styles both states; `check-standards` clean after removing `dark:bg-input/30` (field-stock-chrome) |
+| C8 | Stacked sheets: push/pop choreography — badge re-click keeps record pane, closes pop ONE pane, container widens `max-w-sm→max-w-3xl` | fe | live: double-badge → record stays; X on right → dialogs:1; Escape pops; `sheet-manager.test.ts` 8/8 |
+| C9 | ColorSelector: editable = 16px Eraser always rendered (disabled when empty, no layout shift); readonly/disabled = Copy only with value | fe `d6434c7` | live: `#9F7FDE` cleared → CTA auto-disabled |
+| C10 | `avatar_initials` auto-derives from `display_name` in edit — full chain: core `initials_field` → dal constraint validation → be meta → fe draft sync + save propagation | core `01bed83`, dal `9108fc8`, be `29f01c5`, fe `9c3f6f5` | live "Zulu Yankee"→"ZY" while typing; PUT wire `avatar_initials:"ZY"`; **DB-persisted: "E2E Verify Renamed"→"ER", restored→"EA", version 3** (C12) |
+| C11 | Record-sheet pencil RBAC — same `isEntityOpAllowed(meta.actions,'update.single')` gate as ELT row edit | fe (earlier) | verified by construction — one function, one `meta.actions` source; route `PUT /users/:uuid` ↔ `user_profile.update.single` |
+| C12 | **Casdoor 502 root cause — explained** | — | see below |
+| C13 | Lifecycle status badges: suspended→emerald "Sospeso", deleted→destructive "Eliminato" + `text-destructive` title; `getUserByUuid` → `getByUuidIncludingDeleted` so deleted records open (writes stay `EXCLUDED`) | be `c07b4e4`, fe `d81f877` | live: real record — no badge healthy → "Sospeso" suspended → "Eliminato" destructive+red title; deleted wins over suspended |
+| C14 | Audit section: muted box removed, canonical `Accordion` collapsed-by-default, `dd` truncate+title, `gap-y-2` | fe `7dc17a3`, `1e075b8` | live: closed state → expand; computed transparent/0/0 |
+| C15 | Doc-gate workflow: mandatory doc deep-dive before TIC **and** TOC — all repos | 7 repos committed + decimal/website | `workflow.md` all repos |
+| C16 | Dev-stack: detached services must be restarted after releases/merges (watcher rule) | fe/be/us `dev-server.md` | applied immediately after (jh/crm revived) |
+| C17 | **Tests are deliverables** — final specs from first write, no temp probes (this TIC) | workflow.md ×8 + `.devin/rules/workflow.md` website + `e2e-browser-session.md` | this TIC |
+
+## C12 — Casdoor 502: root cause found empirically
+
+- **Symptom**: PUT `/api/v1/auth/users/:uuid` → 502, BE log
+  `CASDOOR_SYNC_FAILED` at `UserService.updateUserProfile` —
+  `cdClient.updateUser` returned falsy.
+- **Root cause (proven)**: TWO `e2e_verify_admin` rows exist. The one I
+  saved first (`uuid …8ce3b8cb`) is a **SQL-seeded test record** with a
+  fabricated `idp_code` (`a5d4117f-…`) that does NOT exist in Casdoor →
+  upstream `updateUser` returns falsy → 502. **Correct error, not an
+  outage** — Casdoor was up all along.
+- **Proof the pipeline works**: same PUT on the REAL provisioned user
+  (`uuid …1c59b9`, `idp_code 7ed124b0`, created via Casdoor) → **200**:
+  `display_name:"E2E Verify Renamed"`, `avatar_initials:"ER"` derived and
+  persisted (DB `version:2`); restored `"E2E Verify Admin"`→`"EA"`
+  (`version:3`).
+- **Lesson**: SQL-seeded test records without a real IdP identity can
+  never save — the 502 is the system refusing to lie about upstream
+  sync. Use the Casdoor-provisioned actors (`e2e_test_admin`,
+  `e2e_verify_admin` …1c59b9) for save-path verification.
+
+## Session-2 full check matrix (punto 2 — what ran, what it proves)
+
+| Repo | Check | Result | Proves |
+|------|-------|--------|--------|
+| fe | `svelte-check` | ✅ 0/0 | types+templates compile |
+| fe | `check-standards` | ❌→✅ **6 violations found & fixed** | panel chrome contract |
+| fe | `vitest` | ❌→✅ 655+2 — **2 stale test dict keys fixed** | unit behavior |
+| be | `tsc --noEmit` | ✅ | compiles |
+| be | `vitest` | ⚠️ 383/385 — 2 `marker-persister` fails = **parallel-load flake** (pass 6/6 isolated) | unit behavior |
+| be | `db:check` | ❌→✅ **snapshot DRIFT found & fixed** — snapshot still had pre-rename `is_*`/`is_admin` columns; DB live is fully migrated (`idp_*`,`suspended_*`) → regenerated + `sign` re-sealed MANIFEST (18 patches) | entity↔DB contract |
+| dal | `tsc`+`test` | ✅ 605/605 + standards clean | compiles+behavior |
+| core | `tsc`+`test` | ✅ 131/131 + standards clean | compiles+behavior |
+| sdk | `tsc`+`test` | ⚠️ 513/514 — 1 deterministic env fail: `::1`→`127.0.0.1` IPv6 bind (machine resolution, pre-existing) | compiles+behavior |
+| ui | `svelte-check`+`test` | ✅ 62/62 + standards clean | compiles+behavior |
+| decimal | `typecheck`+`test` | ✅ 84/84 + standards clean | compiles+behavior |
+| us/job-handler | `tsc`+`test`+`db:check` | ⚠️ 204/206 — 2 timeouts = parallel-load flake (pass 4/4 isolated); db:check ✅ clean | compiles+behavior+schema |
+| website | `astro check` | ⚠️ tooling crash — `@astrojs/language-server` vs TS 7 (`fileExists`) — env/tooling issue, not code | — |
+
+**Findings that mattered (all fixed)**: the "green" type-checks hid 3
+real drifts — (a) sheet footer violated panel standards (badge button
+in legend slot, font chrome on Badge, comment false-positive); (b) the
+BE entity snapshot was stale since the idp-rename/lifecycle migration;
+(c) a unit test's mock i18n dict used snake_case keys the production
+map no longer emits. This is exactly why type-check ≠ verification.
+
+---
+
 # PART 3 — TRAPS / INVARIANTS (empirical, this session)
 
 1. `--input` = sky-200 = the NORMAL border tint — never use it for
@@ -621,21 +736,59 @@
 12. `EntityRecordSheetBody` field surfaces: `page_props.form`
     placements win over the all-columns fallback; uid + audited +
     `version` are partitioned out of both.
+13. **SQL-seeded test records with fabricated `idp_code` can never
+    save** — `cdClient.updateUser` fails (falsy) → 502
+    `CASDOOR_SYNC_FAILED`. For save-path verification use only
+    Casdoor-provisioned actors (real `idp_code`).
+14. `check-standards` panel rules scan INSIDE `<!-- -->` comments —
+    a comment containing `<button>` (or a stock-component tag + banned
+    class) fires a false positive. Rephrase the comment rather than
+    exempting.
+15. `SheetPanelFooter` contract is enforced: `{#snippet start}` =
+    legend/meta only; ANY interactive control (even a badge-wrapping
+    `<button>`) belongs in the right-aligned CTA group.
+16. `Badge` base already carries `text-xs font-medium` — literal
+    `class=` on stock components is layout-only in panel scope; font
+    size/weight utilities are a `panel-chrome-class` violation.
+17. **Entity-declaration changes REQUIRE snapshot regeneration** —
+    `pnpm db:meta:compare` + `primebrick-db sign … --key-id dev-micha-2`
+    + commit MANIFEST + both snapshots + diff together. The idp-rename/
+    lifecycle migration shipped without it → `db:check` drifted red.
+18. Vitest timeouts/fails under `pnpm test` in a 10-way parallel
+    check run are load flakes — always re-run the file in isolation
+    before calling it a real failure (be `marker-persister`, jh
+    `service-routes` both pass isolated).
 
 # PART 4 — REPO LEDGER
 
-| Repo | Head commits this session | Notes |
-|------|---------------------------|-------|
-| fe (`feature/elt-keyboard-legend`) | `25634ff`, `5cdd741`, `0aa5455`, `1fad72a` | rules, avatar, scroll, uid-input (B1 reverts its anatomy) |
-| ui | `56fa81c` | input chrome on widgets |
-| core | `e6c1a87`, `68a2107` | `system.roles`, `type:"avatar"` |
-| dal | `69134bf`, `a9f6ab0` | vocabulary + avatar enforcement |
-| be | `538ea66`, `01d4241`, +user_count fix | meta roles/avatar, org projection |
+## Session 1 (all merged to develop + released)
+
+| Repo | Head commits session 1 | Notes |
+|------|------------------------|-------|
+| fe | `25634ff`, `5cdd741`, `0aa5455`, `1fad72a`, `9c3f6f5`, `d6434c7`, `7dc17a3`, `1e075b8`, `d81f877` | rules, avatar, scroll, uid, initials, eraser, audit, lifecycle |
+| ui | `56fa81c`, `eb9ebef` | input chrome, combo checkbox gradient |
+| core | `e6c1a87`, `68a2107`, `01bed83` | `system.roles`, `type:"avatar"`, `initials_field` |
+| dal | `69134bf`, `a9f6ab0`, `9108fc8` | vocabulary, avatar enforcement, initials constraint |
+| be | `538ea66`, `01d4241`, `29f01c5`, `c07b4e4` | meta roles/avatar, org fix, initials meta, deleted GET |
 | us | `f918564` | rules only |
 | sdk | `bad6e3d` | rules only |
 
-- Only red spec: `ref-cell-sheet › sheet chrome — labels resolved`
-  (B5 `suspended*` raw keys — expected until the translation patch).
-- Temp probe files all deleted; `test-results/` gitignored.
+## Releases (GitFlow, session 1 close + session-2 doc/artifact work)
+
+| Repo | Version | Session-2 pending commits (this TIC) |
+|------|---------|---------------------------------------|
+| decimal | 3.1.1 | workflow.md (tests-are-deliverables) — uncommitted (AGENTS rule) |
+| core | 3.3.0 | workflow.md |
+| sdk | 3.4.0 | workflow.md |
+| dal | 3.5.0 | workflow.md |
+| ui | 3.4.0 | workflow.md |
+| be | 3.7.0 | workflow.md + db-meta snapshot/MANIFEST regen (drift fix) |
+| us | 3.6.0 | workflow.md |
+| fe | 3.6.0 | workflow.md + e2e doc + EntityRecordSheet standards fix + json-config-ai test fix |
+| website | 3.14.4 | .devin/rules/workflow.md — uncommitted (AGENTS rule) |
+
+- `ref-cell-sheet › sheet chrome — labels resolved` was RED on
+  suspended* keys → now resolved by the BCP-47 patch (B5 cure).
+- Temp probe files all deleted (rule now forbids the pattern — B4).
 - This plan lives at
   `primebrick-workspace/ai-plans/record-sheet-anatomy-and-meta-vocabulary.md`.
