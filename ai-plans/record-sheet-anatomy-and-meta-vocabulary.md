@@ -473,6 +473,25 @@
   y98/x1553 — label directly above, left-aligned as every field label.
   Evidence: `d:\git\primebrick\temp\uid-field-anatomy.png`.
 
+## B14. uid badge → canonical uuid glyph (`file-key`) — ✅ DONE
+
+- **WHERE**: `EntityRecordSheetBody.svelte` uid badge,
+  `payload-map-editor.svelte` `FORMAT_TYPE_ICONS`, `payload-map-widget.spec.ts`.
+- **WHY**: uuid surfaces had a double icon vocabulary — `fingerprint-pattern`
+  (payload map, chosen when `id` still existed to disambiguate) vs nothing
+  elsewhere; with `id` gone, `file-key` is THE uuid glyph and fingerprint
+  stays WebAuthn/passkey-domain only.
+- **WHAT done**: uid badge restyled to the nats-subject cell anatomy —
+  `secondary` pill + `file-key` icon at `amber-500` (the `path`/zap source
+  accent, via `colorCssFromToken`) + mono value + copy CTA;
+  `FORMAT_TYPE_ICONS.uuid` → `file-key`; e2e selector updated. Docs:
+  `icon-conventions.mdx` + `docs/ai/icon-conventions.md` (rule 11),
+  `special-icons.mdx` (format/type icon vocabulary table), `entity-metadata.mdx`
+  `uid` row.
+- **HOW verified**: live sheet → badge `lucide-file-key`, color
+  `oklch(0.769 0.188 70.08)` (amber-500), bg `rgb(241,245,249)` (secondary).
+  `svelte-check` 0/0 both repos. Evidence: `temp/uid-badge-filekey.png`.
+
 ---
 
 # PART 3 — TRAPS / INVARIANTS (empirical, this session)
