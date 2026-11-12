@@ -420,6 +420,24 @@
 - **WHAT**: decide with the user — hide from form surfaces by contract,
   or keep with proper label (after B5).
 
+## B11. ComboSelect disabled — inner badges invisible on muted field — ✅ DONE
+
+- **WHERE**: `primebrick-v3-ui/src/lib/components/combo-select/combo-select.svelte`
+  — summary chip (~654), per-value multi badge (~670), created-value
+  outline chip (~634).
+- **WHY**: disabled trigger fills `--muted` (the disabled signal per the
+  3-state contract) but `secondary` badges kept `bg-secondary` grey —
+  chip blended into the field, the value became illegible (Roles).
+- **WHAT done**: `disabled && "bg-background"` on the three chip slots —
+  white/surface fill pops on the muted field. `destructive` invalid
+  badges and token-colored single badges untouched (color is data);
+  remove-X already hidden when disabled.
+- **WHEN**: this turn (pending commit).
+- **HOW verified**: svelte-check 0/0; live record sheet → Roles
+  `administrators` badge computes `rgb(255,255,255)` inside the
+  `aria-disabled` trigger. Evidence:
+  `d:\git\primebrick\temp\combo-disabled-badge.png`.
+
 ---
 
 # PART 3 — TRAPS / INVARIANTS (empirical, this session)
