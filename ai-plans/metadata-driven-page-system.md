@@ -1277,11 +1277,12 @@ us 14d285a). None block; each needs a deliberate choice:
   for KB ingestion labels + zudoku page paths — evaluate rename impact
   before adopting.
 
-### Deferred from task-5 capability derivation (2026-11-13) — evaluate
+### Closed from task-5 capability derivation (2026-11-13) — be `ac6ef01`
 
-- **be's own `entity-router`** (`primebrick-be-v3/src/http/entity-router.ts`)
-  does not use the SDK router — it still authors `duplicate: false` and
-  audit flags manually. The SDK now derives both from the service
-  (`clonable`/`auditable` — dal `19b5021`, sdk `d659712`). Evaluate
-  porting the same derivation into the BE router so no authored
-  capability survives anywhere.
+- **be's own `entity-router`**: derivation ported. `duplicate?: false`
+  field deleted from `EntityRouterConfig`; `isClonableEntity(config.entity)`
+  gates `POST /duplicate`; duplicate-scoped config on non-clonable throws
+  at construction; stale `duplicate` field throws unconditionally;
+  `audit-actors` gates on `hasAuditTrail`; `duplicate.bulk` serves the
+  violet/Copy chrome. No authored capability survives anywhere — be and
+  us routers now derive identically.
