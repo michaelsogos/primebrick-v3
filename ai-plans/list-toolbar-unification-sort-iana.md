@@ -5,19 +5,24 @@
 > shared). This plan rebalances BOTH levels across ELT card/card_list views
 > and dict pages.
 
-## Status: ⚪ TODO — Plan date: 2026-12-20
+## Status: ✅ DONE — Plan date: 2026-12-20 · verified 2026-11-13
+
+> Implementation landed earlier in fe `693e62a` ("canonical
+> pagination/sort/search anatomy + dict-page batch") — the plan stayed ⚪
+> as doc drift. Empirical re-verification 2026-11-13: every piece exists;
+> the only true gap was the card-view E2E pin, added this session.
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
-| 1 | Extract `SortBuilder.svelte` from CardViewRenderer's inline sort UI → `toolbar/` + barrel export | ⏳ | — | shared by cards + dict |
-| 2 | Extend `BulkActionsToolbar` with `selectAll` + `sort` + `ianaToggle` leading zones (absent = no chrome change) | ⏳ | — | |
-| 3 | New sheet `entity.datetimeIana` + `DatetimeIanaPanel.svelte` (per-field label+hint+switch rows) | ⏳ | — | needs i18n keys → BE patch |
-| 4 | ELT: plumb selectAll/sort/iana through `EntityListTableHeader` (populated only when viewMode is cards/cards_list) | ⏳ | — | |
-| 5 | `CardViewRenderer`: delete its sticky sub-bar entirely (select-all/sort/IANA move to L2) — reclaim the row | ⏳ | — | breaking prop cleanup |
-| 6 | Dict L1: remove SelectableToolbar+divider → search-left / CTAs-right only; add Funnel CTA → `entity.filters` sheet | ⏳ | — | |
-| 7 | Dict L2: selectAll zone only (NO sort — order_field has value, comment for posterity) | ⏳ | — | |
-| 8 | BE patch: i18n keys for IANA CTA + panel title (`system.entities.list.datetime_iana.*`) | ⏳ | — | FE fallback is app.*-only |
-| 9 | E2E: dict spec pins (sort builder, L2 select-all, filter CTA); ELT card-view spec coverage; regression run | ⏳ | — | |
+| 1 | Extract `SortBuilder.svelte` from CardViewRenderer's inline sort UI → `toolbar/` + barrel export | ✅ done | 693e62a | verified: `toolbar/SortBuilder.svelte` + index export |
+| 2 | Extend `BulkActionsToolbar` with `selectAll` + `sort` + `ianaToggle` leading zones (absent = no chrome change) | ✅ done | 693e62a | verified: 3 optional typed zones + dict "no sort" comment verbatim |
+| 3 | New sheet `entity.datetimeIana` + `DatetimeIanaPanel.svelte` (per-field label+hint+switch rows) | ✅ done | 693e62a | verified: panel + `SHEET_PANEL_IDS` + SheetHost map |
+| 4 | ELT: plumb selectAll/sort/iana through `EntityListTableHeader` (populated only when viewMode is cards/cards_list) | ✅ done | 693e62a | verified: zones `$derived` on `isSpecialView = viewMode !== 'table'` → table passes undefined |
+| 5 | `CardViewRenderer`: delete its sticky sub-bar entirely (select-all/sort/IANA move to L2) — reclaim the row | ✅ done | 693e62a | verified: zero sub-bar/Sort/Switch residue |
+| 6 | Dict L1: remove SelectableToolbar+divider → search-left / CTAs-right only; add Funnel CTA → `entity.filters` sheet | ✅ done | 693e62a | verified: Funnel + entity.filters wiring; spec pins pass |
+| 7 | Dict L2: selectAll zone only (NO sort — order_field has value, comment for posterity) | ✅ done | 693e62a | verified: comment preserved verbatim in EntityDictPage |
+| 8 | BE patch: i18n keys for IANA CTA + panel title (`system.entities.list.datetime_iana.*`) | ✅ done | migration | verified: `fields_cta`/`title`/`mode_*` in seed translations ×5 langs (`migration-datetime-iana-sheet`) |
+| 9 | E2E: dict spec pins (sort builder, L2 select-all, filter CTA); ELT card-view spec coverage; regression run | ✅ done | 2026-11-13 | dict spec 4/4 live; **added** missing card-view pin — `elt-view-mode-*` testid + `/crm/customers` spec: zones absent in table → present ×1 in cards → IANA sheet opens `iana-field-onboarding_at` → gone back in table. ELT spec 1/1 |
 
 ---
 
