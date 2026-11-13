@@ -1257,25 +1257,30 @@ Two be docs-gen drifts parked here per user decision — they are *shape* proble
 Related: `bugfix-version-badge-clone-ref-labels.md` docs-gen section
 (D1–D10 inventory; D1–D5 + D8 already FIXED).
 
-### Deferred from D9 intrinsic-docs implementation (2026-11-14) — evaluate
+### Deferred from D9 intrinsic-docs implementation (2026-11-14) — resolved 2026-11-13
 
 Parked decisions left over after `--emit-docs` landed (sdk 351c71b,
-us 14d285a). None block; each needs a deliberate choice:
+us 14d285a). All three now resolved:
 
-- **be host-path emit**: be does not use `createMicroservice` (Express
-  app) → it keeps `scripts/generate-page-docs.ts` + `generate-docs-pack.ts`
-  calling the same SDK internals. Evaluate whether be should migrate to a
-  shared emit entrypoint or whether the explicit host path is the
-  legitimate divergence of the gateway host.
-- **release-close `--check` gate**: `emitServiceDocs --check` diffs
-  committed `generated/` vs fresh emit. No CI exists — decide where the
-  gate lives (release-close script / checklist step) so stale committed
-  docs can't reach `main` for zudoku sync.
-- **pack `repo` := `service_code`**: the emitter could derive the pack
-  repo label from `resolveServiceCode`, killing the existing drift
-  (`job-handler` vs `job`, `backend` vs `be` as pack repo ids). Breaking
-  for KB ingestion labels + zudoku page paths — evaluate rename impact
-  before adopting.
+- **be host-path emit** → ✅ **legitimate divergence** (user decision):
+  be is the Express gateway host and will migrate to Bun in a future
+  effort — porting it to the shared `createMicroservice` entrypoint now
+  is premature. Its `scripts/generate-page-docs.ts` +
+  `generate-docs-pack.ts` stay until that migration, at which point the
+  same `--emit-docs`/`--check` flags come free.
+- **release-close `--check` gate** → ✅ **implemented**: `docs:check`
+  script (`bun src/index.ts --emit-docs --check`, ~1.2s, exit 1 on
+  drift) added to all 5 US services and wired into the `pnpm test`
+  chain (`check:standards && docs:check && vitest`) — the same
+  un-skippable gate surface as standards. `prebuild` keeps
+  `generate:docs` as auto-heal; a checklist/sync-script location was
+  rejected (skippable / depth-1 clone can't boot the service). Negative
+  test proven: a tampered `generated/*.mdx` → exit 1 naming the drifted
+  file. us-v3 pending commit.
+- **pack `repo` := `service_code`** → ⏳ **deferred to a future
+  low-priority plan** (user decision): the rename is breaking for KB
+  ingestion labels + zudoku page paths — it joins the backlog of
+  low-priority items rather than this plan.
 
 ### Closed from task-5 capability derivation (2026-11-13) — be `ac6ef01`
 
