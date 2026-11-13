@@ -290,3 +290,78 @@ same sky→indigo gradient bg, NO border. Different by construction, not percept
   the generator must consume the facet, not the opt-out flag.
 - DRIFT-3 (self-healing): openapi spec derives from registered routes — gating the router
   auto-removes the 15 /duplicate paths (verified: spec emits all 16 today).
+
+## 2026-11-13 (2) — clonable opt-in confirmed + deep docs-pipeline audit
+
+### Task 5 — CONFIRMED design (user decision)
+`Clonable` is opt-IN: no entity exposes /duplicate unless it adopts the mixin.
+CRM adoption set: customer + **local_address + customer_account + customer_contact**
+(the 3 user-approved additions). All other 12 CRM entities lose /duplicate.
+Work per adopted entity: mixin on entity class + patch for cloned_* columns
+(check existing cloned audit patch 0008) + duplicate permission/body if wanted.
+
+### Docs pipeline — REAL picture (was: lazy analysis)
+Pipeline = 2 stages:
+- A. generate-page-docs.ts (thin ~180-line wiring over sdk docs-gen engine):
+  present ONLY in be/ai/job-handler. crm + emailsender lack it.
+- B. build-docs-pack.ts: all 6. Serving IS already intrinsic:
+  createMicroservice auto-mounts GET /api/v1/system/docs/pack when
+  dist/docs-pack/manifest.json exists + registrar advertises docs_pack cap.
+- Runtime: ai service pulls packs (NATS service.register + gateway_online +
+  startup for BE), ingests into user KB (docs-pack-ingest.ts).
+
+History: per-service scripts ARE the recent design (sdk feature/docs-gen-engine +
+us/be feature/docs-gen-wiring → release 3.5.0), NOT legacy leftovers. Landed the
+same week as fa83f69 — crm got a COPIED frozen customers.mdx, never a generator.
+
+### Full drift inventory (D1–D10)
+- D1 crm generated/customers.mdx frozen since fa83f69 (pre-Clonable, pre-uuid tweaks)
+- D2 emailsender: EMAILSENDER_NAV 6 routes + entity decls + remote fe pages → ZERO docs
+- D3 emailsender fe/src/index.ts mountPage uses ternary over ctx.nav.route →
+  parseRemoteDispatch cannot resolve (needs PAGES record normalization)
+- D4 collectDocRoutes iterates nav.routes only — CRM_NAV.siblings[] (settings dict
+  pages) never documented even with the script
+- D5 dead imports AI_EVENTS/JOB_EVENTS in both scripts (census comes from registry DB)
+- D6 be emits thin pages for no-facts surfaces (credentials/migrations/templates/
+  translations) — verify real prose not stubs
+- D7 be _order.json has generated/migrations.mdx AND manual/migrations.mdx
+- D8 be keep_files fragility: 5 reference docs live in generated/ owned by the
+  ghost-cleaner; only survive via keep_files + re-emission in a second script
+- D9 NO check-standards rule: service with routes/fe without docs decl = silent drift
+- D10 build requires live DATABASE_URL (registry+translations) — no-DB build = no docs
+
+### Docs-gen refactor — DONE 2026-11-14 (design approved, implemented)
+
+Shipped: shared `docs-gen/service-docs.ts` in sdk (loadDocsCompilers /
+loadDocsDbContext / applyRemoteFacts / applyHostFacts / printDocsReport —
+the ~70% boilerplate once). Per-service scripts reduced to thin config
+wiring (~80 lines: decls + service_code + schema + fe mode + extras).
+Commits: sdk `5a09fa2` + `0920c29` (api-ref regen), be `238768d`,
+us `84a3db4`.
+
+Closed drifts:
+- D1 FIXED — crm/scripts/generate-page-docs.ts exists; customers.mdx
+  regenerated live (frozen copy unfrozen: cols now Code/Display Name/
+  Status/Onboarded At, access-grant line, create section)
+- D2 FIXED — emailsender generates 6 pages (providers + templates
+  list/create/edit), docsDir wired into build-docs-pack
+- D3 FIXED — emailsender fe/src/index.ts ternary → typed PAGES dispatcher
+  (ai/crm precedent); route→source resolution works
+- D4 FIXED — collectDocRoutes traverses nav.siblings[].routes;
+  crm customer_types.mdx (settings dict page) now generated
+- D5 FIXED — dead AI_EVENTS/JOB_EVENTS imports gone with the thin scripts
+- D6/D7/D8 — be thin pages + _order.json dup + keep_files fragility:
+  UNCHANGED, deferred (cosmetic, not blocking)
+- D9 OPEN — check-standards is a src line-scanner; a docs-wiring rule
+  needs a filesystem/package.json check the framework doesn't have.
+  Proposed follow-up, not hacked in.
+- D10 UNCHANGED — generation still needs live DATABASE_URL (registry +
+  translations); acceptable (matches build-docs-pack behavior)
+
+Also shipped: parseRemoteDispatch normalizes PAGES keys [param]→{param}
+so remote detail routes resolve source files.
+
+Verification: ai regen = zero diff; jh/be regen diffs = decl drift
+corrected (committed pages were stale); crm + emailsender regen clean;
+fe tsc clean; consumer standards clean; sdk tests 517 pass (1 pre-existing
+IPv6 env failure, unrelated — verified on clean HEAD).
