@@ -379,8 +379,8 @@ Closed drifts:
     suffix) — preserves UUID label
 - D10 UNCHANGED — generation still needs live DATABASE_URL (registry +
   translations); acceptable (matches previous build-docs-pack behavior)
-- REMAINING from D9 analysis: be explicit host path (no createMicroservice),
-  release-close --check gate placement (no CI: release checklist/script)
+- D9 residuals moved to metadata-driven-page-system.md for evaluation
+  (be host path, --check release gate, repo:=service_code)
 
 Also shipped: parseRemoteDispatch normalizes PAGES keys [param]→{param}
 so remote detail routes resolve source files.

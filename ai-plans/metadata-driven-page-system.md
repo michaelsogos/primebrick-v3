@@ -1256,3 +1256,23 @@ Two be docs-gen drifts parked here per user decision — they are *shape* proble
 
 Related: `bugfix-version-badge-clone-ref-labels.md` docs-gen section
 (D1–D10 inventory; D1–D5 + D8 already FIXED).
+
+### Deferred from D9 intrinsic-docs implementation (2026-11-14) — evaluate
+
+Parked decisions left over after `--emit-docs` landed (sdk 351c71b,
+us 14d285a). None block; each needs a deliberate choice:
+
+- **be host-path emit**: be does not use `createMicroservice` (Express
+  app) → it keeps `scripts/generate-page-docs.ts` + `generate-docs-pack.ts`
+  calling the same SDK internals. Evaluate whether be should migrate to a
+  shared emit entrypoint or whether the explicit host path is the
+  legitimate divergence of the gateway host.
+- **release-close `--check` gate**: `emitServiceDocs --check` diffs
+  committed `generated/` vs fresh emit. No CI exists — decide where the
+  gate lives (release-close script / checklist step) so stale committed
+  docs can't reach `main` for zudoku sync.
+- **pack `repo` := `service_code`**: the emitter could derive the pack
+  repo label from `resolveServiceCode`, killing the existing drift
+  (`job-handler` vs `job`, `backend` vs `be` as pack repo ids). Breaking
+  for KB ingestion labels + zudoku page paths — evaluate rename impact
+  before adopting.
