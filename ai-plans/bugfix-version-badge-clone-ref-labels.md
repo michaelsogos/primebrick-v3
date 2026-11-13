@@ -350,8 +350,13 @@ Closed drifts:
 - D4 FIXED — collectDocRoutes traverses nav.siblings[].routes;
   crm customer_types.mdx (settings dict page) now generated
 - D5 FIXED — dead AI_EVENTS/JOB_EVENTS imports gone with the thin scripts
-- D6/D7/D8 — be thin pages + _order.json dup + keep_files fragility:
-  UNCHANGED, deferred (cosmetic, not blocking)
+- D6 thin pages — OPEN (decision: suppress vs marked placeholder)
+- D7 _order.json generated+manual migrations dup — user: resolves another way
+- D8 FIXED — reference docs moved to own dir reference/ (sdk 8c210af,
+  be 4cb5267): keep_files REMOVED from RenderContext, ghost-clean is now
+  unconditional, reconcileOrder prefix = dir basename so generators never
+  share out_dir or touch each other's order entries; inline reconcile
+  copy deleted; module-navigation.mdx path updated
 - D9 OPEN — check-standards is a src line-scanner; a docs-wiring rule
   needs a filesystem/package.json check the framework doesn't have.
   Proposed follow-up, not hacked in.
