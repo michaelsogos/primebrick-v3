@@ -7,7 +7,7 @@
 > PROCEED. Session 2 (same day): created_at repairs + customer icon went
 > TOC on user approval; remaining Phase-2 items still TIC.
 
-## Status: 🟡 PARTIALLY DONE — Plan date: 2026-11-13 15:10 UTC / 16:10 CET (rev. 14:30 UTC)
+## Status: 🟡 PARTIALLY DONE — Plan date: 2026-11-13 15:10 UTC / 16:10 CET (rev. 14:30 UTC) · session 2026-11-13c (task 5 closed — derived `clonable`+`auditable` service capabilities end-to-end; residual: be router same-derivation eval)
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
@@ -15,7 +15,7 @@
 | 2 | Fix identical clone labels — `cloned_by`→"Clonato da", `cloned_from`→"Clone di" | ✅ done | 2026-11-13 | be `7746197` — patch `20261113141900` (DELETE+INSERT); de-DE collision fixed too; manifest re-signed; applied + Redis busted + DB-verified |
 | 3 | `cloned_from` ref → same entity, no circular refs | ✅ done | 2026-11-13 | dal `ceaacea` — `servedRefEntity()` unifies self-ref on ALL paths (was auto-derive-only); name-only ref → cannot recurse by construction |
 | 4 | Forced canonical audit order by construction (meta-overridable) | ✅ done | 2026-11-13 | dal — `STANDARD_AUDIT_RANK` bands (extras 2000+ → pairs → clone 2160+ → `version` 2900 last); authored `order` = escape hatch; verified on REAL metas: customer + user_profile emit canonical sequence |
-| 5 | `duplicate` route/CTA only when entity uses `Clonable` mixin — wired through facade + generated docs | ⏳ not done | — | see §C — today default-ON opt-out: ~16 non-Clonable CRM entities + BE entities expose untracked `/duplicate` |
+| 5 | `duplicate` route/CTA only when entity uses `Clonable` mixin — wired through facade + generated docs | ✅ done | 2026-11-13 | dal `19b5021` + sdk `d659712` + us `a44b275` — see §C-post: implemented as **service-level capability** (`DomainService.auditable/.clonable` getters → `EntityServiceLike`), superseding the §C `meta.clonable` design (no core closed-schema bump needed; same enforcement). Scope extended per user: `auditable` consolidated the same way — `EntityRouteDecl.auditable` deleted, `collaboration.enabled` derives from `@AuditTrail()`. **Residual**: be's own `entity-router` (non-SDK) still authors `duplicate:false` — evaluate same derivation there. |
 | 6 | `cloned_by_name` / `cloned_from_name` display joins from DAL | ⏳ not done | — | see §D — was a "non-blocking note"; promoted to scope by the user's request |
 | 7 | `created_at > updated_at` inverted rows — repair via trail-aligned patches | ✅ done | 2026-11-13 | us `e32a0e0` (patch 0009, all 138 seeded rows → trail INSERT) + be `be9782e` (42 translations → updated_at); manifests re-signed; live sweep 0 inverted |
 | 8 | Record-sheet ref icon collision: customers vs user_profile both render `user` | ✅ done | 2026-11-13 | us `6b1ff9d` — customers leaf + module icon → `users-round`; fe `3af8fa9` — uniqueness rule 13 in both icon docs |

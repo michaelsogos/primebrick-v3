@@ -1276,3 +1276,12 @@ us 14d285a). None block; each needs a deliberate choice:
   (`job-handler` vs `job`, `backend` vs `be` as pack repo ids). Breaking
   for KB ingestion labels + zudoku page paths — evaluate rename impact
   before adopting.
+
+### Deferred from task-5 capability derivation (2026-11-13) — evaluate
+
+- **be's own `entity-router`** (`primebrick-be-v3/src/http/entity-router.ts`)
+  does not use the SDK router — it still authors `duplicate: false` and
+  audit flags manually. The SDK now derives both from the service
+  (`clonable`/`auditable` — dal `19b5021`, sdk `d659712`). Evaluate
+  porting the same derivation into the BE router so no authored
+  capability survives anywhere.
