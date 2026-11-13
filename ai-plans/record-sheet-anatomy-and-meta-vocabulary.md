@@ -281,7 +281,7 @@
   (testid `entity-record-sheet-audit-section` preserved on the inner
   section).
 
-## B4. Persistent E2E coverage — 🔴 STILL THE MAIN DEBT (rule now written)
+## B4. Persistent E2E coverage — ✅ DONE (session-4 audit + pins)
 
 - **WHY**: every verification this session ran on temp probe specs that
   were deleted after use — zero regression net. Session 2 repeated the
@@ -292,28 +292,33 @@
   `docs/ai/e2e-browser-session.md` + enforcement bullet. A deleted probe
   deletes its proof; behavior verified only by a deleted probe counts
   as UNVERIFIED.
-- **WHAT to write (permanent specs)** — the list grew with session-2
-  features:
-  1. `ref-cell-sheet.spec.ts` additions — avatar preview; roles
-     ComboSelect multi; uid badge anatomy (`file-key` icon, secondary
-     pill, copy CTA); audit accordion closed-by-default → expands;
-     3-state chrome computed styles; lifecycle status badge
-     (suspended/deleted + destructive title); version badge in the
-     right-aligned footer CTA group + opens stacked history.
-  2. Stacked-sheet LIFO — badge → history stacked → Escape/X pops ONE
-     pane → record survives → reopen works (B16 has unit tests, no E2E).
-  3. NEW `src/e2e/elt-scroll-persistence.spec.ts` — h-scroll survives
-     pagination, loading AND full reload (fraction anchor).
-  4. Avatar in LIST cell + live initials derivation in edit (save →
-     reload → persisted `avatar_initials`).
-  5. `organizations/active` 200 regression.
-  6. B8 roles cell renderer (destination-anatomy badges) once shipped.
-  7. ComboSelect multi-option checkbox canonical gradient states.
-  8. ColorSelector editable Eraser + readonly Copy.
-- **WHERE**: `primebrick-fe-v3/src/e2e/`; helpers `loginAsTestAdmin`,
-  `helpers/db.ts`.
+- **SESSION-4 RE-AUDIT (post-refactor real gaps) + pins landed**:
+  1. ✅ `ref-cell-sheet.spec.ts` — uid badge anatomy (`file-key` svg +
+     `entity-record-sheet-uid-copy` CTA); audit accordion expand;
+     lifecycle status badge (suspend collab actor → marker customer row
+     → ref sheet → `entity-record-sheet-status-badge` destructive);
+     `hidden:true` contract (`auth_method_enforcer_dismissed` absent,
+     `onboarding_completed` present). 15/15 green live.
+  2. ✅ Stacked-sheet LIFO — already covered (version badge → history
+     stacked → Escape pop → record survives).
+  3. ✅ `elt-scroll-persistence.spec.ts` — h-scroll survives full page
+     reload via fraction anchor (settled-gate aware). Green live.
+  4. ✅ Avatar in LIST cell — `avatar_initials` column via picker →
+     `.avatar-hex` rendered. Green live. (Initials derivation in edit
+     lives on the custom users pages — migrates with user_profile LAST;
+     re-pin then.)
+  5. ✅ `organizations/active` 200 + `{organizations:[]}` envelope. Green.
+  6. ✅ B8 roles cell renderer pin (see B8).
+  7. ✅ ComboSelect multi checkbox gradient states — vitest pin
+     `combo-select-multi-chrome.test.ts` (4/4: per-option square,
+     sky→indigo checked, neutral unchecked, partition coexistence).
+  8. ✅ 3-state chrome — vitest pin in `input-copy-cta.test.ts`
+     (readonly `border-readonly`+attr / disabled attr / editable neither).
+  - DEFERRED to user_profile migration: roles ComboSelect multi on
+    users custom page; avatar initials live-derivation in edit form.
+    Both surfaces are custom pages scheduled to die.
 
-## B5. Translation language-code bug — ✅ CURE DONE / 🔴 PREVENTION OPEN
+## B5. Translation language-code bug — ✅ CURE + PREVENTION DONE (session-4)
 
 - **CURE — DONE & VERIFIED**: corrective patch
   `20261112190000_suspended_labels_bcp47_fix.sql` replaced the short
@@ -323,17 +328,26 @@
   Redis cache invalidated for all 7 `system` dicts
   (`translations:i18n:system:{lang}`) — the mandatory step from
   `docs/ai/i18n.md` after direct SQL on `*translations` tables.
-- **PREVENTION — still open** (the trio that stops recurrence):
-  1. DB CHECK constraint `translations.language IN (…)` — hand SQL
-     can't err.
-  2. `check-standards` lint scanning `db-meta/patches/*.sql` for
-     `INSERT INTO translations` language literals outside the
-     vocabulary → CI gate.
-  3. `SUPPORTED_LANGUAGES` constant in `@primebrick/core` — single
-     source for lint + docs + BE.
-- **OPEN wording**: Italian label for `auth_method_enforcer_dismissed`
-  ("Verifica Metodo di Accesso Ignorata" rejected — still needs user's
-  pick).
+- **PREVENTION — DONE & VERIFIED (session-4 trio)**:
+  1. ✅ DB CHECK constraint `translations_language_supported_chk` —
+     `language IN ('en-GB','en-US','it-IT','fr-FR','es-ES','de-DE','pt-PT')`
+     on all 8 `*.translations` tables (be→public/system/custom
+     `20261114002000_translations_language_check.sql`; us→ai/crm/
+     emailsender/job/webhook per-schema patches). Applied live; probe
+     INSERT `language='it'` rejected, `'en-GB'` accepted.
+  2. ✅ `check-standards` `i18n-language-literal` rule — positional
+     parse of `INSERT INTO *.translations` column lists + `SET
+     language=` literals; short codes and unsupported tags fail.
+     Shipped buggy patches grandfathered via per-repo
+     `i18n_lang_exempt` (they're immutable; the BCP-47 fix patch cured
+     the data). Negative test: `'it'` in a new patch → violation fires.
+  3. ✅ `SUPPORTED_LANGUAGES` + `isSupportedLanguage` in
+     `@primebrick/core` (`src/languages.ts`) — consumed by BE
+     `LanguageSchema` (translations.router vocabulary refine) via
+     `sdk → core` re-export.
+- **CLOSED wording**: IT label = "Promemoria di autenticazione avanzata
+  ignorato" (user-approved semantic; `20261114001000` patch applied —
+  all 7 languages).
 
 ## B6. `page_props.form` for user_profile — ✅ DONE (user-ordered)
 
@@ -364,44 +378,64 @@
   contract and is kept current; no `docs/user-guide/` entry is owed.
 - **Status**: closed by decision, no remaining work.
 
-## B8. Roles list-cell renderer — 🟢 DESIGN DECIDED (session-2 user spec)
+## B8. Roles list-cell renderer — ✅ DONE & PINNED (session-4)
 
-- **USER SPEC**: same badge-list treatment as the job_trigger `filter`
-  column — a list of badges containing roles; each badge uses the
-  **destination-event anatomy** (NOT the filter chip color semantics):
-  `Badge variant="secondary"` + roles icon `user-key` (12px) + role
-  display name translated where possible, native `idp_role` as
-  fallback; raw code available in tooltip.
-- **WHERE the roles live**: `job_trigger.filter` is `RuleFilter[]`
-  (`{field, op, value}` — `job-trigger_entity.ts:69`,
-  `job.meta.ts:88` `format:"json"`). The roles case = a condition whose
-  `field` is a roles path (`roles` or `*.roles`) carrying a `value` of
-  one or more role codes — e.g. `{field:"payload.roles",
-  op:"contains", value:["administrators","hr"]}`.
-- **DESIGN** (matches the existing `TableCell.svelte` renderer):
-  - In the `format:"json"` conditions branch (~:217-234): when
-    `cond.field === 'roles' || cond.field.endsWith('.roles')` and
-    `cond.value` is a role-code string/array → render the field+op
-    preamble as text spans (keep the condition readable), then ONE
-    `Badge variant="secondary"` per role code: `DynamicIcon
-    name="user-key" size={12}` + label.
-  - Label resolution: role display name via `useActiveRoles`
-    (`idp_role` → `label_key` → `$t`; fallback = the raw `idp_role`
-    code). Tooltip keeps the canonical pretty-printed condition JSON.
-  - **Role resolver plumbing** — canonical context pattern (same as
-    `getAuditColumnsContext`/`getMetaUidContext`): `EntityListTable`
-    instantiates `useActiveRoles` ONCE lazily (`enabled` gated on a
-    `format:"json"` column presence), exposes the resolver via a new
-    `getActiveRolesContext()`; `TableCell` resolves labels through it —
-    no per-cell fetches, no singleton store drift.
-  - NOT metadata-driven beyond the field-path convention — the
-    `*.roles` path IS the discriminator (same family as `format`
-    conventions); inventing a `role_color` vocabulary was explicitly
-    ruled out by the user ("a differenza di filter dove il badge ha
-    una sua semantica dei colori").
-- **WHEN**: TOC phase after PROCEED — FE `TableCell.svelte` +
-  `entity-list-table/context.ts` + `EntityListTable.svelte` root;
-  persistent E2E per B4 item 6.
+- **USER SPEC (corrected)**: the requirement is a **roles COLUMN** —
+  a column whose cell value is an array of role codes renders ONE badge
+  per role, like the `nats_subject` source/destination badges (icon +
+  text). The `job_trigger.filter` conditions column was cited ONLY as
+  the aesthetic reference ("that column renders an array of badges"),
+  NOT as the target surface — the session-2 design below encoded the
+  wrong surface. Real data: `user_profile.roles` is `jsonb` array of
+  role codes declared `options_source:"system.roles"`
+  (`user-profiles.meta.ts:32`).
+- **ANATOMY**: `Badge variant="secondary"` per role code + `DynamicIcon
+  name="user-key" size={12}` + role display label translated via active
+  roles (`idp_role` → `label_key` → `$t`); fallback = raw `idp_role`
+  code; raw codes in tooltip. NO color semantics — destination-event
+  badge anatomy, `role_color` vocabulary explicitly ruled out.
+- **DISCRIMINATOR**: `column.options_source === "system.roles"` — the
+  already-declared meta vocabulary IS the marker (metadata-driven, no
+  field-path heuristics, applies to ANY column declaring that source).
+  The condition `Array.isArray(value)` gates non-empty cells.
+- **Role resolver plumbing** — canonical context pattern (same as
+  `getAuditColumnsContext`/`getMetaUidContext`): `EntityListTable`
+  instantiates `useActiveRoles` ONCE lazily (`enabled` gated on a
+  `options_source:"system.roles"` column presence), exposes the
+  resolver via `getActiveRolesContext()`; `TableCell` resolves labels
+  through it — no per-cell fetches, no singleton store drift.
+- **E2E**: users list (`/system/settings/users` — canonical ELT page)
+  → enable `roles` column via column picker (`default_visible:false`)
+  → assert badge per role + icon + translated label + tooltip.
+- **WHEN — DONE**: FE `TableCell.svelte` badge branch (secondary +
+  `user-key` + translated label + raw-code tooltip, `-` on empty),
+  `context.ts` `getActiveRolesContext`, `EntityListTable` lazy
+  `useActiveRoles` instantiation, `useActiveRoles.resolveLabel`
+  resolver. E2E pin `roles column renders one badge per role code`
+  green live (11.8s): users list → Columns picker → `roles` toggle →
+  `[data-slot=badge]` per code + icon + non-empty label.
+
+### Session-3 decisions (user-approved)
+
+- `auth_method_enforcer_dismissed` label → "Advanced authentication
+  reminder dismissed" semantic in all 7 languages (IT: "Promemoria di
+  autenticazione avanzata ignorato"); column gets `hidden:true` —
+  internal flag, invisible on every entity surface (sheet, column
+  picker, filters, forms); the Settings→Profile checkbox stays (separate
+  `/me` contract — custom page, migrates with user_profile LAST).
+  Tooltip on the checkbox: ✅ DONE — the `/me` field-def contract
+  supports `tooltip`/`tooltip_title`/`tooltip_priority`/
+  `show_form_tooltip` natively (`auth-session.router.ts:77` +
+  `20261114003000_auth_enforcer_hint.sql`, 7 languages).
+- `onboarded_at`/`invited_by` on user_profile → moved to NEW plan
+  `user-invitation-e2e-flow.md` (invitation flow test & refinement).
+  Data already exists in `user_invitations` (`completed_at`,
+  `created_by` audit = inviter) — needs projection onto user_profile.
+- B5 language invariant: `SUPPORTED_LANGUAGES` (7 BCP-47 tags) in
+  `@primebrick/core` + lint rule on `db-meta/patches/*.sql` literals +
+  `CHECK (language IN (...))` on all 8 `*.translations` tables
+  (per-repo patches: be→public/system/custom, us→ai/crm/emailsender/
+  job/webhook).
 
 ## B9. Control-state drift — ✅ DONE (user-ordered: "dovrebbero avere disabled", "immutable = disabled")
 
