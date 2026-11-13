@@ -1,6 +1,21 @@
 # ELT `type:"ref"` Cell — Sheet Detail + External List CTA
 
-## Recon refresh 2026-12-22 — post-H3 + drift-closure, verified empirically
+## Status: ✅ DONE — verified 2026-11-13 (implementation + E2E green)
+
+All phases landed (naming realized differently: `EntityRecordSheet` +
+`EntityRecordSheetBody` + `EntityFormField` instead of a monolithic
+`EntityFormSurface`; `CellAffordance` shared by ref + JSON cell
+anatomies). `@Ref("user_profile")` on Auditable/Deletable mixins →
+`withColumnConstraints` auto-derives `type:"ref"` — every audit `*_by`
+column is a ref for free. `ref.presentation:"link"|"badge"` contract in
+core. Verified: `ref-cell-sheet.spec.ts` **14/14** on the live stack.
+This session also repaired 3 stale pins: display_name lives on the
+input `value` attribute (not innerText), the audit section sits in a
+collapsed-by-default Accordion (expand before asserting), and the
+not-found state pins `entity-record-sheet-missing-hero` rather than
+translated copy.
+
+### Recon refresh 2026-12-22 — post-H3 + drift-closure, verified empirically
 
 **Landed since this plan was written (all verified in code):**
 - H3 uuid-PK migration DONE — every ref value IS a `uuid`; `local_address_id`→`local_address_uuid`, `contact_id`→`contact_uuid`, `customer_id`→`customer_uuid` in crm list-configs. G2 fully resolved; `ref.value_field` leftovers (`value_field:"uuid"` on `customer_accounts`) are now vestigial duplicates of the default — teardown candidate, not a blocker.
