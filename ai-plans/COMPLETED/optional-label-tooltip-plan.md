@@ -1,5 +1,11 @@
 # Plan: Error Label Key Placeholder + Optional Tooltip
 
+> **Status: ✅ DONE** — verified empirically 2026-11-13. `labelKey` prop
+> lives on `FormLabelWithPriorityHelp` (`primebrick-v3-ui`); the
+> config-builder renders `placeholder={autoErrorLabelKey(...)}` and
+> `labelKey="app.common.optional"` on the optional fields
+> (`ValidationRulesSection.svelte`). Archived to COMPLETED.
+
 ## Problem
 
 1. **Error label key inputs show auto-generated value as actual text**, not as placeholder.
