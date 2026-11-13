@@ -1240,3 +1240,19 @@ rule (user-stated): **the trail author is the actor stamped in
 `changed_at = t.created_at` for INSERT events. `'initial-setup'` stays
 the seed-time convention only (config_entries precedent); a migration
 is not a seed.
+
+### Deferred from docs-gen drift audit (2026-11-14) — resolve WITH the LIST/DICT/FORM migration
+
+Two be docs-gen drifts parked here per user decision — they are *shape* problems, and the page-shape they emit changes entirely once every surface migrates to the standard LIST/DICT/FORM page types:
+
+- **D6 thin pages**: census surfaces with no extracted facts emit stub
+  pages (credentials/templates/migrations/translations — 13-21 lines of
+  boilerplate). When LIST/DICT/FORM lands, every such surface has a real
+  page type → the "no facts" branch disappears by construction. Do NOT
+  build a suppression/placeholder mechanism for the transient shape.
+- **D7 `generated/migrations` vs `manual/migrations` dup**: same root —
+  the generated stub duplicates the curated page only because the stub
+  exists at all. Dies with D6.
+
+Related: `bugfix-version-badge-clone-ref-labels.md` docs-gen section
+(D1–D10 inventory; D1–D5 + D8 already FIXED).

@@ -350,16 +350,25 @@ Closed drifts:
 - D4 FIXED — collectDocRoutes traverses nav.siblings[].routes;
   crm customer_types.mdx (settings dict page) now generated
 - D5 FIXED — dead AI_EVENTS/JOB_EVENTS imports gone with the thin scripts
-- D6 thin pages — OPEN (decision: suppress vs marked placeholder)
-- D7 _order.json generated+manual migrations dup — user: resolves another way
+- D6 thin pages — MOVED to parent plan metadata-driven-page-system.md:
+  resolves WITH the LIST/DICT/FORM standard migration (no-facts branch
+  disappears by construction; no transient suppression mechanism)
+- D7 _order.json generated+manual migrations dup — same: dies with D6
 - D8 FIXED — reference docs moved to own dir reference/ (sdk 8c210af,
   be 4cb5267): keep_files REMOVED from RenderContext, ghost-clean is now
   unconditional, reconcileOrder prefix = dir basename so generators never
   share out_dir or touch each other's order entries; inline reconcile
   copy deleted; module-navigation.mdx path updated
-- D9 OPEN — check-standards is a src line-scanner; a docs-wiring rule
-  needs a filesystem/package.json check the framework doesn't have.
-  Proposed follow-up, not hacked in.
+- D9 deep-dive DONE (subagent map + framework study) — RECOMMENDATION:
+  emit-docs boot mode in createMicroservice (docs derive from the literal
+  createMicroservice options object — same source as service.register);
+  makeServiceRoutes brand carries .entityDecls alongside .spec (zero new
+  options); generate:docs = `tsx src/index.ts --emit-docs` identical in
+  every service; all generate-page-docs.ts + build-docs-pack.ts deleted;
+  check-standards repo-level rule (precedent: checkSeedAuditTrail) as
+  the safety net; pack repo field := service_code (kills existing
+  job-handler/job + backend/be drift); be keeps explicit host path.
+  Full analysis in conversation 2026-11-14; awaiting user decision.
 - D10 UNCHANGED — generation still needs live DATABASE_URL (registry +
   translations); acceptable (matches build-docs-pack behavior)
 
