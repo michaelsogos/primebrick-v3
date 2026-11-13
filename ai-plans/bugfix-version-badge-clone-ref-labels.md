@@ -19,7 +19,7 @@
 | 6 | `cloned_by_name` / `cloned_from_name` display joins from DAL | ✅ done | 2026-11-13 | core `c597cf4` (`resolveDisplayTemplate`) + dal `eed5133` (`JoinExpr.display` — joins carry their projection contract; alias-map convention deleted; `clone_src` self-join renders the entity's own `display_name` template → `cloned_from_name`; `includeCloner` → `cloned_by_name`; search/sort via projected name + raw fallback; unknown `${key}` throws at construction) + sdk `ddd6fdd` (`assembleMeta` delegates) + us `e8051af` (4 clonable services `display: resolveDisplayTemplate(meta)`; authored templates customer `"${display_name} (${code})"`, address `"${street} (${city})"`, account `"${company_name} (${country})"`). Verified live: `cloned_from_name` = "E2E Lifecycle (E2E-…)" on a real duplicate; 616/616 dal tests |
 | 7 | `created_at > updated_at` inverted rows — repair via trail-aligned patches | ✅ done | 2026-11-13 | us `e32a0e0` (patch 0009, all 138 seeded rows → trail INSERT) + be `be9782e` (42 translations → updated_at); manifests re-signed; live sweep 0 inverted |
 | 8 | Record-sheet ref icon collision: customers vs user_profile both render `user` | ✅ done | 2026-11-13 | us `6b1ff9d` — customers leaf + module icon → `users-round`; fe `3af8fa9` — uniqueness rule 13 in both icon docs |
-| 9 | Clone version-history action — exists but VIOLET, user asked warning color | ⏳ decision | — | see §H — `clone` already maps Copy+violet end-to-end (8 real CLONE audit rows); recolor decision needed (amber collides with restore → orange?) |
+| 9 | Clone action color — violet adopted as the clone semantic, propagate to all surfaces | 🔵 TOC ready | — | see §H — decision taken: violet IS the clone color (version-history already); extend `ActionColor`/`DialogSeverity` with `violet`, wire `duplicate_chrome` end-to-end (row CTA + bulk button + confirm dialog), docs updated in all repos |
 | 10 | Non-standard audit fields (`last_synced_at`, `suspended_*`) reach audit section first | ✅ done | 2026-11-13 | dal — `isSynchronizable`→`audited` injected on BOTH paths (class fact, undroppable); sync stamps land extras band. NOTE: suspended_*/last_synced_at on user_profile were ALREADY audited via authored meta — §I corrected |
 | 11 | Icon sweep across module leaves — evidence only, NO changes without approval | ✅ evidence | 2026-11-13 | see §H-sweep — zero remaining entity-leaf collisions; settings/templates is `kind:"page"` (legal glyph reuse) |
 
@@ -195,16 +195,73 @@ audit section by rank design above.
 
 ---
 
-## H — Clone version-history action + icon sweep (evidence)
+## H — Clone action color: violet as the clone semantic (TIC done — design approved by user)
 
-### Clone action — EXISTS, wrong color?
-End-to-end already live: `repo.clone` writes `action='CLONE'` audit rows
-(8 real rows in `crm.customers_audit`, Oct 26), and
-`VersionHistoryPanel.svelte:140/158/176` maps `clone` → `Copy` icon +
-**violet** (`text-violet-600`/`border-violet-600`). The dedicated action
-exists; only the color differs from the request ("Warning color").
-Decision: `amber` is taken by `restore` → propose `orange` for clone, or
-keep violet. Micro-change when approved (3 lines in the panel).
+User decision (2026-11-13): **violet IS the clone color** — correct in
+version-history, must extend to the row-menu CTA, the bulk button and the
+duplicate confirm dialog (`BorderedDialog` violet severity). Watch
+gradients: every filled `Button` variant is a `bg-linear-to-br` two-stop
+gradient — violet must join that family, not be a flat `bg-violet-*`.
+
+### Current state (evidence)
+- `VersionHistoryPanel.svelte:140/158/176` — `clone` → `Copy` + violet-600
+  (hardcoded if/else — stays; aligns with the new semantic naturally).
+- Row CTA (`TableRow.svelte:262`, `CardActions.svelte`): `Copy` + label
+  hardcoded, NO `actionColorClass` → neutral, and it never reads chrome.
+- Bulk (`BulkActionsToolbar.svelte:219`): `variant="default"` hardcoded →
+  primary gradient. The ONLY std bulk op without a `*Chrome` prop —
+  delete/restore already ride `bulkDeleteChrome`/`bulkRestoreChrome`.
+- `DuplicateDialog.svelte`: `severity="warning"` + `variant="warning"`
+  hardcoded, no `chrome` prop — `DeleteDialog` shows the target pattern
+  (`severity = chrome?.color ?? 'destructive'`).
+
+### Design (single source: `meta.actions["duplicate.bulk"]`)
+
+**core** `entity-meta.ts` — `ActionColor`/`ACTION_COLORS` += `"violet"`;
+doc comment gains the rule "violet = clone/duplicate semantic".
+
+**sdk** `entity-router.ts` `deriveActions` — default chrome on the
+`duplicate.bulk` entry, same pattern as `update.single`→`primary`:
+`color: "violet"`, `icon: "copy"` (overridable via `actions_overrides`,
+validated by `validateActionChrome` as today). No route change.
+
+**ui** `primebrick-v3-ui`:
+- `button.svelte`: filled `violet` variant in the gradient family —
+  `border-violet-700 bg-linear-to-br from-violet-400 to-purple-600
+  text-white hover:from-violet-500 hover:to-purple-700` (mirrors `info`);
+  `tone` axis += `violet` + soft/outline compound variants.
+- `semantic-icons.ts` `actionColorButtonVariant`: `"violet"` → `"violet"`.
+- `dialog-bordered.svelte`: `DialogSeverity` += `'violet'`; top-strip
+  gradient + `border-violet-gradient-popover` soft-border map entries.
+
+**fe** `primebrick-fe-v3`:
+- `app.css`: `--color-violet` theme token (→ `text-violet` resolves for
+  `actionColorClass`); `@utility border-violet-gradient(-popover|-soft)`
+  (violet-400→violet-600 stops, same border-image trick); `@source inline`
+  safelist += the 3 names.
+- `EntityListTable.svelte`: `duplicate_chrome: opChrome('duplicate.bulk')`
+  in `effectiveRowActions` + `bulkDuplicateChrome` derived prop → Header.
+- `types.ts`: `EntityRowActions.duplicate_chrome?: ActionChrome`.
+- `TableRow`/`CardActions`: duplicate item →
+  `actionColorClass(chrome.color)` + `DynamicIcon` from `chrome.icon`
+  (Copy fallback) — enters the same chrome path as edit/delete.
+- `BulkActionsToolbar`: `bulkDuplicateChrome` prop →
+  `variant={actionColorButtonVariant(chrome?.color)}`.
+- `DuplicateDialog`: `chrome` prop → `severity = chrome?.color ??
+  'violet'`, confirm button `actionColorButtonVariant(severity)` —
+  exactly `DeleteDialog`'s pattern. `EntityListTableDialogs` passes it.
+
+**docs** (all repos): core `entity-meta.ts` contract comment;
+fe `docs/dev-guide/button-styles.mdx` + `components/button.mdx` +
+`components/dialog-bordered.mdx`; fe icon-conventions (ai + dev-guide)
+gain the "violet = clone" rule; ui `special-icons.mdx` if it enumerates
+colors. Generated `api.json`/`api-reference.mdx` regenerated, not edited.
+
+### Deliberately out of scope
+Version-history keeps its hardcoded audit-action→color map (it renders
+audit fact names, not meta chrome — unifying those is a separate
+consolidation). `border-violet-gradient` non-popover/soft utilities only
+added if a consumer needs them.
 
 ### Icon sweep — all module nav leaves (evidence only, NO changes made)
 | Module | Entity leaf | Icon | Sheet glyph | Collision |
