@@ -359,18 +359,28 @@ Closed drifts:
   unconditional, reconcileOrder prefix = dir basename so generators never
   share out_dir or touch each other's order entries; inline reconcile
   copy deleted; module-navigation.mdx path updated
-- D9 deep-dive DONE (subagent map + framework study) — RECOMMENDATION:
-  emit-docs boot mode in createMicroservice (docs derive from the literal
-  createMicroservice options object — same source as service.register);
-  makeServiceRoutes brand carries .entityDecls alongside .spec (zero new
-  options); generate:docs = `tsx src/index.ts --emit-docs` identical in
-  every service; all generate-page-docs.ts + build-docs-pack.ts deleted;
-  check-standards repo-level rule (precedent: checkSeedAuditTrail) as
-  the safety net; pack repo field := service_code (kills existing
-  job-handler/job + backend/be drift); be keeps explicit host path.
-  Full analysis in conversation 2026-11-14; awaiting user decision.
+- D9 IMPLEMENTED (sdk 351c71b, us 14d285a) — docs emission is now an
+  intrinsic capability of the service bootstrap, not a script:
+  * emitServiceDocs (src/docs-gen/emit.ts) derives page docs + OpenAPI +
+    docs pack from the literal MicroserviceOptions — nav, routeHandler
+    .entityDecls (new brand next to .spec), fe/ auto-discovery
+  * createMicroservice: --emit-docs flag emits + exits before NATS/HTTP;
+    normal boot emits a stale/missing pack BEFORE registrar → docs_pack
+    capability always backed in dev (verified live: crm restart emitted
+    before registration)
+  * generate:docs = `bun src/index.ts --emit-docs` identical in all 5
+    services; 10 scripts deleted (generate-page-docs ×5, build-docs-pack ×5)
+  * --check mode: diffs committed generated/ vs fresh emit, EOL-normalized
+  * check-standards docs-wiring repo rule: nav-declaration ⇒ generate:docs
+    runs emit; fe/ ⇒ fe/vite.config.ts (negative-tested: fires on drift)
+  * post-merge hook: hardcoded list (missing crm) → auto-discovery glob
+  * render.test ghost-cleanup updated to single-owner contract
+  * platform schema ordering restored in lexicon (system/public/custom
+    suffix) — preserves UUID label
 - D10 UNCHANGED — generation still needs live DATABASE_URL (registry +
-  translations); acceptable (matches build-docs-pack behavior)
+  translations); acceptable (matches previous build-docs-pack behavior)
+- REMAINING from D9 analysis: be explicit host path (no createMicroservice),
+  release-close --check gate placement (no CI: release checklist/script)
 
 Also shipped: parseRemoteDispatch normalizes PAGES keys [param]→{param}
 so remote detail routes resolve source files.
