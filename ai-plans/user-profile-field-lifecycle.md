@@ -1,6 +1,15 @@
 # User-Profile Field Lifecycle — `immutable`, `idp_*` renames, `is_active` → `suspended_at/by`
 
-## Status: IMPLEMENTED — verification in progress (typecheck/svelte-check)
+## Status: ⏸️ DEFERRED — implemented, verification parked (user decision 2026-11-13)
+
+> `user_profile` is one of the LAST entities migrating to the de-facto
+> standard — its forms are still custom surfaces. Verifying it against
+> the standard contract now is premature. Ordering constraint: this
+> verification resumes only AFTER the standard migration POC closes on
+> **crm and job-handler** (see `metadata-driven-page-system.md` task 18 —
+> user_profile explicitly last in that sequence). The implementation
+> itself is landed; what waits is the standard-migration pass + E2E
+> verification of the new anatomy.
 
 ## Decisions (all user-approved)
 
