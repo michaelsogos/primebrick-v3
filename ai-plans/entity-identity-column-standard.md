@@ -304,6 +304,23 @@ all 6 live schedules (trigger-name + service-code branches proven) →
 disabled, uuid enabled, zap badge, "Source Queue"/"Cadence" labels) +
 `service_code` documented in `entity-meta-schema.md`.
 
+**IDENTITY CORRECTION (2026-11-14, post-delivery TIC)** — `armed_by` was
+semantically incoherent: three meanings (trigger name / armer / owner)
+under a "who" label, `user_profiles` branch dead on real data
+(`created_by` carries `trigger:`/`rule:`/service stamps, never user
+uuids), no drill-through. REDESIGNED as `job_name` — *the schedule
+inherits the name of the job it schedules* (user decision A: source
+name): `COALESCE(jt.name, SUBSTRING(created_by FROM '^(?:trigger|rule):
+(.+)$'), subject tail, service_code)`. The WHO answer moved to
+`created_by` authored with `label_key: armed_by` (the system-column
+relabel — `type:"ref"` restatement required, enforcer-verified);
+`created_by_name` renders the actor stamp (`trigger:<name>` etc).
+DAL bug found by live probe: `renderExprOperand` consumed `?` inside
+SQL literals as params → fixed builder-wide + regression test (dal
+`1a093e2`). us-v3 `33c79f9` + patch `0012` (fields.job_name ×7;
+armed_by keys survive as the created_by label). fe `be668ab` — e2e
+PASSED live (Job Name pin, Armed By toggle, name values real).
+
 **TIC round 3 — dict extensibility (facts kept)**:
 
 - `DictEntityBase`/`ConfigEntityBase` are SIBLING bases; the polymorphic
