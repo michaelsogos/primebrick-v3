@@ -27,6 +27,18 @@ state and updates this file.
   `primebrick-v3-ui/src/lib/icons/custom-icons.ts` (`CUSTOM_ICONS` registry,
   resolved by `DynamicIcon` — this IS the fallback until upstream ships)
 
+## Check cadence
+
+- **Real-time signal is GitHub itself** — the PR author (`michaelsogos`) is
+  auto-subscribed to the thread; every comment/review/merge reaches his
+  notifications. No polling needed for events.
+- **Skill check cadence: ~weekly digest** (maintainer icon reviews run in
+  batches — 1–4 weeks is a normal wait). Daily checks are noise.
+- **On any change-request notification**: run the skill immediately —
+  maintainers cool off if a requested change sits unanswered for weeks.
+- **Before bumping `@lucide/svelte`**: run the skill — a merge may have
+  shipped the glyph upstream.
+
 ## Status lifecycle
 
 `open` → maintainer review → **merged** / **changes-requested** /
