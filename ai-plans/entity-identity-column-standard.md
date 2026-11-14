@@ -284,9 +284,12 @@ pair index `customer_links_pair_uq` LIVE — exact+reversed dup rejected
 atomically, drift-free vs `pg_get_indexdef`; `inverse_label_key` +
 translations ×7 seeded) · 5 fe `c788f4c` (display_field guard + icon
 fallback fix, 671 tests) · 6 dal dev-guide `@Relation` section. be-v3
-`7916976` seeded `app.common.validation.immutable` ×7. NOT done:
-`hierarchical` deep-cycle insert check (declared, unimplemented — flag NOT
-set on customer_link), service-side 23505→ERR mapping, dict extras
+`7916976` seeded `app.common.validation.immutable` ×7. dal `ba4a575` —
+23505→ERR mapping IS the conflict CTE, derived from the facet:
+same-direction → ERR04/ERR05, reversed → **ERR11** circular reference
+(new `DalErrorCodes` entry; add+update+addMany covered; verified live on
+crm). NOT done: `hierarchical` deep-cycle insert check (declared,
+unimplemented — flag NOT set on customer_link), dict extras
 update-sheet, embedded-relation UI.
 
 **TIC round 3 — dict extensibility (facts kept)**:
