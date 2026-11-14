@@ -292,6 +292,18 @@ crm). NOT done: `hierarchical` deep-cycle insert check (declared,
 unimplemented — flag NOT set on customer_link), dict extras
 update-sheet, embedded-relation UI.
 
+**TOC JH-schedules — ALL DONE (2026-11-14)**: ① `68aa7e3` patch `0010`
+("Cadenza" ×7) → ②③④ `0393390` entity+writer+meta+nav (`armed_by`
+@Calculated COALESCE trigger→`public.user_profiles`→service_code; drops
+shipped; nav `[triggers(def),schedules,runs]`) → ⑤ FE `e3e1974`
+`format:"service_code"` module badge → ⑥ `6b4c129` patch `0011` —
+patcher refuses DROP COLUMN by design (warn-only), so DDL authored:
+3 drops applied live + labels/tooltips ×7 seeded; `armed_by` resolves on
+all 6 live schedules (trigger-name + service-code branches proven) →
+⑦ `e8e4f4c` e2e rewrite — **PASSED live** (pinned armed_by checked+
+disabled, uuid enabled, zap badge, "Source Queue"/"Cadence" labels) +
+`service_code` documented in `entity-meta-schema.md`.
+
 **TIC round 3 — dict extensibility (facts kept)**:
 
 - `DictEntityBase`/`ConfigEntityBase` are SIBLING bases; the polymorphic
