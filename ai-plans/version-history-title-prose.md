@@ -1,16 +1,16 @@
 # Version History panel — translated prose title with actor sheet link
 
-## Status: ⚪ TODO — Plan date: 2026-11-15
+## Status: 🟢 DONE — Plan date: 2026-11-15
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
-| 1 | FE: fix `getAuditActionLabel` lookup → `system.entities.version_history.actions.{lower}` (generic block, closed vocabulary) | ⏳ not done | — | broken key: camelCase `versionHistory` + `.toUpperCase()` + no ns |
-| 2 | FE: title → prose `{action} {by} {actorLink}` — color only on action span, neutral rest | ⏳ not done | — | `Timeline.Title` keeps h3 chrome; move `colorClass` to inner span |
-| 3 | FE: actor link → `system:*`→`service.record`; else `entity.record` on `user_profile` (sheet owns notFound + pseudoRef) | ⏳ not done | — | `{entity:'user_profile', value: changed_by}` `{stack:true}` |
-| 4 | BE patch: action values → participles (7 langs), add `actions.clone` + `version_history.by`, drop `create`/`delete` alias rows | ⏳ not done | — | system.translations; sign manifest |
-| 5 | crm patch: soft-delete `crm.entities.*.version_history.actions.*` duplicates (784 rows, 16 entities) | ⏳ not done | — | generic block rules; removes parallel source |
-| 6 | Tests: unit (label lookup + actor routing) + E2E title contract | ⏳ not done | — | |
-| 7 | typecheck + runtime verify + commit per repo | ⏳ not done | — | live check on real audit rows |
+| 1 | FE: fix `getAuditActionLabel` lookup → `system.entities.version_history.actions.{lower}` (generic block, closed vocabulary) | ✅ done | 2026-11-15 | extracted to `version-history-title.ts` (`auditActionKey`) |
+| 2 | FE: title → prose `{action} {by} {actorLink}` — color only on action span, neutral rest | ✅ done | 2026-11-15 | `colorClass` on inner span; `by` + neutral actor button |
+| 3 | FE: actor link → `system:*`→`service.record`; else `entity.record` on `user_profile` (sheet owns notFound + pseudoRef) | ✅ done | 2026-11-15 | `changedBySheetTarget` helper; `{stack:true}` |
+| 4 | BE patch: action values → participles (7 langs), add `actions.clone` + `version_history.by`, drop `create`/`delete` alias rows | ✅ done | 2026-11-15 | `20261115204500_version_history_prose_actions` applied live, signed |
+| 5 | crm patch: soft-delete `crm.entities.*.version_history.actions.*` duplicates (784 rows, 16 entities) | ✅ done | 2026-11-15 | `20261115210000_version_history_actions_dedup` — 784→0 live |
+| 6 | Tests: unit (label lookup + actor routing) + E2E title contract | ✅ done | 2026-11-15 | 4/4 unit; E2E green: prose regex on all titles + drill → entity.record uid-badge |
+| 7 | typecheck + runtime verify + commit per repo | ✅ done | 2026-11-15 | svelte-check 0; ref-cell-sheet spec 16/16; fe `3728140` be `945bc9e` us `f26546b` |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 
