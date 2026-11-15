@@ -1,7 +1,9 @@
 # Plan — ELT Case Study doc: job_schedule as the reference implementation
 
-**Status**: pending — approved scope, file location proposed.
-**Repos**: `primebrick-us-v3` (doc page), `primebrick-fe-v3` (cross-refs only).
+**Status**: approved — location confirmed `primebrick-fe-v3` (user call: ELT
+construction docs live with the component; `EntityListTable` is fe-v3
+host-shell code, `@primebrick/ui` ships only fragments).
+**Repos**: `primebrick-fe-v3` (doc page + `_order.json` + cross-links).
 **Original ask**: a doc that uses the schedules ELT as the running example of
 *every* entity-class + entity-meta feature that produced a complex ELT — not a
 generic schema reference (that already exists in `entity-metadata.mdx`).
@@ -31,13 +33,14 @@ a finding, documented in a "Known gaps" section rather than smoothed over.
 
 ## Target file
 
-`primebrick-us-v3/docs/dev-guide/elt-case-study-job-schedules.mdx`
+`primebrick-fe-v3/docs/dev-guide/elt-case-study-job-schedules.mdx`
 
-Rationale: entity classes, meta declarations and service routes all live in
-`job-handler/`; the doc is a service-developer doc (how to declare), not an
-FE doc (how to render). FE `entity-list-table.mdx` links *to* it as the
-canonical worked example. Sidebar: append to `_order.json` after
-`adding-a-service` (it IS the advanced "what adding a service can produce").
+Rationale (revised, user-confirmed): the doc teaches ELT *construction* —
+declarations → wire → chrome. The chrome is `EntityListTable`, which lives in
+fe-v3 `$lib` (host-shell, not vendored — `@primebrick/ui` only exports
+fragments). The doc joins the existing family: `entity-metadata.mdx` (schema
+ref) + `components/entity-list-table.mdx` (component) + this page (worked
+example). Sidebar: top-level, right after `entity-metadata` in `_order.json`.
 
 ## Structure
 
