@@ -1,0 +1,231 @@
+{
+  "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+  "dtype": "q4f16",
+  "captured_at": 1789595836258,
+  "load": {
+    "type": "load_complete",
+    "seq": 1,
+    "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+    "repo_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX",
+    "dtype": "q4f16",
+    "device": "webgpu",
+    "worker_nonce": "bc1788c6-457d-48b4-b9ea-6d30b3233085",
+    "files": [
+      "onnx/model_q4f16.onnx",
+      "onnx/model_q4f16.onnx_data",
+      "onnx/model_q4f16.onnx_data_1"
+    ],
+    "external_data_files": [
+      "model.onnx",
+      "model_fp16.onnx",
+      "model_q4.onnx",
+      "model_q4f16.onnx",
+      "model_quantized.onnx"
+    ],
+    "model_config": {
+      "architectures": [
+        "NemotronHForCausalLM"
+      ],
+      "model_type": "nemotron_h",
+      "hidden_size": 3136,
+      "num_hidden_layers": null,
+      "vocab_size": 131072,
+      "max_position_embeddings": 262144
+    },
+    "fingerprint": "SKIPPED (no-cache model)",
+    "warmup_ms": 0
+  },
+  "turns": [
+    {
+      "type": "stream_complete",
+      "text": "",
+      "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": "",
+      "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": "",
+      "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": "",
+      "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": "",
+      "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "dtype": "q4f16"
+    }
+  ],
+  "measures": [],
+  "errors": [],
+  "debug": [
+    {
+      "type": "debug",
+      "step": "dispose_start",
+      "model_id": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4",
+      "has_generator": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_generator_done",
+      "model_id": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4"
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "kv_cache_reuse": false,
+      "num_messages": 2
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 1911,
+      "tail": "\nsolo lettere e numeri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|im_end|>\n<|im_start|>assistant\n<think></think>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 621,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "kv_cache_reuse": false,
+      "num_messages": 4
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2106,
+      "tail": " il punto e la virgola\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|im_end|>\n<|im_start|>assistant\n<think></think>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 670,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "kv_cache_reuse": false,
+      "num_messages": 6
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2295,
+      "tail": " underscore e trattino\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|im_end|>\n<|im_start|>assistant\n<think></think>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 715,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "kv_cache_reuse": false,
+      "num_messages": 8
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2470,
+      "tail": "er\nrimuoviamo il punto\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|im_end|>\n<|im_start|>assistant\n<think></think>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 759,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/NVIDIA-Nemotron-3-Nano-4B-BF16-ONNX#q4f16",
+      "kv_cache_reuse": false,
+      "num_messages": 10
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2667,
+      "tail": "ole da 3 a 5 caratteri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|im_end|>\n<|im_start|>assistant\n<think></think>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 810,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    }
+  ],
+  "vram": [
+    {
+      "at": 1789595616619,
+      "args": [
+        "before_switch",
+        {
+          "label": "before_switch",
+          "timestamp": 1789595616465,
+          "js_heap_mb": 88.67732524871826,
+          "cache_bytes": 15639424304,
+          "gpu_adapter": "nvidia blackwell"
+        }
+      ]
+    },
+    {
+      "at": 1789595616817,
+      "args": [
+        "after_destroy",
+        {
+          "label": "after_destroy",
+          "timestamp": 1789595616641,
+          "js_heap_mb": 88.99366474151611,
+          "cache_bytes": 15639424304,
+          "gpu_adapter": "nvidia blackwell"
+        }
+      ]
+    },
+    {
+      "at": 1789595625892,
+      "args": [
+        "after_new_load",
+        {
+          "label": "after_new_load",
+          "timestamp": 1789595625775,
+          "js_heap_mb": 263.13576316833496,
+          "cache_bytes": 15639424304,
+          "gpu_adapter": "nvidia blackwell"
+        }
+      ]
+    }
+  ]
+}

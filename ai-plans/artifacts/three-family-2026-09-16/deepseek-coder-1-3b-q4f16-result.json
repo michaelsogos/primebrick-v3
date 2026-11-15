@@ -1,0 +1,379 @@
+{
+  "captured_at": "2026-09-16T19:48:56.095Z",
+  "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+  "load_complete": {
+    "type": "load_complete",
+    "seq": 1,
+    "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+    "repo_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX",
+    "dtype": "q4f16",
+    "device": "webgpu",
+    "worker_nonce": "5355f270-e55c-4dad-a17e-369f64034326",
+    "files": [
+      "onnx/model_q4f16.onnx"
+    ],
+    "external_data_files": [
+      "model.onnx",
+      "model_fp16.onnx"
+    ],
+    "model_config": {
+      "architectures": [
+        "LlamaForCausalLM"
+      ],
+      "model_type": "llama",
+      "hidden_size": 2048,
+      "num_hidden_layers": 24,
+      "vocab_size": 32256,
+      "max_position_embeddings": 16384
+    },
+    "fingerprint": "SKIPPED (no-cache model)",
+    "warmup_ms": 0
+  },
+  "stream_complete": [
+    {
+      "type": "stream_complete",
+      "text": "The regular expression should match only alphanumeric strings because of flags i being ignore case sensitivity which is not required by this problem statement so we can safely assume lowercase as flag if you want upper cases then add an extra condition like `[\"upper\"]` on your pattern string builder code section where it depends upon whether there exists such option available otherwise falls back default value will be used depending how many conditions exist within these options provided here without specific details about them they may vary from each possible combination found among various possibilities relatedly due diligence beforehanding anything else under normal circumstances would require additional steps beyond what has been outlined above thus further clarification needed regarding exact requirements could lead us closer than expected but ultimately desired outcome remains undetermined until more information comes along concerning its implications etc.. hence cannot provide solution at present time since lack lays between understanding requirement up till now positioned around certain situation needing particular attention taken care potential impactful future direction determined yet unspecified future progression anticipated still unknown future direction remaining open question scope limit yet unclear expectation futures movement decision made yet undefined expectations moveable yes answer choice selection choices necessary data entry method input fields methods text inputs outputs links navigation menu sections selectors selector type types values ...]]}}}}}...)```   The complete list",
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": "I understand correctly today; however未来的变化将取决于您的问题的具体情况。以下是一个示例，展示了如何扩展现有的正则表达式以包括小写字母、大写字母和其他ASCII符号：\n\nJSON Pattern Example(Upper Case):\n``jsonPatternExample(\"UPPER\")\"\"\"regex = r\"(?u)[rSDe][igkHqVTWbQcKrOsEdGrAsTWaXkbdcMghVatnocmewOxlacuperseteaucoserATglavatbeckoptogenginibeconesubsequelitprolongtermnormaltextovertimeoversizedOverheadOtherUnderstandNotYetUnknownFutureDirectionDecideBetterPlaceholderForMoreInfoAboutItOrItsUsageToConnectInformITtowardsafetywithwhatisfixedinvariablesandfunctionsThatmaybesecurityimpossibletocomeintoexistencesthatcanberforeverthingsunderstandingmoveaboweenengineAndEngineProblemStatementNoThinkSureCanBeDoneByThisMethodUntilNextQuestionIsArrivedAtLeastOneThingRemainsUnresolvedAfterAllPreviousReasons",
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": "Based on current context (\"upper\"), adding \"_\" followed by \"-\". This indicates addition of two optional elements separated by hyphen (-TRATTOIN-) . However please note below changes do NOT reflect actual usage scenario nor does their implementation align properly against standard practices across platforms & languages alike. It serves purely purposefully overcoming constraints imposed during development process phase itself doesn’t have explicit intention towards utilizing those features again after some period postponemt existence conceptualisation absence practicality realities perspective reality abstract abstraction architectural architecture board game points objects events AI BACKENDFRONT ENDAI SINGLEINSTANTIA NET WORK INTERFACE GATE ALLOW REJECT CALLBACK FUNCTIONALITY! THIS IS AN EXAMPLE OF THE TYPE OR PROPERTY AS WE DON'T KNOW WHICH TRADE TO USE FOR STANDARD DEVELOPMENT PHASE ALMOST ENTIRELIKEABOUTTHESECONCEPTIONISNOTONEOFUSEFORTHUNDERESTIMAGESHAINTSOURCEBROWSINGWEBVIEWINTERACTIVEELEMENTSELECTOR VECTORS LISTS OURNESTEDPARTIALREFERENCE PULLREQUEST",
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": "From our discussion earlier, removing punctuation marks isn't typically done unless absolutely necessary—for example when working directly onto source files rather than compiling online libraries via IDE tools. Nevertheless, based solely on common English idioms, following might seem appropriate actions given typical programming scenarios involving removal entirely ('remove') point symbols presence while constructively appendix symbol sequence construction approach utilized alongside inherent capability disregarding conventional wisdom merely stated out loud publicly accessible platform environment feature set functionality disparate distinction disparation difference discrepancy dissociated discretion disputary dispute divergent diversity disorder denial downgrade disrupt drowning downside earthquake disaster distress emergency disaster disturbance foresaw forthcoming forwardcast fortnight functionFortranfunctionFourierfourierfunctor funnelFunctionalityFunctionsGenericsgenericiostypesystemtypesignaturesignitureSignaturesSignatureHandling handheld handednesshanded gestaltgesture gestureSelection gesticetranslation translationtranslatedtranslationTranslate transpositiontype typenotypeofnotethatisnotaninstanceoftypealiasusefactorymethodfactorycreatemanagermanagerhandler handlerstayconnectedhangmanianiansintakinginterestdatainformationdataaboutinformationinsightsightseeingthoughtswitcher switcherSwap sway Swing swing",
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": "Your task involves matching exactly three consecutive minuscule Latin characters ranging from five to ten digits apart according to international standards governing digit count rules amongst others. Here goes nothing aside responsibility center stage side effects sunken sun kitten sunburn sunday superflu idiosincatur bearable autoloader buffer cache call chaincode contract creation delay determinant display dimensions dimensionlessdigitalismore orient orientation overview page paranoïa pneumelextraordináleraextravaguardevolúequivalentéexhilarioushermanliness hermanagement mundousedowntimeovernicedowntimesoundsecretdata starkstylestringstreamstylesystaxítaxiyáÁÀÂẽđĐŝȷ���ùüûφαβγρειηστάλονωκ απφαμ μί与之交叉 crossCrossReferencetalante CrossReferenceExtractFeaturecrossreferences extradition equatorEquivalent equipmentequipmentsensestatementsensorstepsstealthstatisticsstepstoStepTypeTypenameunknownuniquenessundefinedunsuitableunitvaluevaluesvaluessentialisticalelementlistseg seglistselectselector",
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16"
+    }
+  ],
+  "measures": [
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 42257,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 0,
+      "tokens_generated": 0,
+      "tokens_per_second": 0,
+      "first_token_latency_ms": 0,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 0,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 0,
+      "cache_bytes": 12359196682,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 42257,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 0,
+      "tokens_generated": 0,
+      "tokens_per_second": 0,
+      "first_token_latency_ms": 0,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 0,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 0,
+      "cache_bytes": 12359196682,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 30620,
+      "tokens_generated": 257,
+      "tokens_per_second": 8.4,
+      "first_token_latency_ms": 1578,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 707,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 707,
+      "cache_bytes": 12098487066,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 30620,
+      "tokens_generated": 257,
+      "tokens_per_second": 8.4,
+      "first_token_latency_ms": 1578,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 707,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 707,
+      "cache_bytes": 12098487066,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 54830,
+      "tokens_generated": 257,
+      "tokens_per_second": 4.7,
+      "first_token_latency_ms": 1416,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 1027,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 1027,
+      "cache_bytes": 12098487066,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 54830,
+      "tokens_generated": 257,
+      "tokens_per_second": 4.7,
+      "first_token_latency_ms": 1416,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 1027,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 1027,
+      "cache_bytes": 12098487066,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 52900,
+      "tokens_generated": 258,
+      "tokens_per_second": 4.9,
+      "first_token_latency_ms": 1990,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 1343,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 1343,
+      "cache_bytes": 12098487066,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 52900,
+      "tokens_generated": 258,
+      "tokens_per_second": 4.9,
+      "first_token_latency_ms": 1990,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 1343,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 1343,
+      "cache_bytes": 12098487066,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 55049,
+      "tokens_generated": 258,
+      "tokens_per_second": 4.7,
+      "first_token_latency_ms": 2573,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 1657,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 1657,
+      "cache_bytes": 12098487066,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 55049,
+      "tokens_generated": 258,
+      "tokens_per_second": 4.7,
+      "first_token_latency_ms": 2573,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 1657,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 1657,
+      "cache_bytes": 12098487066,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 58048,
+      "tokens_generated": 257,
+      "tokens_per_second": 4.4,
+      "first_token_latency_ms": 3091,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 1973,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 1973,
+      "cache_bytes": 12098487066,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 58048,
+      "tokens_generated": 257,
+      "tokens_per_second": 4.4,
+      "first_token_latency_ms": 3091,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 1973,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 1973,
+      "cache_bytes": 12098487066,
+      "memory_usage_bytes": null
+    }
+  ],
+  "errors": [],
+  "debug": [
+    {
+      "at": 1789587824540,
+      "msg": {
+        "type": "debug",
+        "step": "gen_enter",
+        "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+        "kv_cache_reuse": false,
+        "num_messages": 2
+      }
+    },
+    {
+      "at": 1789587855931,
+      "msg": {
+        "type": "debug",
+        "step": "gen_enter",
+        "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+        "kv_cache_reuse": false,
+        "num_messages": 4
+      }
+    },
+    {
+      "at": 1789587911446,
+      "msg": {
+        "type": "debug",
+        "step": "gen_enter",
+        "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+        "kv_cache_reuse": false,
+        "num_messages": 6
+      }
+    },
+    {
+      "at": 1789587964772,
+      "msg": {
+        "type": "debug",
+        "step": "gen_enter",
+        "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+        "kv_cache_reuse": false,
+        "num_messages": 8
+      }
+    },
+    {
+      "at": 1789588020592,
+      "msg": {
+        "type": "debug",
+        "step": "gen_enter",
+        "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4f16",
+        "kv_cache_reuse": false,
+        "num_messages": 10
+      }
+    }
+  ],
+  "vram": [
+    {
+      "at": 1789587780868,
+      "args": [
+        "[VRAM]",
+        "before_switch",
+        {
+          "label": "before_switch",
+          "timestamp": 1789587780738,
+          "js_heap_mb": 84.89321994781494,
+          "cache_bytes": 11503878644,
+          "gpu_adapter": "nvidia blackwell"
+        }
+      ]
+    },
+    {
+      "at": 1789587781041,
+      "args": [
+        "[VRAM]",
+        "after_destroy",
+        {
+          "label": "after_destroy",
+          "timestamp": 1789587780886,
+          "js_heap_mb": 85.23933506011963,
+          "cache_bytes": 11503878644,
+          "gpu_adapter": "nvidia blackwell"
+        }
+      ]
+    },
+    {
+      "at": 1789587824541,
+      "args": [
+        "[VRAM]",
+        "after_new_load",
+        {
+          "label": "after_new_load",
+          "timestamp": 1789587823511,
+          "js_heap_mb": 109.2125358581543,
+          "cache_bytes": 12359196682,
+          "gpu_adapter": "nvidia blackwell"
+        }
+      ]
+    }
+  ]
+}

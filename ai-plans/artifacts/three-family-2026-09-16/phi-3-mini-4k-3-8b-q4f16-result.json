@@ -1,0 +1,356 @@
+{
+  "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+  "dtype": "q4f16",
+  "captured_at": 1789589909819,
+  "load": {
+    "type": "load_complete",
+    "seq": 1,
+    "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+    "repo_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX",
+    "dtype": "q4f16",
+    "device": "webgpu",
+    "worker_nonce": "a9e67505-7d2f-482f-8782-615b2407da4e",
+    "files": [
+      "onnx/model_q4f16.onnx",
+      "onnx/model_q4f16.onnx_data",
+      "onnx/model_q4f16.onnx_data_1"
+    ],
+    "external_data_files": [
+      "model.onnx",
+      "model_fp16.onnx",
+      "model_q4.onnx",
+      "model_q4f16.onnx"
+    ],
+    "model_config": {
+      "architectures": [
+        "Phi3ForCausalLM"
+      ],
+      "model_type": "phi3",
+      "hidden_size": 3072,
+      "num_hidden_layers": 32,
+      "vocab_size": 32064,
+      "max_position_embeddings": 4096
+    },
+    "fingerprint": "The capital of France is Paris.\n\n\n##",
+    "warmup_ms": 2212
+  },
+  "turns": [
+    {
+      "type": "stream_complete",
+      "text": " {\n    \"patterns\": [\n        {\n            \"pattern\": \"^[a-zA-Z0-9]+$\",\n            \"flags\": \"\"\n        }\n    ]\n}",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": " {\n    \"patterns\": [\n        {\n            \"pattern\": \"^[a-zA-Z0-9,.']+$\",\n            \"flags\": \"\"\n        }\n    ]\n}",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": " {\n    \"patterns\": [\n        {\n            \"pattern\": \"^[a-zA-Z0-9._'-]+$\",\n            \"flags\": \"\"\n        }\n    ]\n}",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": " {\n    \"patterns\": [\n        {\n            \"pattern\": \"^[a-zA-Z0-9_.'-]+$\",\n            \"flags\": \"\"\n        }\n    ]\n}",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "dtype": "q4f16"
+    },
+    {
+      "type": "stream_complete",
+      "text": " ```json\n{\n    \"patterns\": [\n        {\n            \"pattern\": \"^[a-f][a-f]{2,4}$\",\n            \"flags\": \"\"\n        }\n    ]\n}\n```\nThis pattern ensures only lowercase hexadecimal strings of length between three and five will match. It uses `^` at the start and `$` at the end as anchors to ensure we capture whole words from beginning to end without partial matches within larger texts. The `[a-f]` part specifies each digit must be an uppercase Latin alphabet letter ranging from 'A' through 'F'. `{2,4}` after it indicates there should be two more digits following this first one, making sure our string is either exactly four characters long (`[a-f]`) if starting with a capitalized letter like 'A', or up to six characters total when including additional lower case letters ('aa'). This setup covers both minimum lengths due to inclusive range specified by curly braces. Remember, since you requested exclusively lowercase letters but used mixed casing examples above, make sure your input strictly adheres to these constraints—or adjust accordingly based on actual requirements!",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "dtype": "q4f16"
+    }
+  ],
+  "measures": [
+    {
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 202577,
+      "warmup_time_ms": 2212,
+      "generation_time_ms": 0,
+      "tokens_generated": 0,
+      "tokens_per_second": 0,
+      "first_token_latency_ms": 0,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 0,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 0,
+      "cache_bytes": 14775422998,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 7275,
+      "tokens_generated": 44,
+      "tokens_per_second": 6,
+      "first_token_latency_ms": 1023,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 686,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 730,
+      "prompt_token_count": 686,
+      "cache_bytes": 13920104960,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 6561,
+      "tokens_generated": 45,
+      "tokens_per_second": 6.9,
+      "first_token_latency_ms": 386,
+      "kv_cache_speedup": 1.1,
+      "kv_cache_hit_tokens": 730,
+      "kv_cache_miss_tokens": 61,
+      "kv_cache_hit_ratio": 0.923,
+      "kv_cache_seq_length": 836,
+      "prompt_token_count": 791,
+      "cache_bytes": 13920104960,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 7096,
+      "tokens_generated": 46,
+      "tokens_per_second": 6.5,
+      "first_token_latency_ms": 411,
+      "kv_cache_speedup": 0.9,
+      "kv_cache_hit_tokens": 836,
+      "kv_cache_miss_tokens": 60,
+      "kv_cache_hit_ratio": 0.933,
+      "kv_cache_seq_length": 942,
+      "prompt_token_count": 896,
+      "cache_bytes": 13920104960,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 7023,
+      "tokens_generated": 46,
+      "tokens_per_second": 6.5,
+      "first_token_latency_ms": 339,
+      "kv_cache_speedup": 1,
+      "kv_cache_hit_tokens": 942,
+      "kv_cache_miss_tokens": 58,
+      "kv_cache_hit_ratio": 0.942,
+      "kv_cache_seq_length": 1046,
+      "prompt_token_count": 1000,
+      "cache_bytes": 13920104960,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "dtype": "q4f16",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 38239,
+      "tokens_generated": 254,
+      "tokens_per_second": 6.6,
+      "first_token_latency_ms": 410,
+      "kv_cache_speedup": 0.2,
+      "kv_cache_hit_tokens": 1046,
+      "kv_cache_miss_tokens": 46,
+      "kv_cache_hit_ratio": 0.958,
+      "kv_cache_seq_length": 1346,
+      "prompt_token_count": 1092,
+      "cache_bytes": 13920104960,
+      "memory_usage_bytes": null
+    }
+  ],
+  "errors": [],
+  "debug": [
+    {
+      "type": "debug",
+      "step": "dispose_start",
+      "model_id": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4",
+      "has_generator": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_generator_done",
+      "model_id": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4"
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 2
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 1866,
+      "tail": "ags\":\"\"}]}<|end|>\n<|user|>\nsolo lettere e numeri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 686,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 0,
+      "cache_seq_len_after": 730,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 4
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2160,
+      "tail": "-Z0-9]+$\naggiungiamo anche il punto e la virgola\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 791,
+      "cache_len_before_gen": 730,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 730,
+      "cache_seq_len_after": 836,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 6
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2454,
+      "tail": "-zA-Z0-9,.']+$\naggiungiamo underscore e trattino\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 896,
+      "cache_len_before_gen": 836,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 836,
+      "cache_seq_len_after": 942,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 8
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2736,
+      "tail": "nt regex: ^[a-zA-Z0-9._'-]+$\nrimuoviamo il punto\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1000,
+      "cache_len_before_gen": 942,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 942,
+      "cache_seq_len_after": 1046,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 10
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 3006,
+      "tail": "user|>\nsolo lettere minuscole da 3 a 5 caratteri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1092,
+      "cache_len_before_gen": 1046,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 1046,
+      "cache_seq_len_after": 1346,
+      "cache_valid": true
+    }
+  ],
+  "vram": [
+    {
+      "label": "before_switch",
+      "timestamp": 1789589462786,
+      "js_heap_mb": 94.01577568054199,
+      "cache_bytes": 12481214626,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_destroy",
+      "timestamp": 1789589462923,
+      "js_heap_mb": 94.32823944091797,
+      "cache_bytes": 12481214626,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_new_load",
+      "timestamp": 1789589667948,
+      "js_heap_mb": 95.49549198150635,
+      "cache_bytes": 14775422998,
+      "gpu_adapter": "nvidia blackwell"
+    }
+  ]
+}

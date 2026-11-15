@@ -1,6 +1,11 @@
 backend/
 frontend/
+microservices/
 node_modules/
 .DS_Store
 *.log
+OLD/
+*.sql
 
+# Scratch area — one-off scripts/dumps live here, never committed
+temp/

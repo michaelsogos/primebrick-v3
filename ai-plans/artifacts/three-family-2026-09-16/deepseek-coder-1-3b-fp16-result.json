@@ -1,0 +1,724 @@
+{
+  "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#fp16",
+  "dtype": "fp16",
+  "run_started_at": 1789588520996,
+  "captured_at": 1789589128565,
+  "load": {
+    "complete": false,
+    "error": "RangeError: Array buffer allocation failed",
+    "failed_file": "onnx/model_fp16.onnx_data",
+    "content_length": 2692943872
+  },
+  "worker_messages": [
+    {
+      "type": "debug",
+      "step": "dispose_start",
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4",
+      "has_generator": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_generator_done",
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4"
+    },
+    {
+      "type": "dispose_complete",
+      "disposed_model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4",
+      "worker_nonce": "6e4dc753-4e0c-4332-86e1-4d5497e3691b"
+    },
+    {
+      "type": "boot",
+      "worker_nonce": "90181977-bf20-49ee-85f2-67fc5a3b8ec1"
+    },
+    {
+      "type": "load_started",
+      "seq": 1,
+      "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#fp16",
+      "repo_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX",
+      "dtype": "fp16",
+      "device": "webgpu",
+      "worker_nonce": "90181977-bf20-49ee-85f2-67fc5a3b8ec1"
+    },
+    {
+      "type": "webgpu",
+      "available": true
+    },
+    {
+      "type": "load_phase",
+      "phase": "downloading",
+      "worker_nonce": "90181977-bf20-49ee-85f2-67fc5a3b8ec1"
+    },
+    {
+      "type": "load_progress",
+      "stage": "initiate",
+      "file": "config.json",
+      "total_files": 1,
+      "completed_files": 0,
+      "file_progress": {
+        "config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "stage": "initiate",
+      "file": "tokenizer.json",
+      "total_files": 2,
+      "completed_files": 0,
+      "file_progress": {
+        "config.json": 0,
+        "tokenizer.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "stage": "initiate",
+      "file": "tokenizer_config.json",
+      "total_files": 3,
+      "completed_files": 0,
+      "file_progress": {
+        "config.json": 0,
+        "tokenizer.json": 0,
+        "tokenizer_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 100,
+      "file": "config.json",
+      "total_files": 3,
+      "completed_files": 0,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 0,
+        "tokenizer_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "stage": "done",
+      "file": "config.json",
+      "total_files": 3,
+      "completed_files": 1,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 0,
+        "tokenizer_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "stage": "initiate",
+      "file": "generation_config.json",
+      "total_files": 4,
+      "completed_files": 1,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 0,
+        "tokenizer_config.json": 0,
+        "generation_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 14.31035762792546,
+      "file": "tokenizer.json",
+      "total_files": 4,
+      "completed_files": 1,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 14.31035762792546,
+        "tokenizer_config.json": 0,
+        "generation_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 34.344858307021106,
+      "file": "tokenizer.json",
+      "total_files": 4,
+      "completed_files": 1,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 34.344858307021106,
+        "tokenizer_config.json": 0,
+        "generation_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 48.65521593494657,
+      "file": "tokenizer.json",
+      "total_files": 4,
+      "completed_files": 1,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 48.65521593494657,
+        "tokenizer_config.json": 0,
+        "generation_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 62.965573562872024,
+      "file": "tokenizer.json",
+      "total_files": 4,
+      "completed_files": 1,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 62.965573562872024,
+        "tokenizer_config.json": 0,
+        "generation_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 80.13800271638259,
+      "file": "tokenizer.json",
+      "total_files": 4,
+      "completed_files": 1,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 80.13800271638259,
+        "tokenizer_config.json": 0,
+        "generation_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 91.58628881872295,
+      "file": "tokenizer.json",
+      "total_files": 4,
+      "completed_files": 1,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 91.58628881872295,
+        "tokenizer_config.json": 0,
+        "generation_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 100,
+      "file": "tokenizer.json",
+      "total_files": 4,
+      "completed_files": 1,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 0,
+        "generation_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 100,
+      "file": "tokenizer_config.json",
+      "total_files": 4,
+      "completed_files": 1,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "stage": "done",
+      "file": "tokenizer_config.json",
+      "total_files": 4,
+      "completed_files": 2,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "stage": "done",
+      "file": "tokenizer.json",
+      "total_files": 4,
+      "completed_files": 3,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "stage": "initiate",
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 5,
+      "completed_files": 3,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 0,
+        "onnx/model_fp16.onnx": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "stage": "initiate",
+      "file": "onnx/model_fp16.onnx_data",
+      "total_files": 6,
+      "completed_files": 3,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 0,
+        "onnx/model_fp16.onnx": 0,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 100,
+      "file": "generation_config.json",
+      "total_files": 6,
+      "completed_files": 3,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 0,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "stage": "done",
+      "file": "generation_config.json",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 0,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 3.178747524944675,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 3.178747524944675,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 6.68944364638739,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 6.68944364638739,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 9.868191171332064,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 9.868191171332064,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 13.046938696276742,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 13.046938696276742,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 16.225686221221416,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 16.225686221221416,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 20.06833093916217,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 20.06833093916217,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 23.247078464106842,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 23.247078464106842,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 25.443956982567844,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 25.443956982567844,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 28.62270450751252,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 28.62270450751252,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 31.801452032457195,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 31.801452032457195,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 34.98019955740187,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 34.98019955740187,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 39.78277749737935,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 39.78277749737935,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 46.1402725472687,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 46.1402725472687,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 52.49776759715805,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 52.49776759715805,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 55.676515122102735,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 55.676515122102735,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 62.03401017199208,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 62.03401017199208,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 65.2267344799472,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 65.2267344799472,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 68.40548200489187,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 68.40548200489187,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 84.29921962961525,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 84.29921962961525,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 87.47796715455992,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 87.47796715455992,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 90.6567146795046,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 90.6567146795046,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 97.01420972939395,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 97.01420972939395,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "progress": 100,
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 4,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 100,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    },
+    {
+      "type": "load_progress",
+      "stage": "done",
+      "file": "onnx/model_fp16.onnx",
+      "total_files": 6,
+      "completed_files": 5,
+      "file_progress": {
+        "config.json": 100,
+        "tokenizer.json": 100,
+        "tokenizer_config.json": 100,
+        "generation_config.json": 100,
+        "onnx/model_fp16.onnx": 100,
+        "onnx/model_fp16.onnx_data": 0
+      }
+    }
+  ],
+  "stream_complete": [],
+  "measures": [],
+  "errors": [],
+  "console_errors": [],
+  "debug": [
+    {
+      "at": 1789588521340,
+      "msg": {
+        "type": "debug",
+        "step": "dispose_start",
+        "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4",
+        "has_generator": true
+      }
+    },
+    {
+      "at": 1789588521349,
+      "msg": {
+        "type": "debug",
+        "step": "dispose_generator_done",
+        "model_id": "onnx-community/deepseek-coder-1.3b-instruct-ONNX#q4"
+      }
+    }
+  ],
+  "vram": [
+    {
+      "at": 1789588521337,
+      "args": [
+        "[VRAM]",
+        "before_switch",
+        {
+          "label": "before_switch",
+          "timestamp": 1789588521267,
+          "js_heap_mb": 90.00333881378174,
+          "cache_bytes": 12480699486,
+          "gpu_adapter": "nvidia blackwell"
+        }
+      ]
+    },
+    {
+      "at": 1789588521540,
+      "args": [
+        "[VRAM]",
+        "after_destroy",
+        {
+          "label": "after_destroy",
+          "timestamp": 1789588521354,
+          "js_heap_mb": 90.26936912536621,
+          "cache_bytes": 12480699486,
+          "gpu_adapter": "nvidia blackwell"
+        }
+      ]
+    }
+  ]
+}

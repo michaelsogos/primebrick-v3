@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="pb-grad" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+  <!-- Regular flat-top hexagon: circumradius R=64, width=2R=128, height=R*sqrt(3)=110.85, centered in 128x128 -->
+  <polygon points="128,64 96,8.57 32,8.57 0,64 32,119.43 96,119.43" fill="url(#pb-grad)"/>
+  <text x="64" y="86" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="62" font-weight="700" fill="#0b1220" text-anchor="middle" letter-spacing="-2">PB</text>
+</svg>

@@ -1,0 +1,917 @@
+{
+  "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+  "dtype": "q4",
+  "captured_at": 1789591148333,
+  "load": {
+    "type": "load_complete",
+    "seq": 1,
+    "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+    "repo_id": "onnx-community/granite-4.0-1b-ONNX-web",
+    "dtype": "q4",
+    "device": "webgpu",
+    "worker_nonce": "163f041b-679b-49c4-aaeb-6362c7054d58",
+    "files": [
+      "onnx/model_q4.onnx",
+      "onnx/model_q4.onnx_data"
+    ],
+    "external_data_files": [
+      "model.onnx",
+      "model_fp16.onnx",
+      "model_q4.onnx",
+      "model_q4f16.onnx"
+    ],
+    "model_config": {
+      "architectures": [
+        "GraniteMoeHybridForCausalLM"
+      ],
+      "model_type": "granitemoehybrid",
+      "hidden_size": 2048,
+      "num_hidden_layers": 40,
+      "vocab_size": 100352,
+      "max_position_embeddings": 131072
+    },
+    "fingerprint": "SKIPPED (no-cache model)",
+    "warmup_ms": 0
+  },
+  "turns": [
+    {
+      "type": "stream_complete",
+      "text": "{\"patterns\":[{\"pattern\":\"^[a-zA-Z0-9]*$\",\"flags\":\"\"}]}",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "dtype": "q4"
+    },
+    {
+      "type": "stream_complete",
+      "text": "{\"patterns\":[{\"pattern\":\"^[a-zA-Z0-9.,;]*$\",\"flags\":\"\"}]}",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "dtype": "q4"
+    },
+    {
+      "type": "stream_complete",
+      "text": "{\"patterns\":[{\"pattern\":\"^[a-zA-Z0-9._\\-]*$\",\"flags\":\"\"}]}",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "dtype": "q4"
+    },
+    {
+      "type": "stream_complete",
+      "text": "{\"patterns\":[{\"pattern\":\"^[a-zA-Z0-9\\_\\-]*$\",\"flags\":\"\"}]}",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "dtype": "q4"
+    },
+    {
+      "type": "stream_complete",
+      "text": "{\"patterns\":[{\"pattern\":\"^[a-z]{3,5}$\",\"flags\":\"\"}]}",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "dtype": "q4"
+    }
+  ],
+  "measures": [
+    {
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "dtype": "q4",
+      "load_time_ms": 76453,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 0,
+      "tokens_generated": 0,
+      "tokens_per_second": 0,
+      "first_token_latency_ms": 0,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 0,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 0,
+      "cache_bytes": 20757409934,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "dtype": "q4",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 2534,
+      "tokens_generated": 19,
+      "tokens_per_second": 7.5,
+      "first_token_latency_ms": 2532,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 561,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 561,
+      "cache_bytes": 18034252713,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "dtype": "q4",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 1942,
+      "tokens_generated": 21,
+      "tokens_per_second": 10.8,
+      "first_token_latency_ms": 1940,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 637,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 637,
+      "cache_bytes": 18034252713,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "dtype": "q4",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 2071,
+      "tokens_generated": 21,
+      "tokens_per_second": 10.1,
+      "first_token_latency_ms": 2069,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 713,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 713,
+      "cache_bytes": 18034252713,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "dtype": "q4",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 2093,
+      "tokens_generated": 21,
+      "tokens_per_second": 10,
+      "first_token_latency_ms": 2091,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 788,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 788,
+      "cache_bytes": 18034252713,
+      "memory_usage_bytes": null
+    },
+    {
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "dtype": "q4",
+      "load_time_ms": 0,
+      "warmup_time_ms": 0,
+      "generation_time_ms": 1897,
+      "tokens_generated": 18,
+      "tokens_per_second": 9.5,
+      "first_token_latency_ms": 1895,
+      "kv_cache_speedup": null,
+      "kv_cache_hit_tokens": 0,
+      "kv_cache_miss_tokens": 856,
+      "kv_cache_hit_ratio": 0,
+      "kv_cache_seq_length": 0,
+      "prompt_token_count": 856,
+      "cache_bytes": 18034252713,
+      "memory_usage_bytes": null
+    }
+  ],
+  "errors": [],
+  "debug": [
+    {
+      "type": "debug",
+      "step": "dispose_start",
+      "model_id": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4",
+      "has_generator": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_generator_done",
+      "model_id": "onnx-community/Qwen2.5-Coder-3B-Instruct#q4"
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 2
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 1866,
+      "tail": "ags\":\"\"}]}<|end|>\n<|user|>\nsolo lettere e numeri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 686,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 0,
+      "cache_seq_len_after": 730,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 4
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2160,
+      "tail": "-Z0-9]+$\naggiungiamo anche il punto e la virgola\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 791,
+      "cache_len_before_gen": 730,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 730,
+      "cache_seq_len_after": 836,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 6
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2454,
+      "tail": "-zA-Z0-9,.']+$\naggiungiamo underscore e trattino\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 896,
+      "cache_len_before_gen": 836,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 836,
+      "cache_seq_len_after": 942,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 8
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2736,
+      "tail": "nt regex: ^[a-zA-Z0-9._'-]+$\nrimuoviamo il punto\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1000,
+      "cache_len_before_gen": 942,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 942,
+      "cache_seq_len_after": 1046,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "kv_cache_reuse": true,
+      "num_messages": 10
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 3006,
+      "tail": "user|>\nsolo lettere minuscole da 3 a 5 caratteri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1092,
+      "cache_len_before_gen": 1046,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 1046,
+      "cache_seq_len_after": 1346,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_start",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16",
+      "has_generator": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_generator_done",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4f16"
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "kv_cache_reuse": true,
+      "num_messages": 2
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 1866,
+      "tail": "ags\":\"\"}]}<|end|>\n<|user|>\nsolo lettere e numeri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 686,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 0,
+      "cache_seq_len_after": 730,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "kv_cache_reuse": true,
+      "num_messages": 4
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2160,
+      "tail": "-Z0-9]+$\naggiungiamo anche il punto e la virgola\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 791,
+      "cache_len_before_gen": 730,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 730,
+      "cache_seq_len_after": 836,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "kv_cache_reuse": true,
+      "num_messages": 6
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2454,
+      "tail": "-zA-Z0-9,.']+$\naggiungiamo underscore e trattino\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 896,
+      "cache_len_before_gen": 836,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 836,
+      "cache_seq_len_after": 942,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "kv_cache_reuse": true,
+      "num_messages": 8
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2736,
+      "tail": "nt regex: ^[a-zA-Z0-9_.'-]+$\nrimuoviamo il punto\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1000,
+      "cache_len_before_gen": 942,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 942,
+      "cache_seq_len_after": 1047,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "kv_cache_reuse": true,
+      "num_messages": 10
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 3007,
+      "tail": "user|>\nsolo lettere minuscole da 3 a 5 caratteri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1093,
+      "cache_len_before_gen": 1047,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 1047,
+      "cache_seq_len_after": 1337,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_start",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4",
+      "has_generator": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_generator_done",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#q4"
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "kv_cache_reuse": true,
+      "num_messages": 2
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 1866,
+      "tail": "ags\":\"\"}]}<|end|>\n<|user|>\nsolo lettere e numeri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 686,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 0,
+      "cache_seq_len_after": 730,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "kv_cache_reuse": true,
+      "num_messages": 4
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2160,
+      "tail": "-Z0-9]+$\naggiungiamo anche il punto e la virgola\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 791,
+      "cache_len_before_gen": 730,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 730,
+      "cache_seq_len_after": 1046,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "kv_cache_reuse": true,
+      "num_messages": 6
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 3421,
+      "tail": "zA-Z0-9,.\\s]*$\naggiungiamo underscore e trattino\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end|>\n<|assistant|>\n",
+      "kv_cache_reuse": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 1110,
+      "cache_len_before_gen": 1046,
+      "using_cache": true
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_post_gen",
+      "cache_seq_len_before": 1046,
+      "cache_seq_len_after": 1365,
+      "cache_valid": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_start",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16",
+      "has_generator": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_generator_done",
+      "model_id": "onnx-community/Phi-3-mini-4k-instruct-ONNX#fp16"
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4f16",
+      "kv_cache_reuse": false,
+      "num_messages": 2
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 1963,
+      "tail": "tere e numeri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end_of_text|>\n<|start_of_role|>assistant<|end_of_role|>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 561,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4f16",
+      "kv_cache_reuse": false,
+      "num_messages": 4
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2447,
+      "tail": " e la virgola\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end_of_text|>\n<|start_of_role|>assistant<|end_of_role|>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 637,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4f16",
+      "kv_cache_reuse": false,
+      "num_messages": 6
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2925,
+      "tail": "re e trattino\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end_of_text|>\n<|start_of_role|>assistant<|end_of_role|>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 709,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4f16",
+      "kv_cache_reuse": false,
+      "num_messages": 8
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 3389,
+      "tail": "iamo il punto\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end_of_text|>\n<|start_of_role|>assistant<|end_of_role|>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 780,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4f16",
+      "kv_cache_reuse": false,
+      "num_messages": 10
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 3875,
+      "tail": "a 5 caratteri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end_of_text|>\n<|start_of_role|>assistant<|end_of_role|>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 859,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "dispose_start",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4f16",
+      "has_generator": true
+    },
+    {
+      "type": "debug",
+      "step": "dispose_generator_done",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4f16"
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "kv_cache_reuse": false,
+      "num_messages": 2
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 1963,
+      "tail": "tere e numeri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end_of_text|>\n<|start_of_role|>assistant<|end_of_role|>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 561,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "kv_cache_reuse": false,
+      "num_messages": 4
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2275,
+      "tail": " e la virgola\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end_of_text|>\n<|start_of_role|>assistant<|end_of_role|>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 637,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "kv_cache_reuse": false,
+      "num_messages": 6
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2587,
+      "tail": "re e trattino\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end_of_text|>\n<|start_of_role|>assistant<|end_of_role|>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 713,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "kv_cache_reuse": false,
+      "num_messages": 8
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 2887,
+      "tail": "iamo il punto\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end_of_text|>\n<|start_of_role|>assistant<|end_of_role|>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 788,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    },
+    {
+      "type": "debug",
+      "step": "gen_enter",
+      "model_id": "onnx-community/granite-4.0-1b-ONNX-web#q4",
+      "kv_cache_reuse": false,
+      "num_messages": 10
+    },
+    {
+      "type": "debug",
+      "step": "prompt_tail",
+      "len": 3175,
+      "tail": "a 5 caratteri\n/no_think\n[Respond ONLY with JSON: {\"patterns\":[{\"pattern\":\"...\",\"flags\":\"\"}]}]<|end_of_text|>\n<|start_of_role|>assistant<|end_of_role|>",
+      "kv_cache_reuse": false
+    },
+    {
+      "type": "debug",
+      "step": "kv_cache_pipeline",
+      "prompt_token_count": 856,
+      "cache_len_before_gen": 0,
+      "using_cache": false
+    }
+  ],
+  "vram": [
+    {
+      "label": "before_switch",
+      "timestamp": 1789589462786,
+      "js_heap_mb": 94.01577568054199,
+      "cache_bytes": 12481214626,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_destroy",
+      "timestamp": 1789589462923,
+      "js_heap_mb": 94.32823944091797,
+      "cache_bytes": 12481214626,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_new_load",
+      "timestamp": 1789589667948,
+      "js_heap_mb": 95.49549198150635,
+      "cache_bytes": 14775422998,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "before_switch",
+      "timestamp": 1789589926249,
+      "js_heap_mb": 98.93503856658936,
+      "cache_bytes": 13920104960,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_destroy",
+      "timestamp": 1789589926350,
+      "js_heap_mb": 99.20841789245605,
+      "cache_bytes": 13920104960,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_new_load",
+      "timestamp": 1789590066816,
+      "js_heap_mb": 102.91599369049072,
+      "cache_bytes": 16643262181,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "before_switch",
+      "timestamp": 1789590221582,
+      "js_heap_mb": 105.06761360168457,
+      "cache_bytes": 15577910605,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_destroy",
+      "timestamp": 1789590221659,
+      "js_heap_mb": 105.33391666412354,
+      "cache_bytes": 15577910605,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_new_load",
+      "timestamp": 1789590570728,
+      "js_heap_mb": 133.4627170562744,
+      "cache_bytes": 23221070638,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "before_switch",
+      "timestamp": 1789590786691,
+      "js_heap_mb": 134.39487552642822,
+      "cache_bytes": 20018445121,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_destroy",
+      "timestamp": 1789590786784,
+      "js_heap_mb": 134.67127799987793,
+      "cache_bytes": 20018445121,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_new_load",
+      "timestamp": 1789590855276,
+      "js_heap_mb": 152.0053300857544,
+      "cache_bytes": 21270083048,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "before_switch",
+      "timestamp": 1789590995427,
+      "js_heap_mb": 138.42780590057373,
+      "cache_bytes": 18975874676,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_destroy",
+      "timestamp": 1789590995530,
+      "js_heap_mb": 138.68862628936768,
+      "cache_bytes": 18975874676,
+      "gpu_adapter": "nvidia blackwell"
+    },
+    {
+      "label": "after_new_load",
+      "timestamp": 1789591072252,
+      "js_heap_mb": 141.4814510345459,
+      "cache_bytes": 20757409934,
+      "gpu_adapter": "nvidia blackwell"
+    }
+  ]
+}
