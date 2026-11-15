@@ -10,9 +10,9 @@
 
 | # | Debt item | Found during | Status |
 |---|-----------|--------------|--------|
-| 1 | `armed_ref_entity`/`armed_by` dead branches on `job_schedule` | record-sheet collapse fix | ⏳ not done |
-| 2 | Entity-scoped `version_history.actions.*` seed duplicates (generator convention) | version-history title TIC | ⏳ partial — crm rows covered by `version-history-title-prose.md` task 5; generator convention open |
-| 3 | Pre-existing svelte-check shim errors (alert/loading-bar/password/toggle exports) | system-trigger work | ⏳ not done |
+| 1 | `armed_ref_entity`/`armed_by` dead branches on `job_schedule` | record-sheet collapse fix | ✅ done 2026-11-15 (us `3c4b471`, fe `52fa69c`) |
+| 2 | Entity-scoped `version_history.*` seed duplicates (generator convention) | version-history title TIC | ✅ done 2026-11-15 (us `30fcae6`) — all scoped rows dead; no in-repo emitter exists (one-off bootstrap dump) |
+| 3 | Pre-existing svelte-check shim errors (alert/loading-bar/password/toggle exports) | system-trigger work | ✅ done 2026-11-15 (fe — variants moved to `.ts`, `password.svelte.ts` → `password-context.svelte.ts`) |
 | 4 | Audit: verify every per-instance NATS sub flows through the lifecycle registry | materialize-route flapping debug | ⏳ not done |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
@@ -32,17 +32,21 @@
 
 **Direction.** Single-truth consolidation: `armed_ref_entity`/`armed_ref_key` collapse to the trigger uuid (or are removed entirely if the FE only needs `armed_by` label + trigger ref); evaluate dropping the `service_registry` join arm and possibly the `service_code` column. Keep audit-writer `created_by` untouched — different concern.
 
+**Resolution (2026-11-15).** Done as directed: `armed_ref_entity`/`armed_ref_key` deleted; `armed_by` = owning trigger name (no `deleted_at` filter — survives soft-delete like `job_name`), falling back to `trigger_uuid::text`; ref is now static `ref: { entity: "job_trigger", key_field: "trigger_uuid" }`. `service_code` column dropped physically (patch `20261115220000_schedule_service_code_drop` — all 6 live rows held the constant `'job'` parsed from `schedule_subject`, i.e. a denormalized copy). Engine no longer writes it. `job_name`/`armed_by` now converge on orphans — the old "divergent truths" were the dead-fallback artifact. Verified: jh unit 132/132, svelte-check 0, E2E lazy-ref + orphan tests green live.
+
 ## 2 — `version_history.actions.*` per-entity seed duplicates
 
 **Evidence.** Closed platform enum `AuditAction` (INSERT/UPDATE/SOFT_DELETE/HARD_DELETE/RESTORE/CLONE) — but translation seeds emit a full `*.entities.<e>.version_history.actions.*` block per entity: crm alone has 784 live rows (16 entities × 49). `system` had the same pattern for `customer` (migrated → soft-deleted rows remain in history).
 
-**Status.** The *data* cleanup is owned by `version-history-title-prose.md` task 5 (crm patch soft-deletes the duplicates). **Open here**: the seed-generation convention itself — whoever authors a new entity translation block still copies the action vocabulary in. Decide: (a) convention change — per-entity blocks stop carrying `actions.*` (closed vocab lives only in the generic block), or (b) accept per-entity override as a feature and keep seeds. Aligns with the lookup-level decision in the same plan.
+**Status.** Resolved 2026-11-15. Data: patch `20261115221000_version_history_full_dedup` soft-deleted the remaining 2,322 scoped rows (the dump had copied the *whole* panel vocabulary — `title`/`loading`/`field.*`/etc. — not just `actions.*`); `crm.entities.*.version_history.*` is now 0 live / 3,106 dead. Generator: **no in-repo emitter exists** — the keys came from the one-off `0003_crm_translations.sql` bootstrap dump; job/ai/emailsender dumps never carried them. The convention question therefore collapses: FE reads only `system.entities.version_history.*`, and any future dump that reintroduces scoped copies produces dead rows, not behavior. Guard: if a translation-export tool is ever reintroduced, it must not namespace closed platform vocabularies per entity.
 
 ## 3 — Pre-existing svelte-check shim errors
 
 **Evidence.** `pnpm svelte-check` on `primebrick-fe-v3` reports longstanding errors for missing `*.svelte` module shims — `alert`, `loading-bar`, `password`, `toggle` exports. None touch working code; they resurface on every full check and mask real signal.
 
 **Direction.** Add/refresh the `*.svelte` ambient declarations (or fix the upstream exports) so the gate is green and stays meaningful.
+
+**Resolution (2026-11-15).** Root cause was upstream exports, not shims: barrels re-exported named members (`alertVariants`, `LoadingBarSize`, `toggleVariants`, …) through the ambient `*.svelte` wildcard which only declares a default export (TS2614); and `password.svelte.ts` shadowed the `password.svelte` component for `./password.svelte` specifiers under bundler resolution (TS1192). Fix: variants/types moved to per-component `variants.ts`; `password.svelte.ts` → `password-context.svelte.ts` (runes preserved), importers updated. Bare `tsc --noEmit` now fully clean; svelte-check 0/0; E2E panel test green.
 
 ## 4 — Audit: all NATS subscriptions through the lifecycle registry
 
