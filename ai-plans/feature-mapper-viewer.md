@@ -4,15 +4,15 @@
 > cells on DST-shaped mapper documents deserve a prose viewer mirroring
 > the form builder, not the generic JSON inspector.
 
-## Status: ⚪ TODO — Plan date: 2025-11-16
+## Status: 🟢 DONE — Plan date: 2025-11-16
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
-| 1 | v3-ui: `PayloadMapViewer` read-only component (rows = form-builder anatomy, prose not inputs) | ⏳ not done | — | shares `payload-map-editor/` dir + `@primebrick/core` DST types |
-| 2 | fe-v3: `entity.mapperViewer` sheet panel (VIEWER archetype, census-resolved schemas) + registry entry | ⏳ not done | — | mirrors `JsonViewerPanel` + `EntityRecordSheet` census access |
-| 3 | fe-v3: `MapperCellViewer` — CellAffordance "Visualizza mappa" link + ExternalLink → detail route `_blank`; `TableCell` branch on `widget:"payload_map"` | ⏳ not done | — | same anatomy as `ref` default-link cell |
-| 4 | e2e: cell link → sheet opens with prose rows; detail CTA href; extend or sibling `payload-map-widget.spec.ts` | ⏳ not done | — | run vs live stack |
-| 5 | Commit v3-ui + fe-v3 on `feature/mapper-viewer` (or reuse trigger-page branch?) | ⏳ not done | — | decision: new branch vs fold into `feature/jobs-trigger-page-refinement` |
+| 1 | v3-ui: `PayloadMapViewer` read-only component (rows = form-builder anatomy, prose not inputs) | ✅ done | this session | `cc1b9fc` — `payload-map-viewer.svelte` |
+| 2 | fe-v3: `entity.mapperViewer` sheet panel (VIEWER archetype, census-resolved schemas) + registry entry | ✅ done | this session | `eb98292` — `MapperViewerPanel` + SheetHost |
+| 3 | fe-v3: `MapperCellViewer` — CellAffordance "Visualizza mappa" link + ExternalLink → detail route `_blank`; `TableCell` branch on `widget:"payload_map"` | ✅ done | this session | `eb98292` |
+| 4 | e2e: cell link → sheet opens with prose rows; detail CTA href | ✅ done | this session | `mapper-viewer.spec.ts` — green vs live stack |
+| 5 | Commit v3-ui + fe-v3 on `feature/jobs-trigger-page-refinement` | ✅ done | this session | folded in per user decision |
 
 ---
 
@@ -136,15 +136,13 @@ inputs) → ExternalLink href = `/system/job/triggers/<uuid>`.
 
 ---
 
-## Open questions for user
+## Decisions (user, same session)
 
-1. **Row source**: schema-resolved (all target fields incl. unmapped —
-   identical to builder) or authored-entries-only? *Proposal:
-   schema-resolved with "not mapped" muted lines; authored-only fallback
-   when census can't resolve the callable.*
-2. **Branch**: new `feature/mapper-viewer` vs fold into
-   `feature/jobs-trigger-page-refinement` (still open, unmerged)?
-   *Proposal: new branch — different feature, trigger branch may close
-   independently.*
-3. **Panel icon**: `Braces` (JSON family) vs `Route`/`Waypoints` (mapper
-   semantics)? *Proposal: `Waypoints`.*
+1. **Row source**: authored entries rendered FIRST (visible rows = only
+   fields present in the document); **unmapped target fields collapsed
+   in an accordion below** ("Unmapped fields ({count})") when the
+   callable schema resolves. Schema-less mode → authored rows only.
+2. **Branch**: fold into `feature/jobs-trigger-page-refinement` — no
+   orphaned open features (merge-conflict risk).
+3. **Panel icon**: combined — `Waypoints` glyph (mapper semantics)
+   distinct from JSON viewer's `Braces`.
