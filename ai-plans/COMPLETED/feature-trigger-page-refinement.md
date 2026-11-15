@@ -1,12 +1,12 @@
 # Trigger page refinement — lifecycle CTAs order/colors + ELT preview pane removal
 
-## Status: 🟠 WIP — Plan date: 2026-02-21 / session continuing
+## Status: ✅ COMPLETE — Plan date: 2026-02-21 / session continuing
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
 | 1 | Stop CTA icon `square` → `square:filled` + e2e coverage | ✅ done | this session | us-v3 `aaeb258`, fe-v3 `1bfceee`, e2e 2/2 green |
-| 2 | Lifecycle CTA order & colors — order/colors CONFIRMED by user (Part A) | ⏳ not done | next TOC | us-v3 `actions-route.ts` only |
-| 3 | ELT PreviewPanel total removal + dblclick→detail-tab + Columns3 header CTA (Part B) | ⏳ not done | next TOC | fe-v3 — empirical map complete |
+| 2 | Lifecycle CTA order & colors — order/colors CONFIRMED by user (Part A) | ✅ done | this session | us-v3 `401635f` — reorder + warning/success colors; wire-verified via extended icons spec |
+| 3 | ELT PreviewPanel total removal + dblclick→detail-tab + Columns3 header CTA (Part B) | ✅ done | this session | fe-v3 `037b451` — 31 files, −1265 lines; svelte-check 0/0; e2e green (sparkline-hover conditional-skip on empty data) |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->
