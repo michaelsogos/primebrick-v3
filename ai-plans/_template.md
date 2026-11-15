@@ -19,3 +19,10 @@
 
 <Free body: analysis, design decisions, config examples, migration steps,
 acceptance criteria. Whatever structure fits.>
+
+---
+
+> **Lifecycle rules**: plans live here; only fully-done plans move to
+> `COMPLETED/` (one-way archive — nothing inside is ever revisited).
+> Drift (unresolved tasks/notes) MUST be re-homed to an open plan before
+> archiving. See `PLAN-CONVENTIONS.md` — it is the normative doc.

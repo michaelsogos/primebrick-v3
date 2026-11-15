@@ -6,3 +6,6 @@ node_modules/
 *.log
 OLD/
 *.sql
+
+# Scratch area — one-off scripts/dumps live here, never committed
+temp/

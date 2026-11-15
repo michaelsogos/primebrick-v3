@@ -109,11 +109,21 @@ semantics per row.
 5. **`runBulkAction` commented** — kept for reference; both customer endpoints
    migrated to DAL *Many.
 
-## Status — IMPLEMENTED
+## Status — IMPLEMENTED (residual drift noted 2026-11-10)
 
 - DAL: expected_version temp-table guard + ERR01/02/03 per-row detail (≤10)
   on updateMany/deleteMany/restoreMany; pre-write diagnosis inside the tx;
   post-write rowCount anti-race safeguard. 192/192 tests.
+
+### Residual (verified 2026-11-10, pre-existing — not caused by later sessions)
+
+- `test/benchmark/bulk-benchmark.test.ts` ×6 fails `MissingVersionError` —
+  the test never re-fetches `version` after `addMany` (the expected_version
+  guard landed in `352f339` **after** the test was written; reproduces on
+  HEAD). Fix = re-read rows before `updateMany` and pass observed versions,
+  or document the benchmark as incompatible with guarded bulk semantics.
+- `entity-capability-mixins` composed-instance test also fails on HEAD
+  (shared-DB contamination, unrelated to this plan).
 - BE: customers bulk-delete/restore → deleteMany/restoreMany;
   config bulkSoftDelete → reserved read + deleteMany; bulkUpdate passes
   caller version → updateMany; errorHandler delegates to SDK mapDalError;
