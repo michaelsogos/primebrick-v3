@@ -1,98 +1,97 @@
-# Trigger page refinement — lifecycle CTAs order/colors + ELT preview pane
+# Trigger page refinement — lifecycle CTAs order/colors + ELT preview pane removal
 
 ## Status: 🟠 WIP — Plan date: 2026-02-21 / session continuing
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
-| 1 | Stop CTA icon `square` → `square:filled` + e2e coverage (TOC) | ✅ done | this session | us-v3 `aaeb258`, fe-v3 `1bfceee`, e2e 2/2 green |
-| 2 | Decide + implement lifecycle CTA order & colors (see Part A) | ⏳ not done | — | TIC — pending user sign-off on proposal |
-| 3 | Decide ELT `PreviewPanel` fate: ref-inspector vs removal (see Part B) | ⏳ not done | — | TIC — pending user decision |
+| 1 | Stop CTA icon `square` → `square:filled` + e2e coverage | ✅ done | this session | us-v3 `aaeb258`, fe-v3 `1bfceee`, e2e 2/2 green |
+| 2 | Lifecycle CTA order & colors — order/colors CONFIRMED by user (Part A) | ⏳ not done | next TOC | us-v3 `actions-route.ts` only |
+| 3 | ELT PreviewPanel total removal + dblclick→detail-tab + Columns3 header CTA (Part B) | ⏳ not done | next TOC | fe-v3 — empirical map complete |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->
 
 ---
 
-## Part A — Lifecycle CTA order & colors (TIC)
+## Part A — Lifecycle CTA order & colors (CONFIRMED, ready for TOC)
 
-### Empirical semantics (verified `job-handler/src/services/schedule-service.ts`)
+User's order: `stop (warning) → pause (warning) → resume (success) → [Preview — dies in Part B] → enable (success) → disable (destructive)`. Effective final order (Preview removed per Part B):
 
-| Op | Mechanism | Status written | Permanence |
-|----|-----------|----------------|------------|
-| `stop` | `disarmSchedule(…,"stopped")` — JetStream purge + mirror flip | `stopped` | Transient — owner/engine may re-arm (trigger refresh, service re-declare) |
-| `pause` | `disarmSchedule(…,"paused")` — same purge | `paused` | Held — `paused ∈ SUPPRESSED_STATUSES`, every re-arm path suppressed until `resume`; survives restarts |
-| `disable` | `disableSchedule` → `dal.delete` on owning `job_trigger` — literal soft-delete; engine disarms via changed-broadcast | (row gone) | Permanent — only explicit `enable` (`dal.restore`) brings it back |
+```
+stop      warning      armed only
+pause     warning      armed only
+resume    success      paused only
+enable    success      stopped/paused/disabled states
+disable   destructive  always LAST custom op (soft-delete of the owning trigger)
+```
 
-Key docstrings in service: `disarmed` = permanent off · `paused` = suspended until resume · `stopped` = temporary instance kill.
+Implementation = **declaration reorder + `cta.color` in `us-v3 job-handler/src/controllers/http/actions-route.ts` only** — `TableRow.svelte` renders custom ops in declaration order, before the standard Delete/Restore block, so no FE change needed for ordering.
 
-### Current state
+TOC checks: verify `color: "warning"` / `"success"` are valid tokens in the FE ActionChrome/color contract (only `"destructive"` is used today); extend `jobs-schedule-cta-icons.spec.ts` with order + color assertions.
 
-- `actions-route.ts` declaration order: `stop, disable, enable, pause, resume`.
-- `TableRow.svelte` renders custom ops in declaration order, before standard Delete — so on an armed row the kebab shows `stop, disable, pause` (destructive mid-menu).
-- Colors today: `disable` = `destructive` ✓ already; `stop`, `pause`, `resume`, `enable` = neutral.
+### Empirical semantics (unchanged — presentation-only task)
 
-### Proposal (pending sign-off)
-
-- **Order:** `stop, pause, resume, enable, disable` — `disable` last in every visible state:
-  - armed → `stop, pause, …, disable`
-  - paused → `resume, …, disable`
-  - stopped → `enable?, …, disable`
-- **Colors:** `pause` → `warning` (amber matches its status badge; it *holds* the schedule). `stop` stays neutral — transient kill, warning would overclaim. `resume`/`enable` neutral. `disable` stays `destructive`.
-- **Semantics unchanged** — this is presentation-only; backend lifecycle untouched.
-
-### Acceptance criteria
-
-- [ ] Kebab order verified per row state (armed/paused/stopped) — `disable` always last custom op, before standard Delete/Restore block.
-- [ ] `pause` renders `color: "warning"` in row + bulk surfaces.
-- [ ] e2e spec extended: order + color assertions for the kebab menu.
-- [ ] No change to `disarmSchedule`/`disableSchedule`/`resumeSchedule` behavior.
-
-### Open questions for user
-
-1. `stop` color — neutral (proposal) or warning (if you read "kill now" as stronger than "hold")?
-2. Should `enable` sit next to `disable` (paired) or adjacent to `resume` (both = "bring back")? Proposal: adjacent to `disable` keeps the destructive pair at the tail.
+| Op | Mechanism | Status | Permanence |
+|----|-----------|--------|------------|
+| `stop` | `disarmSchedule(…,"stopped")` — JetStream purge | `stopped` | Transient — may auto re-arm |
+| `pause` | `disarmSchedule(…,"paused")` — same purge | `paused` ∈ SUPPRESSED | Held until manual resume |
+| `disable` | `dal.delete` on owning `job_trigger` — literal soft-delete | — | Permanent; only `enable` restores |
 
 ---
 
-## Part B — ELT `PreviewPanel` fate (TIC)
+## Part B — ELT PreviewPanel REMOVAL (approved: "buttiamo via senza nemmeno commentare")
 
-### Current state
+### Empirical inventory (fe-v3)
 
-- `PreviewPanel.svelte` duplicates the row's own record: fields transposed into sections (sticky/data/auditing) + kebab actions + micro-pager + "Edit mode — coming soon" stub.
-- Sheets already cover: record view, edit, version history, ref navigation via stacking.
-- Verdict from session analysis: the pane shows the row you're already looking at — redundant as-is.
+**Files to delete entirely:**
+- `src/lib/components/entity-list-table/panels/PreviewPanel.svelte` (332 l.)
+- `src/lib/components/entity-list-table/components/PreviewPanelWrapper.svelte` (242 l.)
+- `src/lib/components/entity-list-table/composables/usePreviewPanel.svelte.ts` (102 l.)
+- `panels/index.ts` export entry (verify)
 
-### Options on the table
+**Files to edit:**
 
-| Option | What it means | Cost | Value |
-|--------|---------------|------|-------|
-| **A. Remove** | Comment out / delete the pane + its mount points | Low | Kills dead weight; sheets own record detail |
-| **B. Ref-inspector** | Pane auto-shows the *related* entity (e.g. `job_schedule` mirror → owning `job_trigger` document), not the record itself | Medium | Zero-click ambient context the sheet can't give; pane = context, sheet = action surface |
-| **C. Keep as-is** | Status quo | Zero | Redundant duplicate of sheet functionality |
+| File | Change |
+|------|--------|
+| `EntityListTable.svelte` | Remove `usePreviewPanel` (~L475), `navigatePreview`, `previewDropdownOpen`, `dropdownMenuRow` stays (kebab), `PreviewPanelWrapper` mount, `onPreviewRow` in `useRowActions` opts (~L627), `preview: opAllowed('get')` in `effectiveRowActions` (~L559), `preview` in `hasEntityRowActions` (~L581), preview args in `useKeyboardNavigation` (~L663-668) and `createClickHandlers` (~L704) |
+| `useKeyboardNavigation.svelte.ts` | Remove ArrowLeft/Right preview nav (L37-47) + ArrowUp/Down `openPreview` branches (L90-95, L106-111) + the 5 preview options. **Re-home `focusedRowIndex`** — it lives in `usePreviewPanel` state but also drives `data-focused-row-index`, scroll-into-view, Space-select, Enter-dropdown → move into the composable or local `$state` in EntityListTable |
+| `click-handlers.ts` | Remove `handlePreviewRow` + `previewPanel` param; dblclick handler moves here or to TableRow prop |
+| `TableRow.svelte` | Remove Preview menu item (L322-338) + fix the `versionHistory \|\| preview` group condition (L322); `ondblclick` → `window.open(detailHref, '_blank')` (L118) |
+| `EntityListTableHeaderRow.svelte` | Replace PanelRightOpen/Close toggle (L185-211) with `Columns3` → `openSheet('entity.columns', {stickyColumnsGroup, nonAuditingColumns, auditingColumnsGroup, visibleKeys, toggleColumnKey, onResetColumnVisibility})` — same call as `EntityListTableHeader.svelte:153` |
+| `types.ts` | Remove `preview?: boolean` (L37) from `entityRowActions` |
+| `useRowActions.svelte.ts` | Remove `onPreviewRow` option + preview item build |
+| Callers passing `entityRowActions={{ preview… }}` | grep at TOC (`entityRowActions` prop passthrough, e.g. EntityTablePage) |
 
-### Analysis
+**New dblclick contract:**
+- `kind:'detail'` census route for the entity, `[param]` → `row[uid]` — same resolution as `EntityTablePage.svelte:161` (`shellNav.moduleNav?.routes?.find(r => r.kind === 'detail' && r.entity === entity)`) and `entity-links.ts:entityRefHref` (`route.replace(/\[[a-zA-Z0-9_]+\]/, value)`). Example wire: `/system/job/triggers/[uuid]` → `/system/job/triggers/<uuid>`.
+- `window.open(href, '_blank')` inside a user gesture (dblclick) → new tab takes focus natively. No `noopener` needed for same-origin.
+- No `kind:'detail'` decl → proposal: no-op + `import.meta.env.DEV` console.warn (consistent fail-closed behavior — record isn't standalone-browsable).
 
-- Option B is the only version that earns its keep: the `job_schedule` row is a thin mirror (subject/spec/status) while the trigger is the real document — surfacing it ambiently is genuinely new information.
-- Risk of B: splits the mental model — "when does a ref open in the pane vs a stacked sheet?" Needs a crisp rule (pane = automatic context, sheet = user-invoked navigation) or it becomes confusing.
-- Option A is honest cleanup if B's UX rule can't be made crisp.
+**Key bindings — confirmed:**
+- ArrowLeft/Right were bound **only while pane open** → fully freed, nothing else claims them.
+- ArrowUp/Down keep row-focus movement + page-edge paging; lose only the auto-`openPreview` branch.
+- Space (select), Enter (row dropdown), Escape (close dropdown), PageUp/Down/Home/End (pager), Insert (create) — all unchanged.
 
-### Open questions for user
+**Meta governability of Preview — confirmed:**
+- `preview: opAllowed('get')` — the ONLY meta hook; `get` op itself stays in the contract (still gates read data). No `row_custom_actions` or `meta.table.*` field references preview. Removing = drop the flag + item + `onPreviewRow` plumbing.
 
-1. B or A? If B: which ref does the pane resolve for each entity (schedule→trigger obvious; what's the rule generically — first `entity_ref`/`ref` meta field? manifest-declared `preview_ref`?)
-2. Does pane-vs-sheet need an explicit UX rule doc'd in `docs/dev-guide/` before we build B?
+**E2E blast radius:**
+- `src/e2e/entity-list-table-interactions.spec.ts` — L14/69/249: dblclick→pane + arrow-preview assertions → rewrite: dblclick → `context.waitForEvent('page')` popup → assert URL `…/detail/<uuid>` + popup is focused (`popup.evaluate(() => document.hasFocus())`); arrow-left/right assertions removed.
+- `src/e2e/job-triggers-deletion-filter.spec.ts:196` — searches menu texts for `preview|anteprima|…` → update expected menu content.
 
-### Acceptance criteria (if B)
+**Orphaned cleanup (decide at TOC):**
+- i18n keys: `system.entities.list.preview`, `preview_panel_title`, `toggle_preview_panel`, `edit_mode_label` (+ `sticky_fields`/group headers if unused elsewhere) — remove or leave dormant?
+- sessionStorage `pb-preview-panel:{entity}` — dead key, harmless; no migration needed.
+- `EntityListTableHeaderRow` imports `PanelRightClose/PanelRightOpen` — drop with the button.
 
-- [ ] Pane shows the *referenced* entity, not the row's own record.
-- [ ] Rule for ref resolution documented (meta-driven, not hardcoded per entity).
-- [ ] Sheet remains the action/edit surface; pane is read-only context.
-- [ ] e2e: opening a schedule row shows trigger content in the pane.
+### Acceptance criteria
 
-### Acceptance criteria (if A)
-
-- [ ] `PreviewPanel` + mount points removed/commented; no dead imports.
-- [ ] No regression in list page render (e2e smoke).
-- [ ] Decision recorded in dev-guide so it isn't re-proposed.
+- [ ] `grep -ri "previewpanel\|preview_panel\|openPreview" src/lib` → 0 hits (except unrelated `EntityRecordSheet` previews).
+- [ ] Row kebab: no Preview item; versionHistory grouping still renders.
+- [ ] Header actions column: `Columns3` button opens the columns sheet (same sheet as toolbar CTA).
+- [ ] dblclick on a row → new browser tab on the `kind:'detail'` route, focused; parent tab untouched.
+- [ ] ArrowLeft/Right unbound; ArrowUp/Down still move row focus; Space/Enter/Escape/pager keys unchanged.
+- [ ] `tsc`/svelte-check clean; e2e `entity-list-table-interactions` + `job-triggers-deletion-filter` updated and green.
 
 ---
 
