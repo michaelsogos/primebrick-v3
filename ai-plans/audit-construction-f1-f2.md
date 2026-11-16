@@ -278,12 +278,13 @@ keep the old shape → acceptable: old partitions age out and drop.)
 - SDK dev-guide — `partitionMaintenance` option.
 - us-v3 + be-v3 rules/docs where partition/retention is mentioned.
 
-## Open decisions for user (doubt protocol — asked, defaults marked)
+## Decisions — ALL CLOSED (user, 2026-11-17)
 
-1. **Audit PK shape**: (a) `uuid uuid DEFAULT uuidv7()` + PK `(uuid, changed_at)` ← RECOMMENDED (single-@Key meta rule holds, wire key `uuid`, doctrine uuid-PK). (b) composite `(entity_uuid, version, changed_at)` — saves 16B/row but needs a meta-validation exception for AuditLogEntity.
-2. **Decorator names**: `@Partition` new + `PartitionField` alias-deprecated ← RECOMMENDED (your vocabulary) vs keep `@PartitionField`.
-3. **BE namespace**: materialize as `primebrick-api.*` (verify in TOC) vs in-process 24h scheduler fallback ← RECOMMENDED try-wire-first.
-4. **Audit `uuid` in wire**: field name `uuid` (FE `entry.uuid`) ← default.
+1. **Audit PK shape**: `uuid uuid NOT NULL DEFAULT uuidv7()` + `PRIMARY KEY (uuid, changed_at)` — single-@Key rule holds, wire key `uuid`. Composite REJECTED.
+2. **Decorator names**: `@Partition` (new name; `PartitionField` becomes deprecated alias for one release, all in-repo usages migrate now) + `@Retention` property decorator.
+3. **BE wire**: materialize as `primebrick-api.*` via `declareSystemJobs` — PERIOD. A local in-process scheduler was proposed and **rejected by the user as a drift vector** (hidden second maintenance path, invisible to the triggers UI, no job_triggers row — exactly how this debt was born). If JH rejects the namespace, the fix is legitimizing the namespace acceptance — never a parallel path.
+4. **Orphans**: DROP NOW in the same migration patch — `job.job_runs_audit`, `job.job_schedules_audit`, `job.job_rules_audit` part_config+template, `public.ai_cerebellum_audit`, `public.ai_models_audit`, `public.customers_audit` + matching `partman.template_*`. No deferred debt. (Verified: job_runs_audit = 0 rows.)
+5. **Audit `uuid` in wire**: field name `uuid`; FE `entry.uuid`.
 
 ## Verification (each phase ends here)
 
