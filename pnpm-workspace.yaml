@@ -7,6 +7,7 @@ packages:
   - "../primebrick-us-v3/ai"
   - "../primebrick-us-v3/job-handler"
   - "../primebrick-us-v3/crm"
+  - "../primebrick-us-v3/boilerplate"
   - "../primebrick-dal-v3"
   - "../primebrick-decimal"
   - "../primebrick-v3-sdk"
