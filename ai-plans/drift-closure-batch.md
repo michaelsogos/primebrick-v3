@@ -14,7 +14,7 @@ Commit after every turn of changes. No workarounds.
 | ~~D5~~ | bind address | i18n | **DONE** sdk `6719174` — `resolveHttpBindHost()` param-free (0.0.0.0 prod / 127.0.0.1 dev); `hostname` option + unseeded `http_bind_host` row removed — no opt-in exists |
 | — | translate-all preview | i18n | abandoned — superseded by V3 sheet anatomy |
 | — | login auto-refresh hang | session | user: skip |
-| — | ELT phases 3-5 | elt-ref-cell-sheet-plan | AFTER drift closure (user chose "a") |
+| ~~—~~ | ELT phases 3-5 | elt-ref-cell-sheet-plan | **DONE** — verified 2026-11-13 in the plan itself (EntityRecordSheet + CellAffordance + EntityFormSurface landed, E2E green). Stale inventory line corrected 2026-11-16. |
 
 ## D3 — "reboot without shutdown" (self-healing migration recovery)
 
@@ -128,7 +128,7 @@ Commit after every turn of changes. No workarounds.
 4. D5 IPv4 bind (decided contract)
 5. D4 W6 docs (propose → approve → write)
 6. Close plans → move to completed/ as each reaches zero drift
-7. ELT phases 3-5 (after drift zero)
+7. ~~ELT phases 3-5~~ — already landed (see inventory)
 
 ## Acceptance
 
