@@ -224,3 +224,13 @@ the codebase; the parent-driven retention model is the only second thing.
 > `COMPLETED/` (one-way archive — nothing inside is ever revisited).
 > Drift (unresolved tasks/notes) MUST be re-homed to an open plan before
 > archiving. See `PLAN-CONVENTIONS.md` — it is the normative doc.
+
+## Decisions — CLOSED (all resolved in TIC)
+
+- **D1** audit retention 12mo, global default 3mo — CLOSED (user).
+- **D2** `@Retention` separate decorator, orthogonal to `@Partition` — CLOSED (user).
+- **D4** audit-row surrogate `id` eradicated immediately (debt, user-mandated) — CLOSED.
+- **D5** BE does NOT get SDK auto-wire (BE ≠ `createMicroservice`, NODE vs BUN, porting soon). BE wires the same pieces manually at boot (`declareSystemJobs` + `dal.partitionMaintenance(ENTITY_REGISTRY)`) — BE-only, minimal shared surface — CLOSED (user).
+- **D6** `@Retention` legal on NON-partitioned tables → row-level sweep by same executor. Document in all repos + dev-guide (abundantly) — CLOSED (user).
+- **D7** wire `id`: the audit API DOES project `id: bigint` (audit-query.ts:103) and `VersionHistoryEntry` types it — but it is the surrogate bigint being eradicated. Post-D4: drop `id` from the wire; panel re-keys to `entity_uuid:version` (unique per entity write). No uuid column added (16B/row waste on the heaviest table) — CLOSED.
+- **Retention default**: 3mo global applies when entity has `@Partition`/`@Retention` absent? NO — clarified: global default 3mo applies to audit tables? NO — audit = 12mo. Global 3mo = default when dev declares `@Retention`-less `@Partition`? DECIDE: default applies only where retention is *implied* (audit=12mo fixed, domain partition requires explicit `@Retention` — no silent 3mo on domain data). Recorded: global 3mo = fallback for any `@Retention`-less retention-bearing surface.

@@ -295,3 +295,8 @@ verified call-by-call during TIC; writes pass `{actor}` without `audit:`).
 > `COMPLETED/` (one-way archive — nothing inside is ever revisited).
 > Drift (unresolved tasks/notes) MUST be re-homed to an open plan before
 > archiving. See `PLAN-CONVENTIONS.md` — it is the normative doc.
+
+## Decisions — resolved (user)
+
+- **A — `job_run` audit: NON-ISSUE, resolved by design evidence.** `JobRunEntity` and `JobScheduleEntity` carry the `Auditable` mixin (version + created_by/updated_by — needed for optimistic lock and "who armed/stopped" stamping) but deliberately NOT `@AuditTrail()` — entities-route.ts:54/65 documents intent verbatim: "Derived mirror is not auditable state" / "The run row IS the audit trail". Only `JobTriggerEntity` has `@AuditTrail()` → `job_triggers_audit` is the only trail table. The auto-inject is a no-op on non-`@AuditTrail` entities (verify `writeAudit` guard in TOC). **Side-debt found**: `job_runs_audit`/`job_schedules_audit` exist in live DBs (patches 0005/0006 alter them) but are no longer emitted → orphaned, growing tables → TOC adds a drop patch.
+- **B — delete/restore via repo-helper (not svc).** `actions-route.ts` `setTriggerDeleted` casts `getDal()` to a structural `{delete, restore}` to soft-delete/restore `job_triggers`. The comment claims hooks "stay canonical" — but the raw call skips the audit port → trigger disable/enable is invisible in `job_triggers_audit` (real functional hole). Fix: named helpers `softDeleteTrigger/restoreTrigger` in `db/entity-repo.ts` (same `{actor, matchBy:"uuid"}` semantics, no hook interference); post task-0 they get audit auto-injected. The structural cast disappears.
