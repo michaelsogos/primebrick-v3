@@ -67,27 +67,38 @@ The machinery is ~90% built — the missing part is the "by construction" wire:
 
 ## C. Design — what "by construction" means
 
-### C.0 The decorator surface (verified — the user's instinct is already the design)
+### C.0 The decorator surface — redesigned per user feedback (partition ≠ retention)
 
-The project's partitioning IS decorator-declared on the entity class today:
+**User correction 1 — `id` PK claim was stale**: entity surrogate `id` IS
+eradicated (uuid PKs; `entity_id` in audit is conditional, dropped for
+uuid-PK entities — verified `repository.ts:102,3094`). BUT the audit ROW's
+own `"id" bigint identity` is still emitted today as
+`PRIMARY KEY ("id","changed_at")` — flag for decision D4 whether to drop it
+in favor of `(entity_uuid, changed_at[, version])`.
 
-- `@PartitionField({ interval, retention, keepTable })` — **property**
-  decorator on the partition-key column (the key IS a column; PG requires it
-  inside every unique constraint — the emitter auto-adds it to the PK,
-  which is why audit PKs are `(id, changed_at)`).
-- `@PartitionChildOf({ parent, ref })` — **class** decorator: children carry
-  NO partition key at all; they are logically attached to the parent's
-  retention unit and purged set-based before the drop.
+**User correction 2 — partition alone does NOT retain**: `PARTITION BY` only
+slices the table; dropping needs retention. Carrying `retention` inside
+`@PartitionField` conflates the two concepts. Redesign:
 
-So the polymorphism idea is right and mostly already built: audit tables are
-EMITTED from the same entity meta — adding `auditRetention` to the meta feeds
-the identical emission path. What audit needs is only the retention VALUE
-(partition shape is fixed: `changed_at`, `1 month` — no dev choice):
-
-- **`@AuditRetention("12 months")` class decorator** (or an `Auditable`
-  option) → entity meta `auditRetention` → emit-sql-patch writes the
-  `part_config` UPDATE. Absent → global default; `"forever"`/`null` →
-  compliance opt-out (no retention UPDATE emitted).
+- `@Partition({ interval, keepTable, premake })` — property decorator on the
+  partition-key column: HOW the table is sliced. (Rename of today's
+  `@PartitionField` minus `retention` — or keep the name, drop the option.)
+- `@Retention("6 months")` — NEW decorator, orthogonal: WHEN content
+  expires. Associated to the partition at class/column level; its meaning
+  does not depend on partitioning — on a partitioned table it drives
+  partition drops, on a plain table it could drive row-level sweeps (the
+  executor already does those for default-partition strays).
+- The dev composes both: `@Partition({interval:"1 month"})` on the key
+  column + `@Retention("6 months")` — retention defaults exist, override
+  stays possible (part_config is writable; trigger/ops can adjust later).
+- **Audit by construction**: `changed_at` partition is fixed emission
+  (no dev choice); `@Retention` on the entity (or its absence → global
+  default) feeds the audit `part_config` UPDATE through the SAME meta →
+  emit path. One decorator, two consumers — the polymorphism the user
+  described.
+- Migration: `ai_conversations` declaration splits
+  `@PartitionField({interval:"1 month", retention:"6 months"})` →
+  `@Partition({interval:"1 month"})` + `@Retention("6 months")`.
 
 ### What the job actually does (verified end-to-end)
 
@@ -163,11 +174,15 @@ Lift the ai pattern into the governed boot path:
 - **D1 — default retention value**: `12 months`? `24`? And which entities
   opt out forever (`auth_events`, security trails)? My default proposal:
   `12 months` global + meta opt-out.
-- **D2 — retention knob shape**: `@AuditRetention("12 months")` class
-  decorator (separate concern, composable with the `Auditable` mixin) vs an
-  `Auditable({ retention: "12 months" })` mixin option (one declaration site
-  for "this entity is audited + how long"). Default proposal: the mixin
-  option — audit-ness and audit-retention are one concept at one site.
+- **D2 — retention knob shape**: separate `@Retention("…")` decorator
+  (orthogonal concept, user-favored — partition ≠ retention) vs
+  `Auditable({ retention })` mixin option. Default proposal: `@Retention`
+  per user feedback.
+- **D4 — audit row `id`**: keep the identity `id` in audit PK
+  (`(id, changed_at)`) or eradicate it too → `(entity_uuid, changed_at[,
+  version])`? PG only requires the partition column inside the PK — both
+  shapes are valid; dropping `id` is cleaner (uuid-PK coherence) but changes
+  audit-table DDL on live systems.
 - **D3 — schedule**: ai uses a seed schedule (check `SEED_SCHEDULE` value at
   TOC — likely daily/weekly); default: inherit same spec globally.
 
