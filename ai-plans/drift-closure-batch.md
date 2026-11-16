@@ -89,10 +89,36 @@ Commit after every turn of changes. No workarounds.
   doubles as hints source.
 - **Caveat**: workflows go green once `feature/elt-keyboard-legend`
   merges to develop (the baseline-capable tool lives there until then).
-- **Pre-existing finding (out of scope)**: dal/core/sdk/ui release
-  `ci.yml` publish lanes die at `pnpm install` — `workspace:*` deps
-  unresolvable on standalone checkout (empirically verified). Publish-
-  version pinning strategy is a separate decision.
+- **Pre-existing finding — RESOLVED 2026-11-16**: release `ci.yml` publish
+  lanes died at `pnpm install` (`workspace:*` unresolvable on standalone
+  checkout) — had failed silently for ~10 releases/package since 2026-10-16.
+  Root cause chain and fixes, all landed:
+  1. **Workspace reconstruction** — each publish lane checks out required
+     sibling repos at `main` + a synthetic root `package.json` +
+     `pnpm-workspace.yaml` (same pattern as `check-standards.yml`), then
+     installs from the workspace root. `workspace:*` stays the canonical
+     manifest convention (link: overrides were removed in `ad65720` on
+     purpose — they break `pnpm deploy` injection).
+  2. **`pnpm pack` before publish** — rewrites `workspace:*` to concrete
+     versions inside the tarball; `npm publish ./*.tgz --provenance` does
+     the OIDC exchange + Sigstore attestation (pnpm 9.15.9 cannot).
+  3. **Deterministic extract-docs** — TypeDoc output normalized for
+     cross-platform determinism: `\r\n?`→`\n` inside string values and
+     `fileName` paths stripped to `node_modules/…` suffix (both leaked
+     the local dev layout into committed docs → freshness gate
+     unpassable). Propagated to core/dal/sdk/decimal/ui extractors.
+  4. **Docs-gate diagnostics** — the freshness check now prints the real
+     `git diff -- docs/` on failure instead of just the porcelain marker.
+  5. **npm Trusted Publisher** — `@primebrick/core`'s config was expired;
+     recreated on npmjs.com (`michaelsogos/primebrick-v3-core` + `ci.yml`).
+  6. **ui type-check** — release lane uses `pnpm check` (svelte-check);
+     plain `tsc --noEmit` cannot resolve `*.svelte` modules.
+  Published: decimal `3.1.3`, core `3.4.6`, dal-pg `3.6.2` (manifest pins
+  `@primebrick/core@3.4.6` — workspace dep correctly resolved), sdk
+  `3.5.1`, ui `3.4.4`. Burnt tags left on origin as honest history:
+  core `3.4.1`–`3.4.5`, dal `3.6.1`, ui `3.4.2`/`3.4.3`.
+  Debt swept along the way: `pluralize`/`@types/pluralize` `^` ranges
+  pinned to exact versions in sdk (next publish carries the fix).
 
 ## Order
 
