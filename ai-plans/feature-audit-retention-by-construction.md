@@ -10,8 +10,9 @@
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
-| 1 | dal-pg `emit-sql-patch`: emit `UPDATE partman.part_config SET retention='<default>'` for EVERY `*_audit` table (currently only `create_parent`, never expires) | ⏳ not done | — | the one-line gap: partitions are created monthly but never dropped — decision D1 (retention value + per-entity override) |
-| 2 | dal-pg entity meta: per-entity audit-retention option (e.g. `auditRetention` / opt-out for compliance tables) | ⏳ not done | — | default wins; `null` = keep forever for security-relevant entities — decision D1 |
+| 0 | **D4 decided — eradicate audit-row `id`**: emit-sql-patch drops `id`/`entity_id` from new audit tables → PK `(entity_uuid, changed_at[, version])`; `AuditLogEntity` class updated; FE `VersionHistoryPanel` re-keyed (D7); migration patch per service on live DBs (drop PK + columns on partitioned parents) | ⏳ not done | — | user: "debito tecnico da fare subito" |
+| 1 | dal-pg `emit-sql-patch`: emit `UPDATE partman.part_config SET retention='12 months'` for EVERY `*_audit` table (currently only `create_parent`, never expires) | ⏳ not done | — | D1: audit default 12mo; global `@Retention`-absent default 3mo |
+| 2 | dal-pg: `@Retention("…")` decorator + meta field; `@PartitionField` loses `retention` option (split partition ≠ retention); migrate `ai_conversations` decl; `job_run` gets its own retention value if different (see debt plan A) | ⏳ not done | — | D2 decided; D6: also row-level retention on plain tables |
 | 3 | SDK `createMicroservice`: auto-mount `<svc>.partition_maintenance` callable + auto-declare `partition-maintenance` system trigger when registry has ANY partitioned/auditable entity | ⏳ not done | — | hoists ai's `partition-jobs.ts` into the governed boot path; the trigger materializes via existing `declareSystemJobs` → JH arms JetStream |
 | 4 | ai: delete `controllers/nats-sub/partition-jobs.ts` (absorbed by SDK auto-wire) — keep behavior parity (armed flag, retry loop, `PartitionMaintenanceSchema` payload contract) | ⏳ not done | — | verify the auto-declared trigger key matches the existing materialized row or migrate it |
 | 5 | `dal.partitionMaintenance` gate check: cover audit parents — today ai gates declaration on domain `partition.retention` only | ⏳ not done | — | after task 1, every auditable entity implies a maintained parent |
@@ -171,18 +172,38 @@ Lift the ai pattern into the governed boot path:
 
 ## D. Decisions for the user
 
-- **D1 — default retention value**: `12 months`? `24`? And which entities
-  opt out forever (`auth_events`, security trails)? My default proposal:
-  `12 months` global + meta opt-out.
-- **D2 — retention knob shape**: separate `@Retention("…")` decorator
-  (orthogonal concept, user-favored — partition ≠ retention) vs
-  `Auditable({ retention })` mixin option. Default proposal: `@Retention`
-  per user feedback.
-- **D4 — audit row `id`**: keep the identity `id` in audit PK
-  (`(id, changed_at)`) or eradicate it too → `(entity_uuid, changed_at[,
-  version])`? PG only requires the partition column inside the PK — both
-  shapes are valid; dropping `id` is cleaner (uuid-PK coherence) but changes
-  audit-table DDL on live systems.
+- **D1 — retention values**: ✅ DECIDED — audit tables `12 months`;
+  global default retention `3 months` (domain `@Partition` without explicit
+  `@Retention`, and any future plain-retention surface).
+- **D2 — retention knob**: ✅ DECIDED — `@Retention("…")` decorator,
+  orthogonal to `@Partition`.
+- **D3 — schedule**: ai uses `"0 3 * * *"` (daily 03:00, verified
+  `partition-jobs.ts:49`). Default: same spec for every service.
+- **D4 — audit row `id`**: ✅ DECIDED — eradicate now. Consequence chain:
+  PK `(entity_uuid, changed_at)` (partition col required; consider
+  `version` for uniqueness); `AuditLogEntity` class drops `id`; FE
+  `VersionHistoryPanel` keys rows by `entry.id` — wire key becomes
+  `entity_uuid:version:changed_at` composite or an added `uuid` column
+  (sub-decision below). Live migration: ALTER on partitioned parents
+  (drop PK + column — propagates to partitions; default partition too) —
+  patch per service.
+- **D5 — BE schema coverage**: `partman.part_config` is DB-global, but the
+  executor maintains only its own schema (isolation). BE does NOT boot via
+  SDK `createMicroservice` — no auto-wire path exists there. Options:
+  (a) BE gets an equivalent hand-wired job (it has dal + can call SDK
+  `declareSystemJobs` over its NATS if present — verify at TOC);
+  (b) leave BE audits maintained by a platform-owned path. Default
+  proposal: (a) — same mechanism, wired manually in BE boot.
+- **D6 — `@Retention` on NON-partitioned tables**: does the decorator also
+  enable row-level retention sweeps on plain tables (executor already does
+  row-level deletes for strays — extension is mechanical)? Default
+  proposal: YES — same knob, same executor; makes `@Retention` a real
+  first-class concept, not a partition accessory.
+- **D7 — audit wire `id` replacement**: FE keys entries by `entry.id`.
+  Options: (a) composite client key `entity_uuid:version:changed_at`
+  (zero schema cost); (b) add `uuid` column to audit tables (consistent
+  uuid-PK story, +16B/row on the highest-volume table). Default proposal:
+  (a).
 - **D3 — schedule**: ai uses a seed schedule (check `SEED_SCHEDULE` value at
   TOC — likely daily/weekly); default: inherit same spec globally.
 
