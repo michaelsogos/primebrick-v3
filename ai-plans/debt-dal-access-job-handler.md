@@ -300,3 +300,50 @@ verified call-by-call during TIC; writes pass `{actor}` without `audit:`).
 
 - **A — `job_run` audit: NON-ISSUE, resolved by design evidence.** `JobRunEntity` and `JobScheduleEntity` carry the `Auditable` mixin (version + created_by/updated_by — needed for optimistic lock and "who armed/stopped" stamping) but deliberately NOT `@AuditTrail()` — entities-route.ts:54/65 documents intent verbatim: "Derived mirror is not auditable state" / "The run row IS the audit trail". Only `JobTriggerEntity` has `@AuditTrail()` → `job_triggers_audit` is the only trail table. The auto-inject is a no-op on non-`@AuditTrail` entities (verify `writeAudit` guard in TOC). **Side-debt found**: `job_runs_audit`/`job_schedules_audit` exist in live DBs (patches 0005/0006 alter them) but are no longer emitted → orphaned, growing tables → TOC adds a drop patch.
 - **B — delete/restore via repo-helper (not svc).** `actions-route.ts` `setTriggerDeleted` casts `getDal()` to a structural `{delete, restore}` to soft-delete/restore `job_triggers`. The comment claims hooks "stay canonical" — but the raw call skips the audit port → trigger disable/enable is invisible in `job_triggers_audit` (real functional hole). Fix: named helpers `softDeleteTrigger/restoreTrigger` in `db/entity-repo.ts` (same `{actor, matchBy:"uuid"}` semantics, no hook interference); post task-0 they get audit auto-injected. The structural cast disappears.
+
+## B — REVISED: the question was wrong; the architecture already answers it
+
+Census of "what we do in other cases": **CRM follows the canonical shape** —
+every entity family has `XxxService extends DomainService<XxxEntity>` (12+
+services, e.g. `CustomersService`, `ConsentTypesService`). `DomainService`
+(dal-pg `src/entity/domain-service.ts`) is THE sanctioned wrapper: lazy
+`this.dal` gateway + `this.svc` = the same composed `EntityService` the
+entity-router uses — full surface `list/get/create/update/delete/restore/
+purge/bulkDelete/bulkRestore/audit/stream`.
+
+`EntityServiceConfig` (entity-service.ts:168-170) already carries the
+by-construction guarantees:
+- `auditPort` — DEFAULTS to `makeTableAuditPort(repo)` — every svc write is
+  audited with ZERO dev action;
+- `actor` — `() => string` supplier bound once per service (US binds SDK
+  `requireActor`); every write stamps `changed_by` — dev never passes actor.
+
+JH is the anomaly: its "services" are free function modules
+(`triggers-engine`, `schedule-service`, `due-forwarder`, `run-recorder`,
+`system-triggers`) calling `getDal()` raw, and `entity-repo.ts` free helpers
+are an ad-hoc seam duplicating what `DomainService` already is. The cast in
+`actions-route.ts` exists only because there is no owning service class.
+
+### Correct B resolution (canonical, reusable, by construction)
+
+1. JH gains per-entity `DomainService` subclasses:
+   `JobTriggersService`, `JobSchedulesService`, `JobRunsService`
+   (+ others as the census requires) — each owning ALL persistence queries
+   for its entity as named methods (the 25 baseline call sites become
+   methods, verbatim SQL preserved).
+2. Transport + engine services call service methods — `getDal()` survives
+   only inside `db/dal.ts` bootstrap and `DomainService` itself.
+3. `entity-repo.ts` free functions are ABSORBED into the owning services —
+   the file shrinks to genuine cross-entity plumbing or disappears; the
+   baseline entry is removed, not re-shaped.
+4. The `setTriggerDeleted` cast becomes `this.dal.delete/restore(E,{uuid,
+   version},{actor,matchBy:"uuid"})` inside `JobTriggersService` — identical
+   semantics, audited by task-0 auto-inject; where the HTTP-semantic
+   svc.delete/restore fits (actor bound at cfg), prefer svc.
+5. Two concentric "never dev coding" guarantees: svc writes audited via
+   `auditPort` default + actor supplier (exists today); raw `this.dal.*`
+   writes audited via task-0 gateway `??=`. The only dev choice left is
+   svc-vs-dal (hooks+lock semantics vs raw repo) — both audited.
+
+Reusable sempre: any future JH service write is a method on the owning
+DomainService — same shape CRM already proves.
