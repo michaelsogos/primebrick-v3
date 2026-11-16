@@ -67,6 +67,52 @@ The machinery is ~90% built — the missing part is the "by construction" wire:
 
 ## C. Design — what "by construction" means
 
+### C.0 The decorator surface (verified — the user's instinct is already the design)
+
+The project's partitioning IS decorator-declared on the entity class today:
+
+- `@PartitionField({ interval, retention, keepTable })` — **property**
+  decorator on the partition-key column (the key IS a column; PG requires it
+  inside every unique constraint — the emitter auto-adds it to the PK,
+  which is why audit PKs are `(id, changed_at)`).
+- `@PartitionChildOf({ parent, ref })` — **class** decorator: children carry
+  NO partition key at all; they are logically attached to the parent's
+  retention unit and purged set-based before the drop.
+
+So the polymorphism idea is right and mostly already built: audit tables are
+EMITTED from the same entity meta — adding `auditRetention` to the meta feeds
+the identical emission path. What audit needs is only the retention VALUE
+(partition shape is fixed: `changed_at`, `1 month` — no dev choice):
+
+- **`@AuditRetention("12 months")` class decorator** (or an `Auditable`
+  option) → entity meta `auditRetention` → emit-sql-patch writes the
+  `part_config` UPDATE. Absent → global default; `"forever"`/`null` →
+  compliance opt-out (no retention UPDATE emitted).
+
+### What the job actually does (verified end-to-end)
+
+```
+decl:     declareSystemJobs([{key, schedule_spec, target_subject, run_as}])
+          → NATS req jobs.ctl.triggers.materialize → JH reconcile upserts
+          job.job_triggers (system_key) — row is declaration-of-record
+arm:      JH triggers-engine arms JetStream schedule → publishes due msgs
+          on jobs.schedule.job.<uuid> at cron times
+fire:     due-forwarder republishes onto target_subject =
+          <svc>.partition_maintenance — queue work-item, exactly ONE
+          replica consumes
+execute:  the callable handler = dal.partitionMaintenance(ENTITY_REGISTRY)
+          — runs IN the owning service (it owns the DAL pool + schema)
+```
+
+`partitionMaintenance` per partitioned parent (meta → `part_config`):
+children purge (set-based DELETE of `@PartitionChildOf` rows whose parent
+expired — before drop, since DDL drops bypass FK semantics) → default-
+partition strays deleted row-level → `partman.run_maintenance(parent)` drops
+expired partitions (or detaches if `keepTable`) and premakes future ones.
+Single client = one transactional unit. Yes — the destination NAT route is
+a predefined always-same subject: `<svc>.partition_maintenance` (SDK
+`system-jobs.ts` auto-prefixes `<this-service>.`; handler is already generic).
+
 ### C.1 Retention emission (dal-pg, `emit-sql-patch`)
 
 ```ts
@@ -117,12 +163,24 @@ Lift the ai pattern into the governed boot path:
 - **D1 — default retention value**: `12 months`? `24`? And which entities
   opt out forever (`auth_events`, security trails)? My default proposal:
   `12 months` global + meta opt-out.
-- **D2 — where the retention option lives**: entity meta
-  (`@Entity(auditRetention:)`) vs config entry (BE-owned `config_entries`,
-  runtime-tunable). Default proposal: meta (matches `@PartitionField`
-  convention — declaration lives in code, not ops config).
+- **D2 — retention knob shape**: `@AuditRetention("12 months")` class
+  decorator (separate concern, composable with the `Auditable` mixin) vs an
+  `Auditable({ retention: "12 months" })` mixin option (one declaration site
+  for "this entity is audited + how long"). Default proposal: the mixin
+  option — audit-ness and audit-retention are one concept at one site.
 - **D3 — schedule**: ai uses a seed schedule (check `SEED_SCHEDULE` value at
   TOC — likely daily/weekly); default: inherit same spec globally.
+
+## E. The "second partition type" — search result (honest)
+
+All `PARTITION BY` in every patch is `RANGE` and every real key is temporal
+(`changed_at` audits, `last_seen_at` conversations). No LIST/HASH anywhere.
+The genuinely different mechanism present is `@PartitionChildOf`: children
+(`ai_feedback`, `ai_messages`) carry NO partition key of their own — they
+are partitioned **logically by parent ownership** and expire through the
+parent's time axis (set-based purge before the drop). If the remembered
+"non-temporal" partitioning is hash/list sharding — it does not exist in
+the codebase; the parent-driven retention model is the only second thing.
 
 ---
 
