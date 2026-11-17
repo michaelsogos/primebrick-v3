@@ -381,3 +381,107 @@ cd primebrick-fe-v3 && npx tsc --noEmit && npx playwright test jobs-pages.spec.t
 # served meta probe (E2E context): /svc/job/api/v1/entities/job_run/meta
 #   → columns[i].default_visible / hidden / kind / badge / ref / presets
 ```
+
+---
+
+## Part I — REVISION 2026-11-17 (second TIC: lineage, source/destination, diagnostics)
+
+Post-ship review surfaced five issues; a fresh TIC re-derived the
+lineage model. All findings below are empirical (live DB + source).
+
+### I.1 Root findings
+
+1. **`trigger` `@Calculated` is broken by schedule ephemerality** — only
+   6/234 runs resolve (228 join-fail: schedules are HARD-deleted, no
+   `deleted_at`; 4 truly manual). The red "Manuale" renders on
+   non-manual rows → wrong twice. Fix: **physical `trigger_uuid`**
+   stamped at write-time (armed_by pattern: physical anchor + friendly
+   calculated ref).
+2. **`null_label` misused** — it renders `text-xs italic text-destructive`
+   (TableCell:481), an ALARM anatomy for noteworthy nulls (precedent:
+   `next_run` → "Disabled" `when deleted_at`). A manual run's null is
+   neutral → universal `-`. Guardrail: docstring sharpened in core.
+3. **`schedule_subject` badge "untranslated" is by-design** — the
+   nats_subject cell resolves `subjectDecl` via census
+   `emits`/`callables`; `jobs.schedule.*`/`jobs.due.*` are internal NATS
+   lanes, explicitly NOT census-declared → raw-path fallback. The
+   DESTINATION (`target_subject` = callable) IS census-declared →
+   friendly label resolves.
+4. **`error_code` becomes a mapped enum badge** — census of ALL write
+   sites (below); unknown callable codes coerce to `EXECUTION_ERROR`
+   at write (original preserved in `error_detail` prefix).
+5. **`error_detail` → `hidden:true`** (never in picker = non-toggleable,
+   still in row payload) + `error_code` cell click → `job.runDetail`
+   remote sheet (already renders the error section natively).
+
+### I.2 Write-time stamping (`trigger_uuid`, `target_subject`)
+
+| Field | Forwarder path (`insertRun`) | Direct path (`recordDirectRun`) |
+|---|---|---|
+| `trigger_uuid` | `scheduleRow?.trigger_uuid` — row already fetched for the armed gate (`due-forwarder:227`) | schedule lookup by `schedule_subject`; own-lane/manual → NULL |
+| `target_subject` | `envelope.target` verbatim (callable subject) | `data.target` verbatim ("the subject the handler consumed") |
+
+`job_name` stays the display name (mixed derivation — NOT renamed:
+schedule ELT carries the same `job_name` display + `target_subject`
+badge duality).
+
+### I.3 `error_code` closed vocabulary (write-site census)
+
+| Code | Producer | Badge color |
+|---|---|---|
+| `EXECUTION_ERROR` | recorder fallback (executor failed, no code) | red |
+| `HANDLER_ERROR` | SDK transport (handler threw) | red |
+| `DENIED` | SDK transport (verify denied) | amber |
+| `VALIDATION_ERROR` | app-reported (in data) | red |
+| `DISPATCH_ERROR` | forwarder publish failure | red |
+| `DISPATCH_TIMEOUT` | lost-sweep (no result 5min) | amber |
+| `AUTH_ACTOR_UNRESOLVABLE` | forwarder auth checkpoint | red |
+| `SCHEDULE_PAUSED` | forwarder skip (was `"schedule paused"`) | gray |
+| `SCHEDULE_DISARMED` | forwarder skip (was `"schedule disarmed"`) | gray |
+
+Writer normalization: `schedule ${status}` → `SCHEDULE_${STATUS}`;
+`data.error_code` outside the known set → `EXECUTION_ERROR` +
+`error_detail` prefixed with the original code. Migration backfills the
+two legacy literals; no other values exist in data.
+
+### I.4 Final column table (supersedes Part B)
+
+| order | key | type/format | visible | notes |
+|---|---|---|---|---|
+| -1 | `uuid` | uid | sticky | |
+| 0 | `job_name` | text | ✓ | display_field |
+| 10 | `schedule_subject` | nats_subject zap/amber | ✓ | SOURCE — mirrors schedules |
+| 20 | `target_subject` | nats_subject send/sky | ✓ | DESTINATION — NEW physical |
+| 30 | `status` | badge | ✓ | preset-owned |
+| 35 | `trigger` | ref→job_trigger | ✓ | name + uuid drill |
+| 38 | `schedule` | ref→job_schedule | ✓ | `@Calculated` alias of `schedule_subject`; `filter_field:"schedule_subject"` → business-key record lookup (orphan handled) |
+| 40 | `started_at` | datetime | ✓ | |
+| 50 | `finished_at` | datetime | ✓ | |
+| 60 | `duration_ms` | number | ✓ | humanizer |
+| 80 | `run_as` | badge | ✓ | |
+| 90 | `error_code` | badge enum | hidden default | click → `job.runDetail` |
+| 100 | `error_detail` | text | **`hidden:true`** | non-toggleable, in payload |
+| 110 | `redelivery_count` | number | hidden default | |
+| 120 | `fire_seq` | number | hidden default | non-filterable |
+| 130 | `report` | json | hidden default | non-filterable |
+| — | `trigger_uuid` | text (PHYSICAL) | `hidden:true` | write-stamped, never served |
+
+### I.5 Tasks delta
+
+| # | Task | Status |
+|---|---|---|
+| R1 | `job_run_entity`: `@Column trigger_uuid` + `@Column target_subject` (nullable); `trigger` @Calculated rebinds to `{self}.trigger_uuid`; `schedule` @Calculated alias | ✅ |
+| R2 | writers: forwarder stamps `trigger_uuid`+`target_subject`; `recordDirectRun` stamps `data.target` + schedule-lookup `trigger_uuid`; error_code normalize (`KNOWN_ERROR_CODES` → coerce to `EXECUTION_ERROR`, original preserved in `error_detail`) | ✅ |
+| R3 | patch `20261117183000_run_lineage_error_codes`: 2 columns + backfills (35/238 trigger_uuid recovered — live join + mirror-suffix convention; 67 target_subject) + `SCHEDULE_*` normalization + translations (error_codes ×9 codes ×7 langs, `fields.schedule`/`target_subject`, dropped `states.manual`+dead `actions.view_run`) + sign + apply | ✅ |
+| R4 | meta: I.4 table — no null_label, error_code closed badge enum (9 items, all labeled+colored), `schedule` business-key ref, `target_subject` send/sky, `error_detail` `hidden:true` | ✅ |
+| R5 | FE: runs page `cell` snippet on `error_code` → `openSheet('job.runDetail',{run_uuid})` — badge wrapped in a button, NULL stays `-` | ✅ |
+| R6 | core: `null_label` docstring — destructive red-italic alarm semantics explicit, ordinary NULLs must render `-` | ✅ |
+| R7 | tests+E2E — JH vitest 152/152 (new coverage: `SCHEDULE_*` skip codes, stamped lineage, `normalizeError` coercion); service-routes meta contract; E2E 5/5 runs specs incl. error_code→runDetail click; core 142/142; FE 687/687; svelte-check+tsc clean; docs regenerated+check green | ✅ |
+
+### I.6 Verified results
+
+- `job_run` mirrors the `job_schedule` anatomy end-to-end: SOURCE (`schedule_subject` zap/amber) + DESTINATION (`target_subject` send/sky) + `trigger` ref + `schedule` ref.
+- Lineage is stamped at write time — the trigger identity survives schedule hard-deletion (was: 6/234 resolved through the ephemeral mirror; now 35/238 backfilled + all future rows stamped at fire time).
+- `error_code` is a closed enum: writers normalize at insert; unknown callable codes coerce to `EXECUTION_ERROR` with the original preserved in `error_detail` — the badge can never render a raw string.
+- `error_detail` is `hidden:true` — never in the picker, present in the row payload; the click on `error_code` opens `job.runDetail` (the only surface rendering the detail).
+- Ordinary NULLs render `-` — the destructive `null_label` misuse is gone and documented in core.
