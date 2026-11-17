@@ -494,3 +494,43 @@ two legacy literals; no other values exist in data.
 - `error_code` is a closed enum: writers normalize at insert; unknown callable codes coerce to `EXECUTION_ERROR` with the original preserved in `error_detail` — the badge can never render a raw string.
 - `error_detail` is `hidden:true` — never in the picker, present in the row payload; the click on `error_code` opens `job.runDetail` (the only surface rendering the detail).
 - Ordinary NULLs render `-` — the destructive `null_label` misuse is gone and documented in core.
+
+---
+
+## J — Version-history capability gate (all ELTs)
+
+**TIC finding:** `meta.actions` already serves `{op:"read.audit", enabled:false}`
+on entities without a registered audit route (contract: "ops whose route is
+not registered are emitted with enabled:false"). `isEntityOpEnabled` in
+`@primebrick/core` is the fail-closed check. `collaboration.enabled` is the
+auditable-presence semantic, NOT the trail-route signal — excluded.
+
+**Design:** the gate lives INSIDE `VersionHistoryPanel` — the single choke
+point for all 5+ openers (record-sheet badge, row action, version cell,
+audit box, dict/config rows, remote bundles). `fetchEntityMeta` is cached
++ deduped, and every opener's page already warmed the cache → zero extra
+requests on the standard path; a cold miss costs ONE `GET /meta` on a real
+endpoint instead of a doomed `GET /:uuid/audit` 404.
+
+- `auditEnabled === false` → disabled watermark (`Grid3x3Off` size-20 muted,
+  `pb-watermark-disabled` neutral pulse, `data-testid=version-history-
+  disabled`, copy `app.common.version_history_disabled`) — no fetch.
+- Meta fetch failure → fall through to `loadVersionHistory()` so the real
+  error watermark (incl. ApiUnreachableError owner-service copy) survives.
+- i18n in `app.common.*` (public.translations): shared app chrome, not
+  entity-dict vocabulary — `system.entities.version_history.*` is reserved
+  for entry-internal labels. BE seed patch ×7 langs + FE en-GB fallback.
+
+**Deps:** `@lucide/svelte` bumped 1.59.0→1.70.0 (first release carrying
+`grid-3x3-off`, >7 days old) + `@iconify-json/lucide` 1.2.146→1.2.152 for
+DynamicIcon name-resolution. `trash-arrow-up` still absent upstream —
+CUSTOM_ICONS retained.
+
+**Gotcha documented:** after dep-graph changes the vite optimizer cache
+holds the stale lucide chunk (`does not provide an export named
+'Grid3x3Off'` → SSR 500). Fix per docs/ai/dev-server.md: delete
+`node_modules/.vite` + restart the dev server.
+
+**Verified:** E2E — runs page `version` column toggled → v{n} badge →
+disabled watermark renders, ZERO `/audit` requests; ref-cell-sheet spec
+proves the auditable stacked panel still loads real history.
