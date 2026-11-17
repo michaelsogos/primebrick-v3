@@ -534,3 +534,57 @@ holds the stale lucide chunk (`does not provide an export named
 **Verified:** E2E — runs page `version` column toggled → v{n} badge →
 disabled watermark renders, ZERO `/audit` requests; ref-cell-sheet spec
 proves the auditable stacked panel still loads real history.
+
+---
+
+## K. Outcome preset monitor-first + default column surface (verified)
+
+**Request (verbatim):** preset order `SENT → SUCCESS → FAILED → ALL`; SENT
+default view, icon play-filled, "In attesa di essere processati"; FAILED
+aggregates failed+lost+skipped; default-visible columns = outcome-monitor
+nine; lineage columns toggleable-but-hidden.
+
+**Field mapping (confirmed by user):** "execution count" → `fire_seq`
+("Fire #"/"Esecuzione n."), "outcome" → `report` ("Esito"), "re-delivery" →
+`redelivery_count`.
+
+### Findings (TIC)
+
+- `FilterCondition.op` accepts `IN` with array values — wire serializes as
+  `filters[i][op]=IN&filters[i][value][]=a&[value][]=b` (`useEntityList`
+  scopeConditions pass-through). The `failed` option is ONE `IN` clause.
+- `button_group` is icon-only by design — user descriptions became
+  `tooltip_key` copy; `label_key` feeds aria only (reuses `status.*`).
+- `resolvePresetSelection` falls back to `default_option` on stale persisted
+  ids — old `dispatched`/`lost`/`skipped` selections migrate cleanly to
+  `sent`.
+- Lucide 1.70 iconify set renamed `triangle-alert` →
+  `triangle-exclamation-point` (the only `.svelte` file in dist/icons;
+  `alert-triangle` survives as `.js` alias). `play:filled` resolves via the
+  `:filled` qualifier (fill=currentColor, basename stripped).
+- Default `sent` = `status=dispatched` — can be an empty scope on real
+  datasets; E2E that needs rows must click `all` first.
+
+### Changes
+
+- `job.meta.ts` — preset `default_option:"sent"`, options
+  `[sent(play:filled), succeeded(circle-check),
+  failed(triangle-exclamation-point, IN failed+lost+skipped), all(list-clock)]`;
+  `default_visible:false` on `trigger`,`schedule`,`schedule_subject`,
+  `target_subject`,`run_as`; `default_visible:true` on `redelivery_count`,
+  `fire_seq`,`report` (both keep `filterable:false`).
+- Patch `20261207100000_run_outcome_preset_reorder.sql` — DELETE orphan tips
+  (dispatched/skipped/lost), UPDATE `failed_tip` to aggregate copy ×7,
+  INSERT `sent_tip` ×7. Manifest re-signed (28 patches), applied.
+- `service-routes.test.ts` — preset order/default/IN contract + visibility
+  flags.
+- `jobs-pages.spec.ts` — meta-contract assertions, preset wire test
+  (default-sent first-call + IN aggregate + all escape), error_code +
+  version-badge selectors; version test clicks `all` first (sent can be
+  empty).
+
+### Verified
+
+JH vitest 153/153 · svelte-check 0 err · jobs-pages 27/27 (4 transient
+failures in one 12-worker run = JH watch restart mid-suite; all 4 green on
+re-run) · runs.mdx regenerated (new default surface documented).
