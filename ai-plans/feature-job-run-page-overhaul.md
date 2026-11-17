@@ -464,7 +464,16 @@ two legacy literals; no other values exist in data.
 | 110 | `redelivery_count` | number | hidden default | |
 | 120 | `fire_seq` | number | hidden default | non-filterable |
 | 130 | `report` | json | hidden default | non-filterable |
-| — | `trigger_uuid` | text (PHYSICAL) | `hidden:true` | write-stamped, never served |
+| — | `trigger_uuid` | uuid (PHYSICAL) | `hidden:true` | write-stamped, never served |
+| — | `schedule_uuid` | uuid (PHYSICAL) | `hidden:true` | write-stamped (scheduleRow.uuid), never served |
+
+> **Errata — `schedule` ref (fixed in `fa90983`):** the first cut aliased
+> `schedule` to `schedule_subject` and drilled via business-key lookup —
+> the cell repeated the source queue and the drill wasn't the uuid-ref
+> anatomy. Corrected to the `trigger_uuid`/`armed_by` mirror: physical
+> stamped `schedule_uuid` + `@Calculated` display name (js→jt join → the
+> armer trigger's name = the schedule's display_field) + `ref{key_field:
+> "schedule_uuid"}`. Label "Pianificatore".
 
 ### I.5 Tasks delta
 
