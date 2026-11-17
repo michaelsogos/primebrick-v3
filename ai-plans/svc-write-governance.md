@@ -1,7 +1,20 @@
 # svc-write-governance — this.dal writes → svc, actor via ALS, hooks with ctx
 
-> Status: **TIC complete — awaiting approval**
+> Status: **✅ DONE — shipped (verification sweep 2026-12-08)**
 > Plan type: construction hardening (DAL/service convergence, F4-class)
+>
+> **As built** (the plan doc was stale; TOC had already landed):
+> - dal-pg `6561778` — actor guard (auditable+unresolved → throw at
+>   repository.ts:238), `hasAuditTrail` auditPort gate (latent spam bug
+>   killed), `svc.bulkUpdate`/`bulkPurge`, hook `{actor}` ctx
+> - sdk `74045aa` + `9602569` — `dal-member-write` lint incl.
+>   alias/bracket-access evasion coverage
+> - us-v3 `ec398c3`/`995b042`/`d5335f9` — JH migration: `actorSession` +
+>   `runWithSession` wraps, `isSystemActor` hook branches, svc ops ×11
+> - be-v3 `676aac6` + `eb33b39`/`442f6ad` — 35-site migration to svc,
+>   `config_entries` @AuditTrail declared
+> - Verified live: `this.dal.<write>` census = **0** in JH+BE src;
+>   lint rule active in `tools/check-standards.ts`
 
 ## Context
 
