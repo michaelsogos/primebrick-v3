@@ -1,6 +1,6 @@
 # i18n namespace segregation lint — US modules may cite only `app.*` + own schema
 
-## Status: 🟡 PARTIALLY DONE — Plan date: 2025-12-07 / census re-run 2026-12-09
+## Status: 🟢 DONE — Plan date: 2025-12-07 / verified closed 2026-12-09
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
@@ -13,7 +13,7 @@
 | 7 | Fixture specs in `tools/__tests__/check-standards.test.ts` + per-service gate run | ✅ done | this session | 11 new E2E specs (32 total green); ai real-repo probe: 28+42 hits |
 | 8 | Exempt shipped patches (`i18n_key_ref_exempt`) — declared debt | ✅ done | this session | 6 configs: ai/crm/es `0002`, jh `0002`+`20261207110000`, boilerplate `20261116900000`, webhook `0002`+`0003`+`0004` |
 | 9 | Doc updates (proposed text, approved before write) | ✅ done | later sessions | be/fe i18n docs + `.devin/rules/i18n-namespace-segregation.md` shipped |
-| 10 | (Phase 2, separate plan) migrate 67 live `config_entries` label refs → `{schema}.settings.config.*` + shared-chrome keys → `app.*` | ⏳ partial | census 2026-12-09 | repoint+reseed DONE — 0 foreign refs in all 6 schemas live; **RESIDUAL: 157 orphan keys (~1099 rows) still in `system.translations`** — be-v3 cleanup DELETE never landed (D.5 step 3) |
+| 10 | (Phase 2, separate plan) migrate 67 live `config_entries` label refs → `{schema}.settings.config.*` + shared-chrome keys → `app.*` | ✅ done | verified 2026-12-09 | 0 foreign refs in all 6 schemas; cleanup patch `20261208210000` already soft-deleted 1099 orphan rows — live `system.settings.config.*` keys = 54, exactly the public-cited legit set (earlier "157 orphans" report was a census bug: `deleted_at` unfiltered) |
 | 11 | (Phase 2) `findTranslations` RPC — the ONE documented cross-domain exception | ✅ done | this session | be-v3 — details in E.bis "as built" |
 
 ---
