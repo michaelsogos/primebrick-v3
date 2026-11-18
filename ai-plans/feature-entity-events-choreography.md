@@ -187,6 +187,24 @@ Meta flag `events?: false | { except?: EntityWriteAction[] }` lands on
   history; a consumer needing full state re-reads via `svc.get`/`svc.list`.
   Stale events self-purge = no backpressure on an unconsumed lane (the
   exact question raised in the request — JetStream answers it natively).
+- **EMPIRICAL PROOF (nats-server 2.14.3, probe on `TIC_LIMITS` stream,
+  `max_msgs_per_subject=3`, 5 publishes):** with `discard:"old"` all
+  publishes are PubAck'd — NO rejection, NO exception; the oldest messages
+  are silently evicted (`msgs=3, first_seq=3, last_seq=5` → payload 1,2
+  gone). The 101st message ENTERS the queue; the 1st dies. FIFO eviction,
+  publish path never blocks. Caveat discovered: with `discard:"new"` +
+  `max_msgs_per_subject` on 2.14.3 the SAME thing happens (`msgs=2,
+  first=3, last=4` — oldest still evicted) — per-subject discard-new is
+  not honored on this version, so there is NO "reject on full" knob at
+  per-subject granularity anyway. Consequence: an unconsumed lane can
+  never stall publishers; the risk is *silent event loss* for slow/late
+  consumers, which is exactly what `max_age` + durable consumers bound
+  at declaration time mitigate — and it makes trigger-subject bindings
+  (`§2j`) a correctness feature, not an optimization.
+  NOTE on granularity: `max_msgs_per_subject` counts per SUBJECT — our
+  subject carries `<uuid>` so the cap applies per (entity,action,uuid)
+  tuple — a hot row can't evict another row's events. `max_age` is the
+  global staleness bound.
 - Stream ownership: **`createMicroservice` ensures it** when the SDK
   wires the event port (bootstrap opt-in via flag, default ON once the
   port exists — same pattern as `dbPatches`/`migrations`); BE ensures it
@@ -229,6 +247,38 @@ JH `run_as:originator` forwards **headers** — events additionally carry
 the actor in-payload; the JH due-lane already re-resolves auth at fire
 time (`freshAuthHeaders` checkpoint), so arm-time staleness is not
 reintroduced.
+
+### 2j. Consumer model — JH-only cross-service (user decision, 2026-11-18)
+
+A service may consume ONLY events of its own domain
+(`events.<own_code>.>`) — the BE/JH self-consumption precedent
+(`jobs.ctl.triggers.changed`) stays. Cross-service reactions go through
+`job_triggers` rows: `event_subject` → immediate/scheduled dispatch →
+destination callable. This is *governed choreography*, not
+orchestration: the binding is DATA (a trigger row authored by the flow
+owner), publishers and consumers still never know each other — and it
+is strictly MORE decoupled than direct subscription, because
+`subscribeShielded("events.ai.…")` inside crm code is literal
+cross-module vocabulary knowledge, while a trigger row carries zero
+code coupling either way. Bonus: every cross-service reaction lands in
+`job_runs` — traced, retryable, RBAC-audited.
+
+Consequences (accepted): JH becomes a hard runtime dependency for
+cross-service reactions — mitigated by durable consumption (below):
+events wait in the stream, they don't die. One extra hop of latency —
+immediate triggers already trampoline via `jobs.due.*`.
+
+**Enforcement — by construction, not convention:**
+- New lint rule `event-bus-ownership` (unsuppressible): subscribe calls
+  (`subscribe`/`subscribeShielded`/`jetstreamSubscribe`) whose subject
+  resolves under `events.` must be `events.<own service_code>.>` —
+  except `job-handler`, which may bind any `events.>` subject.
+- `triggers-engine.bindSubject` upgrades event-source bindings from
+  core `subscribeShielded` to **`jetstreamSubscribe` durable consumers**
+  on `ENTITY_EVENTS` (one durable per bound subject pattern,
+  `deliver_group:"job"` for replica work-split) — this is what makes
+  "JH down" survivable: bound events persist until the consumer acks;
+  the stream's retention only reclaims what nobody was ever bound to.
 
 ### 2h'. Presence markers — untouched
 
@@ -311,6 +361,7 @@ entity event — nothing to compose. Domain-specific hand-declared emits
 | D5 | Opt-out | entity flag + per-action `except` list on `@Entity` options |
 | D6 | Subject | `events.<svc>.<entity>.<action>.<uuid>` |
 | D7 | Stream owner | `createMicroservice` (US) + `index.ts` (BE) |
+| D8 | Consumer model | JH-only cross-service (durable `jetstreamSubscribe` in triggers-engine); own-domain direct allowed; enforced by `event-bus-ownership` lint — **user decision** |
 
 ## 6. Out of scope
 
