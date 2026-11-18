@@ -180,25 +180,31 @@ halted and both were brought back here instead of improvised APIs:
    lint strengthened to bare `this.dal` refs (`976876b`) which exposed
    two hidden alias escapes in emailsender — migrated via svcFor.query
    preserving find's exactly-one semantics.
-   **BE census (lint-enforced): 39 sites** — user.service 13,
-   config-entries 6, mfa 5, webauthn 4, role 4, invitation 3,
-   user-preferences 2 ✅ (`d7b3516`), auth-events 1 ✅ (`d7b3516`,
-   grouped stats → svc.query + in-memory window pending R3's
-   group_by), db/domain-service 1 (audit-port seam → needs dalInfra R4).
-   Also: `src/http/entity-service.ts` hand-rolled facade must gain
-   `query`/`transaction`/`beginTransaction` to satisfy EntityService.
-   Remaining BE files compile-broken BY DESIGN (private dal) until migrated.
+   **BE census (lint-enforced): 39 sites — ALL RESOLVED.**
+   user.service 13 ✅ (`f44bffc`: 8 lookups → `svc.find`, freshRowByUuid
+   tx-branch + throw preserved, audit → `svc.audit`, listUsers → `svc.list`
+   after empirical wire-set/join/sort comparison — divergences noted:
+   sort_key now validated, all unique cols wire-filterable);
+   config-entries 6 ✅, mfa 5 ✅ (2 via `svcFor`), webauthn 4 ✅,
+   role 4 ✅, invitation 3 ✅, user-preferences 2+1 ✅ (`d7b3516` +
+   `svc.find` fix in `f498ca3`), auth-events 1 ✅ (`d7b3516`),
+   db/domain-service 1 ✅ (auditPort → `getDal()`, declared via
+   dal-access allowPath). `http/entity-service.ts` facade gained
+   `find`/`query`/`transaction`/`beginTransaction` delegates
+   (raw-query allowPath — governed delegate, not raw SQL).
+   **BE: 0 dal-member-access, standards clean, 427/427. (`f498ca3`)**
 
 ### Remaining tasks (post-decision)
 
 | # | Task | Repo | Status |
 |---|---|---|---|
 | R1 | `EntityService.query` + `svcFor` accessor; `DomainService.dal`→private | dal-v3 | ✅ `4615fc0` — tsc clean, 734/734 |
-| R2 | Migrate `this.dal` sites → `svc.query`/`svc.list`/`svc.transaction` (JH 14 sites done). **Lint-enforced census** (`dal-member-access` rule, sdk `ee61384`): JH 1, ai 15→0 (in tree, pending `beginTransaction` decision), crm 2, emailsender 4, webhook 1, BE ~34. `svc.transaction` landed (`ee98824`); `svc.beginTransaction` in-tree pending decision; top-N sites → `svc.list` + `filterableKeys` declaration per user directive | us-v3, be-v3 | 🟡 JH `b912a76` + lint live; ai migrated in tree (uncommitted); other services pending |
+| R2 | Migrate `this.dal` sites → `svc.query`/`svc.list`/`svc.transaction` (JH 14 sites done). **Lint-enforced census** (`dal-member-access` rule, sdk `ee61384` + alias strengthening `976876b`): US **all services 0** (`65e7676`), BE **all 39 sites 0** (`d7b3516`, `f44bffc`, `f498ca3`). `svc.transaction` landed (`ee98824`); `svc.beginTransaction` landed (`374df09`); top-N → `svc.list` + `filterableKeys` per user directive; `svc.find` added for single-row parity | us-v3, be-v3 | ✅ **complete — both repos at zero consumer violations** |
 | R3 | `EntityListQuery` extension: `fields`/`group_by`/`aggregates`/structured `having` + translator + validation (note: `AggregateDecl` already exists in list cfg — extend on top) | dal-v3 | ⏳ |
-| R4 | allowPaths → `["db/dal.ts"]` (+`db/entity-repo.ts`): `dalInfra()` accessor, `config-repository-adapter`→ConfigEntriesService — JH then crm/webhook/emailsender/ai | us-v3 | ⏳ |
+| R4 | **`dalInfra()` canonical infra door** ✅ `20ae26d` — every `db/dal.ts` exports `dalInfra(): Dal` (same singleton, named for role). Migrated: config-repository-adapter ×5, ai health-check `probe ?? dalInfra()` fallback, ai docs-index-status/docs-kb/docs-search-store (repo-level ops: `addMany`/`updateMany`/`hardDeleteMany`/vectorSearch/aggregates — not svc doors). Empirical findings vs original plan: `index.ts` STAYS allowPath'd (bootstrap compositor owns initDal/dalClose/pool wiring — legit infra); `entity-repo.ts` (ai+emailsender) and non-ai health-check adapters never called `getDal` (comments only / ctor-injected `probe`) → dropped from allowlist without code changes; config-repo adapters did NOT route through ConfigEntriesService — they call repo ops directly via `dalInfra()` (they ARE the infra seam, service indirection would be ceremony). **End state achieved: `allowPaths = ["db/dal.ts","index.ts"]`** — a consumer calling `getDal()` is a dal-access violation with zero declared exceptions | us-v3 | ✅ `20ae26d` — tsc+standards clean ×5, ai 20/20, crm 20/20, emailsender 34/34, webhook 4/4, jh 153/153 |
 | R5 | Delete empty baseline files (ai, crm, emailsender) | us-v3 | ✅ `721629c` — all clean |
 | R6 | `dal-usage-guide.md` update: writes via `svc`/`svcAs`, reads `svc.list`/`svc.query`, `this.dal` gone | dal-v3 | ⏳ |
+| R7 | **Read-door rationalization** (post-migration audit 2026-11-18): `svc.query`→`svc.find` on 9 single-row sites ✅ (`937201f`). TIC census proved ~9 by-uuid sites fetch the FULL row (no real projection) — the blockers were `throwIfNotFound:false` + `INCLUDED`, not fields. User directive: full entity + display joins is the right default; projections need real motivation (wire shapes, hot paths). **Work done**: (a) `repo.exists` — `SELECT EXISTS(SELECT 1…)` bool, FindOptions-shaped ✅; (b) `svc.exists(options)` entity-bound ✅; (c) `EntityGetOptions` on `svc.get` — `{throwIfNotFound?, deletedRecords?, displayJoins?}` + overloads keeping `get(uuid)→TEntity` ✅ (dal `8b5dc52`); (d) consumers migrated — `assertExistsByUuid`→`svc.exists` (bool), 7 full-row/null sites→`svc.get` opts, 4 INCLUDED sites→`svc.get` (be `a89af82`, us `…`); `svc.find` stays ONLY for non-uuid filters + real projections (resolveInternalUuid hot path, getEntry masking, updateValue guard) | dal-v3, us-v3, be-v3 | ✅ |
 
 ## TOC progress log — 2026-11 (consumer audit pass)
 
