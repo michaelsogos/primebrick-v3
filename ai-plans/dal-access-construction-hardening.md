@@ -2,7 +2,7 @@
 
 **Type**: debt closure / lint + package-boundary hardening
 **Scope**: `primebrick-v3-sdk` (check-standards tool), `primebrick-dal-v3` (exports + DomainService), `primebrick-us-v3` (all services: job-handler done, ai/crm/emailsender/webhook pending)
-**Status**: TIC complete — awaiting PROCEED
+**Status**: TOC active — decisions taken 2026-11-18 (see below); empirical re-census done same day
 
 ## Objective
 
@@ -112,12 +112,48 @@ Per service, job-handler's F3 playbook: DomainService per owned entity, route th
 - `check-standards --write-baseline` either gone (B1) or requires `"baseline": "allowed"` (B2).
 - tsc clean, full vitest suite per service, live boot smoke (detached stack: arm/reconcile/materialize paths), commit per repo.
 
-## Open decisions (user)
+## Open decisions (user) — RESOLVED 2026-11-18
 
-1. **B**: baseline — B1 kill `--write-baseline`, B2 opt-in `"baseline":"allowed"`, B3 CI-diff check. (recommend B1 or B2)
-2. **D**: `this.dal` — D1 accessor split `q`/`svc`/`sys` + `dal` private (construction, dal-pg change), D2 lint `actor:`-required (text rule, lighter). (recommend D1)
-3. **T2 export removal**: drop `Dal` export entirely vs keep for external tooling. Zero consumers found — recommend remove.
-4. **F4 scope order**: include all 4 services in this plan's TOC, or hardening (T1-T3) first then a separate F4 TIC for the service migrations (ai is substantial — 8 violations + 7 repository classes to absorb)?
+1. **B**: ✅ already landed as **B1** — `--write-baseline` removed (exit 2,
+   `check-standards.ts:2119`). Residual: 3 empty baseline files
+   (ai/crm/emailsender) to delete; fe's 31 `panel-chrome-*` entries are a
+   different rule family, out of scope.
+2. **D**: **re-scoped after user review** — NOT D1 `q`/`sys` accessors.
+   The wire-vs-code boundary analysis produced the chosen design:
+   - **`svc.list` extended** (`EntityListQuery` additive, wire-safe):
+     `fields?: string[]` (entity-column projections), `group_by?: string[]`
+     + `aggregates?: {fn,field,alias}[]`, structured `having`, sort by
+     aggregate alias. Sanitizable like the existing `allowedFields` —
+     serves internal needs AND future ELT features.
+   - **`svc.query(entity?, fields, FindOptions)`** — the single named
+     internal door for the SQL-expression tier (`Filter.expr`,
+     `Project.expr`, `GroupBy.expr`, expr having, joins, `tableName`,
+     `stream`). Accepts raw `FindOptions` — code-authored only, never
+     wire. Lives on `svc` per the user's "one path on the facade".
+   - **`this.dal` → private**; `dal-member-write` lint (already in
+     NO_EXEMPT) becomes redundant for writes and is replaced by
+     compile-time absence — the lint rule stays as defense-in-depth
+     against `this._dal` access.
+   - Cross-entity governed access: `svcFor(entity)` memoized accessor
+     (rare — collaborator services are the norm).
+   - `sys` port: documented reserve (system-actor writes already have a
+     live path — `runWithSession(actorSession(...))` + `svc.*`).
+3. **T2 export removal**: ✅ already landed — `Dal` is type-only export
+   (`index.ts:262`); `new Dal(` unimportable + lint `dal-construct`.
+4. **F4**: audits already executed inside this plan (TOC log) —
+   remaining work = allowPaths shrink to `["db/dal.ts"]` (+`db/entity-repo.ts`
+   where the actorSession seam exists) per service, not a separate TIC.
+
+### Remaining tasks (post-decision)
+
+| # | Task | Repo |
+|---|---|---|
+| R1 | `EntityService.query` + `svcFor` accessor; `DomainService.dal`→private | dal-v3 |
+| R2 | Migrate `this.dal` sites → `svc.query`/`svc.list`/`svc.get` (JH 14 sites first, then census ai/emailsender/crm/webhook/BE) | us-v3, be-v3 |
+| R3 | `EntityListQuery` extension: `fields`/`group_by`/`aggregates`/structured `having` + translator + validation | dal-v3 |
+| R4 | allowPaths → `["db/dal.ts"]` (+`db/entity-repo.ts`): `dalInfra()` accessor, `config-repository-adapter`→ConfigEntriesService — JH then crm/webhook/emailsender/ai | us-v3 |
+| R5 | Delete empty baseline files (ai, crm, emailsender) | us-v3 |
+| R6 | `dal-usage-guide.md` update: writes via `svc`/`svcAs`, reads `svc.list`/`svc.query`, `this.dal` gone | dal-v3 |
 
 ## TOC progress log — 2026-11 (consumer audit pass)
 
