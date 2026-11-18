@@ -146,14 +146,14 @@ Per service, job-handler's F3 playbook: DomainService per owned entity, route th
 
 ### Remaining tasks (post-decision)
 
-| # | Task | Repo |
-|---|---|---|
-| R1 | `EntityService.query` + `svcFor` accessor; `DomainService.dal`→private | dal-v3 |
-| R2 | Migrate `this.dal` sites → `svc.query`/`svc.list`/`svc.get` (JH 14 sites first, then census ai/emailsender/crm/webhook/BE) | us-v3, be-v3 |
-| R3 | `EntityListQuery` extension: `fields`/`group_by`/`aggregates`/structured `having` + translator + validation | dal-v3 |
-| R4 | allowPaths → `["db/dal.ts"]` (+`db/entity-repo.ts`): `dalInfra()` accessor, `config-repository-adapter`→ConfigEntriesService — JH then crm/webhook/emailsender/ai | us-v3 |
-| R5 | Delete empty baseline files (ai, crm, emailsender) | us-v3 |
-| R6 | `dal-usage-guide.md` update: writes via `svc`/`svcAs`, reads `svc.list`/`svc.query`, `this.dal` gone | dal-v3 |
+| # | Task | Repo | Status |
+|---|---|---|---|
+| R1 | `EntityService.query` + `svcFor` accessor; `DomainService.dal`→private | dal-v3 | ✅ `4615fc0` — tsc clean, 734/734 |
+| R2 | Migrate `this.dal` sites → `svc.query` (JH 14 sites done: all on own entity → `svc.query`; auditPort→factory; mock rewired via `svc` getter). Census remaining: ai/emailsender/crm/webhook/BE `this.dal` in service files | us-v3, be-v3 | 🟡 JH `b912a76` — 153/153, standards clean, live boot healthy. Other services pending census |
+| R3 | `EntityListQuery` extension: `fields`/`group_by`/`aggregates`/structured `having` + translator + validation (note: `AggregateDecl` already exists in list cfg — extend on top) | dal-v3 | ⏳ |
+| R4 | allowPaths → `["db/dal.ts"]` (+`db/entity-repo.ts`): `dalInfra()` accessor, `config-repository-adapter`→ConfigEntriesService — JH then crm/webhook/emailsender/ai | us-v3 | ⏳ |
+| R5 | Delete empty baseline files (ai, crm, emailsender) | us-v3 | ✅ `721629c` — all clean |
+| R6 | `dal-usage-guide.md` update: writes via `svc`/`svcAs`, reads `svc.list`/`svc.query`, `this.dal` gone | dal-v3 | ⏳ |
 
 ## TOC progress log — 2026-11 (consumer audit pass)
 
