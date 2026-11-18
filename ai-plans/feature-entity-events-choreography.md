@@ -127,19 +127,36 @@ User's ask mapped: **before+after+delta all come FREE** — the repo loads
 emit the SAME shape per item (uniform vocabulary — a bulk update of 50
 rows = 50 `update` events; volume control is the opt-out's job).
 
-### 2b. Subject taxonomy
+### 2b. Subject taxonomy — action in payload, NOT in subject
 
 ```
-events.<service_code>.<entity>.<action>.<uuid>
-events.ai.conversation.update.019ae... 
-events.job.job_trigger.create.>
+events.<service_code>.<entity>.<uuid>
+events.ai.conversation.019ae...
+events.job.job_trigger.>
 ```
 
-Selectivity ladder for consumers: `events.job.>` (service) ·
-`events.job.job_trigger.>` (entity) · `events.job.job_trigger.update.>`
-(action) · `events.job.job_trigger.update.<uuid>` (instance). Namespace
-`events.*` is deliberately NOT `entity.*` — no collision with presence
-markers and no JetStream capture of presence traffic.
+The action lives in the payload (`event.action`) — the subject does NOT
+repeat it. Rationale (user's call, verified):
+`job_trigger.filter` already discriminates on payload dot-paths
+(`{field:"action", op:"=", value:"update"}` → `matchFilter` at dispatch,
+`triggers-engine.ts:95,301`), so action-in-subject buys nothing for JH
+consumption while forcing 6 subject prefixes per entity. Actionless
+subjects give: ONE durable consumer (`events.<svc>.<entity>.>`) covering
+every action; `max_msgs_per_subject` bounding a row's WHOLE event
+history (100 across actions, not per action); one emit pattern per
+entity in census. Selectivity ladder stays intact: `events.job.>`
+(service) · `events.job.job_trigger.>` (entity) ·
+`events.job.job_trigger.<uuid>` (instance). Trade-off accepted: a
+consumer bound to one action still receives the others and drops them
+in the filter — cheap vs combinatorial subjects. Namespace `events.*`
+is deliberately NOT `entity.*` — no presence-marker collision.
+
+**Action vocabulary** (`EntityWriteAction` — mapped from the svc method,
+NOT the audit enum): `create` (svc.create, addMany items) · `update`
+(svc.update, bulkUpdate items) · `delete` (svc.delete, bulkDelete) ·
+`restore` (svc.restore, bulkRestore) · `purge` (svc.purge, bulkPurge) ·
+`duplicate` (svc.duplicate — `after` = cloned row, `before`/`delta` =
+null).
 
 ### 2c. `EntityEventPort` — the emission seam (repo write option)
 
@@ -359,7 +376,7 @@ entity event — nothing to compose. Domain-specific hand-declared emits
 | D3 | Retention | `max_age=72h`, `max_msgs_per_subject=100`, `discard=old` |
 | D4 | Bulk ops | per-item events (uniform); volume control via opt-out |
 | D5 | Opt-out | entity flag + per-action `except` list on `@Entity` options |
-| D6 | Subject | `events.<svc>.<entity>.<action>.<uuid>` |
+| D6 | Subject | `events.<svc>.<entity>.<uuid>` — action in payload only (trigger `filter` already discriminates) — **user decision** |
 | D7 | Stream owner | `createMicroservice` (US) + `index.ts` (BE) |
 | D8 | Consumer model | JH-only cross-service (durable `jetstreamSubscribe` in triggers-engine); own-domain direct allowed; enforced by `event-bus-ownership` lint — **user decision** |
 
