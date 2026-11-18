@@ -406,7 +406,7 @@ entity event — nothing to compose. Domain-specific hand-declared emits
 | 10 test dedicati (emit/opt-out/tx/bulk/port) | ✅ | dal `2a7630e` — 8/8 event tests (audit-gate bug trovato+fixato), suite 742/742 |
 | E2E broker | ✅ | script: stream `ENTITY_EVENTS` ready → publish seq 13 → durable fetch → payload verificato |
 | E2E JH trigger→run | ✅ | trigger row `events.ai.conversation.>` + filter `action=update` → evento JS seq 21/23 → durable `jh-events-ai-conversation` delivered+acked → dispatch → trampoline `jobs.due.system.job.forward.<uuid>` → `job_runs` status=`dispatched` run_as=`system` (server-clock 17:13:29.699→.701) |
-| E2E browser (trigger via UI) | ⏸️ bloccato | login admin richiede MFA TOTP (no secret); HTTP probes bloccati da `client_shield_registry` (UNKNOWN_CLIENT) — serve account non-MFA o TOTP code |
+| E2E browser (trigger via UI) | ✅ | FE `d2e6129` — spec persistente `src/e2e/entity-events-choreography.spec.ts` 3/3 verdi: UI form → trigger `events.job.job_trigger.>` → durable bound → seconda create auto-emette evento schema-1 → `job_runs` dispatched → cleanup API |
 | Deferred tx (`beginTransaction`) | ⚠️ gap noto | il capture layer non passa dai metodi repo → nessun evento; documentato, fix in iterazione |
 | D5 | Opt-out | entity flag + per-action `except` list on `@Entity` options |
 | D6 | Subject | `events.<svc>.<entity>.<uuid>` — action in payload only (trigger `filter` already discriminates) — **user decision** |
