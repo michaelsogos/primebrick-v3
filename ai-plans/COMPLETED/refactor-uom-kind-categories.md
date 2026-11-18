@@ -1,4 +1,5 @@
 # REFACTOR — MetaColumnUom: kind-specialized UoM categories
+n## Status: 🟢 DONE — all 8 tasks verified in code (core/dal/ui/us/fe commits, E2E green, docs shipped). Archived fully done.
 
 ## Context (TIC)
 
