@@ -390,7 +390,24 @@ entity event — nothing to compose. Domain-specific hand-declared emits
 | D1 | Payload | before+after+delta (free — repo computes all three already) |
 | D2 | Transport | JetStream `ENTITY_EVENTS` on `events.>` + jetstreamPublish PubAck |
 | D3 | Retention | `max_age=72h`, `max_msgs_per_subject=100`, `discard=old` |
-| D4 | Bulk ops | per-item events (uniform); volume control via opt-out |
+| D4 | Bulk ops | **per-item THIN events** (`{uuid, action, before:null, after:null, delta:null, batch:"<shared uuid v7>"}` — one event PER row, never a uuids[] batch event — preserves per-uuid trigger binding) — TEMP-TABLE bulk ops have no RETURNING/oldRecord/delta by contract (204); consumer re-reads via `svc.get` — **user decision** |
+| D9 | Actor on non-auditable entities | `eventActor?: string` on `WriteOptions` base — svc always supplies `resolvedActor`; repo emits `options.actor ?? options.eventActor ?? "system"` (auditable keeps `actor`) — **user decision** |
+| D10 | SDK↔dal dep direction | SDK mirrors `EntityEvent`/`EntityEventPort` STRUCTURALLY (`nats/entity-events.ts`) — SDK must not depend on dal-pg; `EntityEventPort` is an interface so the port typechecks at `dal.eventPort = makeNatsEntityEventPort(code)`. Wire is the real contract. |
+
+## TOC — stato esecuzione
+
+| Step | Stato | Commit |
+|---|---|---|
+| 1-5 contratto + opt-out + emissione + tx buffer + wiring dal | ✅ | dal `2b3d9ee` |
+| 6 SDK transport (`entity-events.ts`, `ensureStream` limits) | ✅ | sdk `b52d665` |
+| 8 JH durable + per-trigger isolation | ✅ | us `936e100` |
+| 7 bootstrap: `dal.eventPort=`+`ensureEntityEventsStream`+auto-declare census | ✅ | sdk + us wiring (`initDal` awaitable, 5 servizi) — standards clean su tutti |
+| 9 lint `event-bus-ownership` | ✅ | us `6a71503` — gated always-on consumer profile; fake violation `events.crm.customer.>` rilevata |
+| 10 test dedicati (emit/opt-out/tx/bulk/port) | ✅ | dal `2a7630e` — 8/8 event tests (audit-gate bug trovato+fixato), suite 742/742 |
+| E2E broker | ✅ | script: stream `ENTITY_EVENTS` ready → publish seq 13 → durable fetch → payload verificato |
+| E2E JH trigger→run | ✅ | trigger row `events.ai.conversation.>` + filter `action=update` → evento JS seq 21/23 → durable `jh-events-ai-conversation` delivered+acked → dispatch → trampoline `jobs.due.system.job.forward.<uuid>` → `job_runs` status=`dispatched` run_as=`system` (server-clock 17:13:29.699→.701) |
+| E2E browser (trigger via UI) | ⏸️ bloccato | login admin richiede MFA TOTP (no secret); HTTP probes bloccati da `client_shield_registry` (UNKNOWN_CLIENT) — serve account non-MFA o TOTP code |
+| Deferred tx (`beginTransaction`) | ⚠️ gap noto | il capture layer non passa dai metodi repo → nessun evento; documentato, fix in iterazione |
 | D5 | Opt-out | entity flag + per-action `except` list on `@Entity` options |
 | D6 | Subject | `events.<svc>.<entity>.<uuid>` — action in payload only (trigger `filter` already discriminates) — **user decision** |
 | D7 | Stream owner | `createMicroservice` (US) + `index.ts` (BE) |
