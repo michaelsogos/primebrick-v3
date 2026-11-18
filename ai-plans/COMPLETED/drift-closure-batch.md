@@ -1,5 +1,11 @@
 # Drift-closure batch — close all residual plan drift
 
+**STATUS: DONE — archived 2026-11-18.** Every inventory item landed in
+reality or was dead-by-decision; the last open item (D3 live
+degraded-boot rehearsal) was staged and passed on both paths
+(pending_review admin-approve + failed-patch heartbeat auto-recovery)
+on 2026-11-18 — see D3 section.
+
 2026-11-11. Goal: zero drift left behind across the 5 recent plans.
 Commit after every turn of changes. No workarounds.
 
@@ -65,6 +71,21 @@ Commit after every turn of changes. No workarounds.
   (propose text per doc rules — folded into D4 W6 docs batch);
   live degraded-boot rehearsal not staged (would need an injected failing
   patch — mechanics covered by unit tests)
+- **REHEARSED LIVE 2026-11-18** — both paths verified on job-handler :3006:
+  - Path A (`pending_review`): signed patch `-- pb:requires-review` →
+    boot DEGRADED, domain 502/503 via gateway, `status` showed
+    `pendingReview:[...]` → ephemeral E2E admin minted via
+    `test-users.createE2eAdminActor` → `POST /svc/job/.../approve` →
+    applied → `degraded:false` → **deferred onReady ran** (triggers
+    bound, schedules armed, reconcile) → domain traffic reopened.
+  - Path B (failed patch): signed broken SQL → boot DEGRADED
+    (`failed: relation does not exist`), auto-remediation reset
+    failed→pending → file fixed + re-signed → **one heartbeat (~30s)
+    later**: `applied` + `auto-remediation cleared degraded state —
+    completing boot init` — zero manual calls.
+  - Cleanup: both patch files removed, registry rows deleted,
+    MANIFEST restored to original signature, ephemeral actor
+    destroyed. No artifacts left.
 
 ## D1 — lint permanence — LANDED 2026-11-11
 
