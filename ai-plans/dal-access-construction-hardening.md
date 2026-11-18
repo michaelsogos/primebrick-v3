@@ -149,7 +149,7 @@ Per service, job-handler's F3 playbook: DomainService per owned entity, route th
 | # | Task | Repo | Status |
 |---|---|---|---|
 | R1 | `EntityService.query` + `svcFor` accessor; `DomainService.dal`→private | dal-v3 | ✅ `4615fc0` — tsc clean, 734/734 |
-| R2 | Migrate `this.dal` sites → `svc.query` (JH 14 sites done: all on own entity → `svc.query`; auditPort→factory; mock rewired via `svc` getter). Census remaining: ai/emailsender/crm/webhook/BE `this.dal` in service files | us-v3, be-v3 | 🟡 JH `b912a76` — 153/153, standards clean, live boot healthy. Other services pending census |
+| R2 | Migrate `this.dal` sites → `svc.query` (JH 14 sites done). **Lint-enforced census** (`dal-member-access` rule, sdk `ee61384`): JH 1, ai 15, crm 2, emailsender 4, webhook 1, BE ~34 — most are service reads → `svc.query`; **gap found**: ai `conversations.service` uses `dal.transaction`/`findByPage`/`findByUUID` → needs `svc.transaction` (tx-scoped governed writes) before dal can go fully private there; health-check adapters take `dalInfra()` (R4) | us-v3, be-v3 | 🟡 JH `b912a76` + lint live; other services pending migration |
 | R3 | `EntityListQuery` extension: `fields`/`group_by`/`aggregates`/structured `having` + translator + validation (note: `AggregateDecl` already exists in list cfg — extend on top) | dal-v3 | ⏳ |
 | R4 | allowPaths → `["db/dal.ts"]` (+`db/entity-repo.ts`): `dalInfra()` accessor, `config-repository-adapter`→ConfigEntriesService — JH then crm/webhook/emailsender/ai | us-v3 | ⏳ |
 | R5 | Delete empty baseline files (ai, crm, emailsender) | us-v3 | ✅ `721629c` — all clean |
