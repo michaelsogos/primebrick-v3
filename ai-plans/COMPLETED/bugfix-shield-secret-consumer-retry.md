@@ -1,6 +1,6 @@
 # Bugfix: client-shield secret — consumer refetch has no retry (post-rotation outage = permanent 401 wall)
 
-**Status:** 🟠 planned — awaiting PROCEED
+**Status:** 🟢 DONE — shipped sdk `e40a27a` (+ `567f183` stale-test cleanup), live-verified 2026-11-18
 **Repos:** `primebrick-v3-sdk` (single repo)
 **Incident date:** 2026-11-17 — JH rejected every `/svc/job/*` proxied call with
 `AUTH_CLIENT_SHIELD_SECRET_INVALID` for ~30 min; healed accidentally via a
@@ -10,11 +10,11 @@
 
 | # | Task | Status | Commit | Repo |
 |---|------|--------|--------|------|
-| 1 | `rotating-secret.ts` — `startSecretProvider`: invalidate → refetch with retry loop (mirror registry pattern), pending-refresh dedup, attempt/success logs | ⏳ not done | — | sdk |
-| 2 | Extract shared `refreshSecretWithRetry(provider, ref)`; reuse it from the `create-microservice.ts` boot fallback (unifies bounded-30 × infinite-loop policy decision — see B.2) | ⏳ not done | — | sdk |
-| 3 | `src/secrets/__tests__/rotating-secret.test.ts` (new): rotated→get-fails-then-succeeds recovers; rotated while engine down keeps retrying (fake timers); concurrent broadcasts → single loop; invalidate keeps module slot until refetch | ⏳ not done | — | sdk |
-| 4 | Verify: `pnpm test` (vitest + standards), `tsc --noEmit`; runtime repro (kill BE → force rotation → restart BE → JH heals alone, no reload) | ⏳ not done | — | |
-| 5 | Commit sdk develop + plan status update | ⏳ not done | — | |
+| 1 | `rotating-secret.ts` — `startSecretProvider`: invalidate → refetch with retry loop (mirror registry pattern), pending-refresh dedup, attempt/success logs | ✅ done | `e40a27a` | sdk |
+| 2 | Extract shared `refreshSecretWithRetry(provider, ref)`; reuse it from the `create-microservice.ts` boot fallback (unifies bounded-30 × infinite-loop policy decision — see B.2) | ✅ done | `e40a27a` | sdk |
+| 3 | `src/secrets/__tests__/rotating-secret.test.ts` (new): rotated→get-fails-then-succeeds recovers; rotated while engine down keeps retrying (fake timers); concurrent broadcasts → single loop; invalidate keeps module slot until refetch | ✅ done | `e40a27a` | sdk — extended existing file (was already present, plan said "new"), 5 cases + detached-handler proof, 10/10 |
+| 4 | Verify: `pnpm test` (vitest + standards), `tsc --noEmit`; runtime repro (kill BE → force rotation → restart BE → JH heals alone, no reload) | ✅ done | — | 587/587 (dropped 1 stale IPv6 test dead-by-design `567f183`), tsc clean, standards clean; **live repro green: JH boot with BE down → attempts 1-6 at 5s cadence → BE boot → `local copy refreshed` at +5s, zero reload** |
+| 5 | Commit sdk develop + plan status update | ✅ done | `e40a27a` | pushed |
 
 ---
 
