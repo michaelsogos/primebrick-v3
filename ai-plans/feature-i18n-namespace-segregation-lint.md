@@ -1,19 +1,19 @@
 # i18n namespace segregation lint — US modules may cite only `app.*` + own schema
 
-## Status: 🟠 WIP — Plan date: 2025-12-07 / TIC complete, awaiting PROCEED
+## Status: 🟡 PARTIALLY DONE — Plan date: 2025-12-07 / census re-run 2026-12-09
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
 | 1 | TIC: doc deep-dive + tool inventory + violation census | ✅ done | this session | evidence below |
-| 2 | Narrow `i18n_namespaces` per US service — remove `system` (`.devin/check-standards.json`) | ⏳ not done | TOC | `["app","{schema}"]` each — already present, `system` must drop |
+| 2 | Narrow `i18n_namespaces` per US service — remove `system` (`.devin/check-standards.json`) | ✅ done | verified 2026-12-09 | all 6 services `["app","{schema}"]`; boilerplate in CI matrix |
 | 3 | Extend `i18n-key-ns` patterns: template-literal prefixes + non-i18n `*_key` denylist | ✅ done | this session | `NON_I18N_KEY_FIELDS={system_key}` + `T_CALL_TEMPLATE`/`I18N_KEY_TEMPLATE` — sdk commit |
 | 4 | New rule `i18n-sql-key-ref`: key-ref columns in db-meta patches vs allowlist | ✅ done | this session | + `i18n_key_ref_exempt` config; verified on ai: 42 refs flagged |
 | 5 | Fix ai/fe `system.entities.ai_*` literals → `ai.entities.ai_*` (broken anyway) | ✅ done | this session | 34 repoints ×4 files incl. `fieldNs` const (~15 lint-invisible `${fieldNs}` call sites) — all 35 cited keys verified live |
 | 6 | `system.entities.list.*` shared-chrome refs — strict rule confirmed; exempt w/ phase-2 pointer or migrate first | ✅ done | this session | exempt comments NOT honored by scanner → seeded `app.entities.list.no_records`+`app.common.restore_failed` (be-v3 patch) + repoint to app.* — zero debt. fe-v3 `useRowActions` had the SAME dead refs → repointed |
 | 7 | Fixture specs in `tools/__tests__/check-standards.test.ts` + per-service gate run | ✅ done | this session | 11 new E2E specs (32 total green); ai real-repo probe: 28+42 hits |
 | 8 | Exempt shipped patches (`i18n_key_ref_exempt`) — declared debt | ✅ done | this session | 6 configs: ai/crm/es `0002`, jh `0002`+`20261207110000`, boilerplate `20261116900000`, webhook `0002`+`0003`+`0004` |
-| 9 | Doc updates (proposed text, approved before write) | ⏳ not done | TOC | i18n.md contract line + gate doc + stale docblock |
-| 10 | (Phase 2, separate plan) migrate 67 live `config_entries` label refs → `{schema}.settings.config.*` + shared-chrome keys → `app.*` | ⏳ not done | later | mechanics in D.5 |
+| 9 | Doc updates (proposed text, approved before write) | ✅ done | later sessions | be/fe i18n docs + `.devin/rules/i18n-namespace-segregation.md` shipped |
+| 10 | (Phase 2, separate plan) migrate 67 live `config_entries` label refs → `{schema}.settings.config.*` + shared-chrome keys → `app.*` | ⏳ partial | census 2026-12-09 | repoint+reseed DONE — 0 foreign refs in all 6 schemas live; **RESIDUAL: 157 orphan keys (~1099 rows) still in `system.translations`** — be-v3 cleanup DELETE never landed (D.5 step 3) |
 | 11 | (Phase 2) `findTranslations` RPC — the ONE documented cross-domain exception | ✅ done | this session | be-v3 — details in E.bis "as built" |
 
 ---
