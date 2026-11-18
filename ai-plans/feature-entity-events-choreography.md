@@ -421,3 +421,66 @@ entity event — nothing to compose. Domain-specific hand-declared emits
 - Replay/catch-up consumers (JetStream durable consumers support it
   natively when needed).
 - Retroactive events for existing rows.
+
+## 7. Deferred — payload/sibling-family standardization (TIC 2026-12-21)
+
+Publisher census found THREE payload families; only A+B are in scope for
+the `{event:{…}, entity:{…}}` envelope restructure (tracked in
+`feature-event-source-ux-convention.md` → new shared-envelope task):
+
+- **A. Entity lifecycle** `events.<svc>.<entity>.<uuid>` — flat envelope
+  `{schema,service,entity,table,action,uuid,version,actor,changed_at,before,after,delta,batch}`.
+- **B. CRM semantic** `events.crm.customer.on.*` — NO envelope at all
+  (domain payload only; actor only in NATS headers) — must adopt the
+  same `event{}` envelope.
+- **C. Transport/infra — DEFERRED (user decision)**: `jobs.result.*`,
+  `emailsender.response.*` (also camelCase payload — convention bug),
+  `webhook.*.received`, `jobs.due.*`, `jobs.ctl.*`, `e2e.*`,
+  `service.gateway_online`, `config.changed`, `client_registry.changed`.
+  Separate initiative: revisit the WHOLE NATS subject naming convention
+  ("abbiamo lasciato correre troppo tempo") and decide which of these
+  subjects deserve schema + envelope governance at all.
+
+### 7a. DONE (2026-12-21) — schema:2 envelope shipped
+
+The `{event:{…}, entity:{…}}` restructure is LIVE on the wire and in the
+census (`schema:2` on all `events.*` emits; semantic `on.*` subjects share
+the same envelope + `entity.after` + domain siblings). Field decisions
+implemented per user review:
+
+- `table` **dropped** — zero consumers verified.
+- `actor`→`emitted_by`, `changed_at`→`emitted_at` — wire ISO 8601 string,
+  schema `{type:"string", format:"date-time"}` (`unix_ms` era inventato:
+  eliminato dopo review utente).
+- `emitted_by` carries `format:"actor_token"` — NEW honest format added
+  to the `*_by` name-hint whitelist (uuid|actor_token) since `system:<code>`
+  tokens are legal actors.
+- `action` stays in `event` (lifecycle verb OR semantic name).
+- `version`/`batch`/`uuid` kept on the envelope; `subject` self-describes.
+- Multi-row shape reserved: top-level `uuids:[]` sibling of `entity`.
+- Domain extras (`change`,`trigger`,`payout`,`account_manager`) stay
+  top-level siblings — the envelope does NOT swallow them.
+- PropNavigator/payload-map path tree sorted ALPHABETICALLY per column
+  (user requirement: no more schema-declaration order).
+- `app.entity_events.*` i18n keys shipped (98 rows, 7 languages);
+  `x_label_key` on envelope props so badges/options translate.
+- Live `job_triggers` rows migrated: `action`→`event.action`,
+  `actor`→`event.emitted_by`, `changed_at`→`event.emitted_at`,
+  `after.*`→`entity.after.*` etc. in `filter` + `payload_map` path exprs.
+- Verified: census re-registered schema:2 on all 4 entity services;
+  E2E `entity-events-choreography` 3/3 + `payload-map-widget` 5/5 green
+  on the real stack (real emit → filter `event.action` match → dispatch).
+
+### 7b. DONE (2026-12-21) — navigator/schema honesty pass
+
+Post-ship UI review fixes (single canonical builder
+`ui/schema-nav-nodes.ts` shared by PropNavigator, PayloadMapEditor,
+RuleFilterEditor): `const:2` → `number`+hash (pin icon removed; `const`
+= 1-item closed vocabulary in the value picker, primitive wire type
+preserved), enum leaves show literal type + `tags` icon, `event.batch`
+→ "Batch UUID" i18n, delta `old`/`new` positional labels
+(`app.entity_events.entity.delta.*` — they no longer reuse the column
+`x_label_key`), Bits-UI check CTA removed from navigator rows,
+lazy i18n bridge (module-load `getT()` crash → blank remote pages),
+`multiSummaryAt:Infinity` in payload-map target chips (regression:
+invalid per-item badge was collapsed into "2 selected").
