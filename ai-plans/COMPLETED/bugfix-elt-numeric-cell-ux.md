@@ -64,7 +64,10 @@ renderer consumed it.
 ## Notes / deviations
 
 - `it-IT` does not group 4-digit integers (ICU `min2` grouping) — tests use
-  5-digit values where grouping must show.
+  5-digit values where grouping must show. **Follow-up**: this limitation
+  was fixed afterwards — `useGrouping:'always'` in `formatListNumberValue`
+  makes `1.234` work in it-IT (see `bugfix-elt-numeric-semantics`); tests
+  now assert 4-digit grouping.
 - Header alignment was attempted then reverted — headers stay left by
   explicit requirement; never in scope.
 - `version` keeps its own `text-right` (audit-group tail badge), without

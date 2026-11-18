@@ -26,8 +26,8 @@
 | 10 | Unit tests: `service-routes.test.ts` meta assertions (JH 148 green); `columns.test.ts` visibleKeys v2 spec (core 24 green); writer tests updated for the drop | ✅ done | 2026-11-17 | us-v3 + core |
 | 11 | E2E `jobs-pages.spec.ts`: served-meta contract, rendered visibility, preset outcome wire AND-ing, `schedule_subject` nats_subject anatomy, visibleKeys v2 migration regression — 4 new tests, all green; `remote-sheet.spec.ts` fixture switched to live-uuid resolution (dev DB is reseeded; hardcoded uuid had rotted) | ✅ done | 2026-11-17 | fe-v3 — 25/25 jobs-pages + 2/2 remote-sheet |
 | 12 | Verify: `tsc --noEmit` clean (JH), `svelte-check` 0 errors (FE), vitest green (JH 148 / FE 687 / core 24), Playwright green, live meta contract verified via authenticated E2E | ✅ done | 2026-11-17 | — |
-| 13 | Commits per repo + plan status update | ⏳ in progress | — | |
-| — | User remediation (NO code): Columns sheet → reset on triggers/schedules/runs to heal stored prefs | ⏳ not done | — | manual — visibleKeys v2 self-heals legacy profiles, reset optional |
+| 13 | Commits per repo + plan status update | ✅ done | verified 2026-12-09 | us `925bae0`, core `bec45a2`, fe commits landed |
+| — | User remediation (NO code): Columns sheet → reset on triggers/schedules/runs to heal stored prefs | 🚫 dropped | — | optional manual step — visibleKeys v2 self-heals legacy profiles; reset never needed |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->

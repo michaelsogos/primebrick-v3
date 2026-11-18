@@ -1,5 +1,14 @@
 # FIX — JsonCellViewer: canonical cell-link anatomy
 
+## Status: 🟢 DONE — shipped fe-v3 `2e4b82a`, E2E `elt-json-cell.spec.ts` green
+
+> Deviations from TOC (recorded honestly): the planned `test_id="json-cell"`
+> was dropped — a fixed testid would duplicate once per table row; the spec
+> targets `role=link` instead. Scope grew: dedicated E2E spec added +
+> `Fire #` ascending sort needed because `report` values live on older
+> maintenance runs (default page shows recent `emailsender.send` runs with
+> `report = null`).
+
 ## Context (TIC)
 
 `JsonCellViewer.svelte` renders the generic `format:"json"` ELT cell

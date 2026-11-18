@@ -1,4 +1,11 @@
-# bugfix-elt-numeric-semantics — STATUS: TOC (answers received)
+# bugfix-elt-numeric-semantics — STATUS: 🟢 DONE (shipped; contract later evolved)
+
+> All tasks 1-8 landed and verified (Intl-native formatter, `useGrouping`,
+> `numericKindOf` fraction budget, dispatcher adornments, docs in all repos).
+> SUPERSEDED-BY note: the `MetaColumnUom` union designed here
+> (`{kind:'custom', unit|field|symbol}`) was replaced by kind-carried
+> macro-categories — see COMPLETED `refactor-uom-kind-categories.md`
+> (`duration_ms` is now `{kind:'time', unit:'millisecond'}`).
 
 ## Objective
 
