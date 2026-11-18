@@ -144,12 +144,57 @@ Per service, job-handler's F3 playbook: DomainService per owned entity, route th
    remaining work = allowPaths shrink to `["db/dal.ts"]` (+`db/entity-repo.ts`
    where the actorSession seam exists) per service, not a separate TIC.
 
+## TOC-discovered gaps — TIC review 2026-12-?? (execution halted for user decision)
+
+Two gaps surfaced mid-TOC that the plan did not anticipate; execution was
+halted and both were brought back here instead of improvised APIs:
+
+1. **Internal top-N / paged reads** — `ai` has 3 sites doing
+   `dal.findByPage(entity, 1, limit, fields, opts)` and keeping only
+   `.entities` (top-N, not real paging). Explored and REVERTED by user
+   direction: `FindOptions.limit/offset` (findAll stays page-free — a
+   DAL signature change was never authorized) and `svc.queryPage`
+   (unneeded).
+   **User directive: `svc.list` IS the paged facade** — `page`,
+   `page_size`, `filters`, `sort_key`/`sort_dir`, `deleted_records` are
+   the contract; the only real gap is that these services declared
+   `filterableKeys: new Set()` (RPC-served, never meta-served). The
+   migration widens the service's OWN allowlist declaration — no API
+   surface change at all.
+2. **Deferred transactions** — `ai/conversations.service.ts
+   commitStamped` uses `dal.beginTransaction()` (`DeferredTransaction` —
+   `tx.add/update` return `Deferred` handles whose `.ref()` binds one
+   op's RETURNING into another, compiling a multi-write CTE;
+   `svc.transaction`'s live `Repository` cannot express ref-binding).
+   `svc.beginTransaction` + `EntityServiceConfig.txBeginner` — **RESOLVED
+   kept** (dal `374df09`): no alternative exists — `svc.transaction`'s
+   live Repository cannot express `ref()`-bound CTE writes. Same
+   injection contract as `txRunner` (fail-fast when absent).
+   ai migration landed `1d6822d` — 15→0 violations, standards clean,
+   20/20 tests.
+
+3. **PROCEED 2026-11-18 (post-amendment)** — `beginTransaction` kept;
+   `svc.list`+`filterableKeys` confirmed as the top-N pattern.
+   us-v3 swept to zero (`65e7676`): health-check adapters renamed the
+   injected field `probe` (allowPath infra dep, not a consumer member);
+   lint strengthened to bare `this.dal` refs (`976876b`) which exposed
+   two hidden alias escapes in emailsender — migrated via svcFor.query
+   preserving find's exactly-one semantics.
+   **BE census (lint-enforced): 39 sites** — user.service 13,
+   config-entries 6, mfa 5, webauthn 4, role 4, invitation 3,
+   user-preferences 2 ✅ (`d7b3516`), auth-events 1 ✅ (`d7b3516`,
+   grouped stats → svc.query + in-memory window pending R3's
+   group_by), db/domain-service 1 (audit-port seam → needs dalInfra R4).
+   Also: `src/http/entity-service.ts` hand-rolled facade must gain
+   `query`/`transaction`/`beginTransaction` to satisfy EntityService.
+   Remaining BE files compile-broken BY DESIGN (private dal) until migrated.
+
 ### Remaining tasks (post-decision)
 
 | # | Task | Repo | Status |
 |---|---|---|---|
 | R1 | `EntityService.query` + `svcFor` accessor; `DomainService.dal`→private | dal-v3 | ✅ `4615fc0` — tsc clean, 734/734 |
-| R2 | Migrate `this.dal` sites → `svc.query` (JH 14 sites done). **Lint-enforced census** (`dal-member-access` rule, sdk `ee61384`): JH 1, ai 15, crm 2, emailsender 4, webhook 1, BE ~34 — most are service reads → `svc.query`; **gap found**: ai `conversations.service` uses `dal.transaction`/`findByPage`/`findByUUID` → needs `svc.transaction` (tx-scoped governed writes) before dal can go fully private there; health-check adapters take `dalInfra()` (R4) | us-v3, be-v3 | 🟡 JH `b912a76` + lint live; other services pending migration |
+| R2 | Migrate `this.dal` sites → `svc.query`/`svc.list`/`svc.transaction` (JH 14 sites done). **Lint-enforced census** (`dal-member-access` rule, sdk `ee61384`): JH 1, ai 15→0 (in tree, pending `beginTransaction` decision), crm 2, emailsender 4, webhook 1, BE ~34. `svc.transaction` landed (`ee98824`); `svc.beginTransaction` in-tree pending decision; top-N sites → `svc.list` + `filterableKeys` declaration per user directive | us-v3, be-v3 | 🟡 JH `b912a76` + lint live; ai migrated in tree (uncommitted); other services pending |
 | R3 | `EntityListQuery` extension: `fields`/`group_by`/`aggregates`/structured `having` + translator + validation (note: `AggregateDecl` already exists in list cfg — extend on top) | dal-v3 | ⏳ |
 | R4 | allowPaths → `["db/dal.ts"]` (+`db/entity-repo.ts`): `dalInfra()` accessor, `config-repository-adapter`→ConfigEntriesService — JH then crm/webhook/emailsender/ai | us-v3 | ⏳ |
 | R5 | Delete empty baseline files (ai, crm, emailsender) | us-v3 | ✅ `721629c` — all clean |
