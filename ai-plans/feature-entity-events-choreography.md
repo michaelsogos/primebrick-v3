@@ -296,6 +296,22 @@ immediate triggers already trampoline via `jobs.due.*`.
   `deliver_group:"job"` for replica work-split) — this is what makes
   "JH down" survivable: bound events persist until the consumer acks;
   the stream's retention only reclaims what nobody was ever bound to.
+- **Fan-out semantics (verified `triggers-engine.ts:95-113,334-360`):**
+  `Promise.all` over every bound trigger per event — N triggers on the
+  same source+filter ALL fire (queue `"job"` splits only across JH
+  replicas, never across triggers). A throwing `onEvent` is currently
+  swallowed by `.then(()=>{})` — siblings already fired, the failed one
+  loses the event silently. **Required change for durable consumers:**
+  wrap each `onEvent` in its own `.catch` inside the fan-out so the
+  handler always acks — otherwise a single failing trigger naks the
+  batch and re-fires every sibling (double-dispatch). Semantics then:
+  at-least-once delivery TO JH, at-most-once fan-out WITHIN JH — run
+  idempotency (dedup key on event id) is future work.
+- **Filter grammar today:** `matchFilter` is `.every()` — AND only;
+  ops `eq`/`neq`/`exists`/`contains`/`gt`/`lt`. No `or`/`in` →
+  "delete OR restore" needs two triggers today. Optional micro-task:
+  add `in` op (`{field, op:"in", value:[...]}`) to `matchFilter` +
+  `TRIGGER_FILTER_SCHEMA` — ~10 lines, unlocks multi-action triggers.
 
 ### 2h'. Presence markers — untouched
 
