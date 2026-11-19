@@ -14,6 +14,10 @@
 | 2 | Entity-scoped `version_history.*` seed duplicates (generator convention) | version-history title TIC | ✅ done 2026-11-15 (us `30fcae6`) — all scoped rows dead; no in-repo emitter exists (one-off bootstrap dump) |
 | 3 | Pre-existing svelte-check shim errors (alert/loading-bar/password/toggle exports) | system-trigger work | ✅ done 2026-11-15 (fe — variants moved to `.ts`, `password.svelte.ts` → `password-context.svelte.ts`) |
 | 4 | Audit: verify every per-instance NATS sub flows through the lifecycle registry | materialize-route flapping debug | ⏳ not done |
+| 5 | `entities.mdx` (dal dev-guide) does not document the `display_field` write contract (nullable-authored lint) — flagged-later stale-doc candidate from the display-field plan | plan archival census 2026-12-21 | ⏳ not done |
+| 6 | JH run idempotency — no dedup key on event id: a JetStream redelivery can double-dispatch a trigger (fan-out is per-trigger isolated but not idempotent) | entity-events choreography §6/§7c | ⏳ not done |
+| 7 | `matchFilter` has no `in` op — "delete OR restore" needs two triggers today (~10 lines: op + `TRIGGER_FILTER_SCHEMA` enum) | entity-events choreography review note | ⏳ not done |
+| 8 | Transport/infra subjects ungoverned — `jobs.result.*` carries **camelCase payloads** (data-model convention violation), plus `emailsender.response.*`, `webhook.*`, `jobs.ctl.*`, `e2e.*`, `config.changed`…: decide which deserve schema+envelope governance vs stay raw transport | choreography §7 family-C, deferred per user decision | ⏳ not done |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 

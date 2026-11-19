@@ -6,7 +6,18 @@
 > parent entity's write traffic — an operating cost (disk + db weight), not
 > a maintenance cost. Without retention every `*_audit` saturates over time.
 
-## Status: ⚪ TODO — Plan date: 2026-11-17 / TIC complete, awaiting PROCEED
+## Status: ✅ DONE — verified empirically 2026-12-21 (moved to COMPLETED)
+
+> All tasks landed: `partman.part_config` shows `retention='12 months'` on
+> EVERY `*_audit` parent (job+crm live-verified); audit tables have PK
+> `(uuid, changed_at)` with no `id`/`entity_id` columns (the uuid-PK shape
+> from F1+F2 superseded the draft `(entity_uuid, changed_at)` — same D4
+> intent); `@Retention` decorator live (`entity-decorators.ts:752`) with
+> `@PartitionField` split; SDK auto-mounts `<svc>.partition_maintenance` +
+> auto-declares the system trigger (`partition-maintenance-job.ts`,
+> `create-microservice.ts:1016` needed-gate); ai `partition-jobs.ts`
+> deleted (auto-wire absorbs it); JH wires
+> `dalMigrations.makePartitionMaintenanceJob(ENTITY_REGISTRY)`.
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
