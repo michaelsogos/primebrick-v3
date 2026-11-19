@@ -1,4 +1,5 @@
 # UX Fixes: sticky-scroll chat AI + error handling passkey
+n> **Status: ✅ DONE — verified empirically 2026-12-22 (all items in code; drift-free).**
 
 > **STATUS: IMPLEMENTED** — 2026-09-22. Scroll sticky ≤50px + pill arrow-down verificati live; passkey deadlock fix + preservazione `webauthnCredentials` deployati; key-picker tradotto come /create.
 

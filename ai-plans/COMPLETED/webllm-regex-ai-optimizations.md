@@ -1,4 +1,5 @@
 # WebLLM Regex AI Optimizations
+n> **Status: ✅ DONE — verified empirically 2026-12-22 (all items in code; drift-free).**
 
 ## Objective
 Apply 4 empirically-validated optimizations from the KV cache test harness to the production `use-regex-ai.svelte.ts` composable.
