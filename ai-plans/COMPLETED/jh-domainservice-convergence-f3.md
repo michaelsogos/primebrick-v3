@@ -7,7 +7,21 @@
 > path go through the owning `DomainService` — the shape that already exists
 > in `src/modules/jobs/jobs.service.ts` but that the function modules bypass.
 
-## Status: ⚪ TODO — Plan date: 2026-11-16 / TIC complete, awaiting PROCEED
+## Status: ✅ DONE — verified empirically 2026-12-21 (moved to COMPLETED)
+
+> The work landed via the R2 migration in `dal-access-construction-hardening`
+> (`9a37948` route-through-DomainService, `ec398c3` ALS-actor system writes,
+> `b912a76`/`937201f`/`0c320dc` read-door rationalization). Empirical
+> re-verification: ZERO `getDal(`/`dal.`/`this.dal` in `src/services` +
+> `src/controllers`; all planned domain methods exist on the three services
+> (plus `listRowsBySubjects`, `decorate`); `makeMarkerAuditPort` dropped from
+> Schedules/Runs (documented comments); `ConfigEntriesService` live with the
+> B3 guard as a `beforeUpdate` hook; `entity-repo.ts` deleted; allowPaths
+> `[db/dal.ts, index.ts]`; baseline file deleted. Acceptance run:
+> check-standards clean [consumer], tsc clean, vitest 158/158; live audit
+> probe — `job_triggers_audit` gained INSERT+SOFT_DELETE rows (changed_by =
+> e2e actor, version 1→2) from governed svc writes during the choreography
+> e2e. `svc.query`/`svc.find`/`svc.get`/`svc.transaction` are the only doors.
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|

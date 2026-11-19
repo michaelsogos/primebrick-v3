@@ -5,7 +5,15 @@
 > construction fix, the tx seam, and every baselined/allowlisted site
 > across us-v3 (ai/emailsender/crm) and be-v3.
 
-## Status: ⚪ TODO — Plan date: 2026-11-17 / TIC complete, awaiting PROCEED
+## Status: ✅ DONE — superseded + repaid, verified 2026-12-21 (moved to COMPLETED)
+
+> Tasks 0/0b/0c shipped as F1+F2 (`audit-construction-f1-f2.md`, COMPLETED).
+> Tasks 1–9 (JH) repaid by `jh-domainservice-convergence-f3` — empirically
+> verified: zero dal in services/controllers, domain methods on the three
+> DomainServices, baseline deleted, audit rows live. Tasks 10–14
+> (ai/emailsender/crm/be-v3 + baselines) repaid by
+> `dal-access-construction-hardening` R2–R7 — both repos at zero consumer
+> violations, `dalInfra()` canonical door, empty baselines deleted.
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
