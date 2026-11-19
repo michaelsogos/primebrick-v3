@@ -1,6 +1,9 @@
 # bugfix-i18n-config-ui-keys-restore
 
-Status: TIC COMPLETE — awaiting PROCEED
+Status: ✅ DONE — verificato live 2026-11-19 (be `d4d3f2c` su
+`feature/i18n-restore-config-ui-keys`; patch `20261222100000` applicata,
+602/602 righe vive + `updated_at` bumped, Redis `translations:i18n:system:*`
+flushed, pannello regole confermato tradotto dall'utente).
 
 ## Obiettivo
 
