@@ -1,12 +1,12 @@
 # ServiceUnavailableView — align CTAs to ErrorPage 500 anatomy, drop OFFLINE status line
 
-## Status: ⚪ TODO — Plan date: 2026-11-19 / 09:58 UTC
+## Status: ✅ DONE — Plan date: 2026-11-19 / 09:58 UTC · verified 2026-12-22
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
-| 1 | `ServiceUnavailableView.svelte`: remove `status` prop + `{#if status}` OFFLINE line; replace single outline Button with ErrorPage-style `<nav>` — left CTA becomes refresh (`RefreshCw` + `app.common.refresh` → `onRetry`, keep `{#if onRetry}` gate), right CTA = `resolveSafePage`-backed return-home (`House` + `app.error.return_home`, primary gradient, disabled state when `homeHref === null`) | ⏳ not done | — | copy `ErrorPage.svelte` anatomy verbatim (classes, icons, testid pattern) |
-| 2 | `EntityFormPage.svelte` (sole caller, line 533): drop `status={svc.status}` prop | ⏳ not done | — | |
-| 3 | Typecheck (`pnpm check`) + rendered verification of the unavailable surface | ⏳ not done | — | |
+| 1 | `ServiceUnavailableView.svelte`: remove `status` prop + `{#if status}` OFFLINE line; replace single outline Button with ErrorPage-style `<nav>` — left CTA becomes refresh (`RefreshCw` + `app.common.refresh` → `onRetry`, keep `{#if onRetry}` gate), right CTA = `resolveSafePage`-backed return-home (`House` + `app.error.return_home`, primary gradient, disabled state when `homeHref === null`) | ✅ done | 2026-12-22 | fe `0adb875` — verbatim ErrorPage anatomy (gap-20 font-mono nav, h-3.5 icons, primary-gradient home) |
+| 2 | `EntityFormPage.svelte` (sole caller, line 533): drop `status={svc.status}` prop | ✅ done | 2026-12-22 | fe `0adb875` |
+| 3 | Typecheck (`pnpm check`) + rendered verification of the unavailable surface | ✅ done | 2026-12-22 | svelte-check 0/0; NEW persistent spec `__tests__/service-unavailable.test.ts` 5/5 — nav anatomy, no OFFLINE, retry fires onRetry, home anchor resolves, aria-disabled span while unresolved; check-standards clean |
 
 ---
 
