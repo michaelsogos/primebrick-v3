@@ -6,6 +6,7 @@ JetStream with TTL-based purge — consumable by job-handler triggers, direct
 subscribers, and future workflow engines.
 
 **Date**: 2026-11-18 — TIC complete, awaiting PROCEED.
+**Status**: ✅ **DONE 2026-12-21** — incl. `{event,entity,entities}` redesign + disjoint `bulk_*` (§7c), verified live 4/4 on the real stack. Moved to COMPLETED.
 
 ---
 
@@ -407,7 +408,9 @@ entity event — nothing to compose. Domain-specific hand-declared emits
 | E2E broker | ✅ | script: stream `ENTITY_EVENTS` ready → publish seq 13 → durable fetch → payload verificato |
 | E2E JH trigger→run | ✅ | trigger row `events.ai.conversation.>` + filter `action=update` → evento JS seq 21/23 → durable `jh-events-ai-conversation` delivered+acked → dispatch → trampoline `jobs.due.system.job.forward.<uuid>` → `job_runs` status=`dispatched` run_as=`system` (server-clock 17:13:29.699→.701) |
 | E2E browser (trigger via UI) | ✅ | FE `d2e6129` — spec persistente `src/e2e/entity-events-choreography.spec.ts` 3/3 verdi: UI form → trigger `events.job.job_trigger.>` → durable bound → seconda create auto-emette evento schema-1 → `job_runs` dispatched → cleanup API |
-| Deferred tx (`beginTransaction`) | ⚠️ gap noto | il capture layer non passa dai metodi repo → nessun evento; documentato, fix in iterazione |
+| Deferred tx (`beginTransaction`) | ✅ | dal `9af70f9` — commit-time `drainEntityEvents`: thin-with-after (before/delta null per costruzione), batch uuid condiviso per commit, opt-out/audit-trail gates, drain non-throwing; suite 745/745 |
+| BE `api` census emits | ✅ | be `e8d1045` — `ENTITY_REGISTRY`-derived `events.api.<entity>.>` (14 emits + entities), served meta → typed payload_schema + label; `enrollApiGatewayRow` endpoints + drift check; `updateByCode` uuid-PK fix (ERR09 dormiente). Verificato live su `service_registry` |
+| JH `job_name`→`name` unification | ✅ | us + fe — `job_schedule.name`/`job_run.name` fisici NOT NULL (era @Calculated/subject-tail); `DeclareScheduleInput.name` required → trigger.name copiato ad arm-time; `JobForwardEnvelope.name` → `insertRun` stampa il nome dichiarato; `recordDirectRun` preferisce schedule row name, parse del subject solo fallback legacy; meta display_field+columns+i18n `fields.name`; patch `20261221160000_job_name_unification` (add col + backfill da trigger/subject, runs RENAME, NOT NULL, i18n rename) firmata `dev-micha-2`, snapshot rigenerati; vitest JH 156/156, live-arm 5 trigger re-armed con name; FE `columns-toggle-name` verificato live nel picker |
 | D5 | Opt-out | entity flag + per-action `except` list on `@Entity` options |
 | D6 | Subject | `events.<svc>.<entity>.<uuid>` — action in payload only (trigger `filter` already discriminates) — **user decision** |
 | D7 | Stream owner | `createMicroservice` (US) + `index.ts` (BE) |
@@ -484,3 +487,34 @@ preserved), enum leaves show literal type + `tags` icon, `event.batch`
 lazy i18n bridge (module-load `getT()` crash → blank remote pages),
 `multiSummaryAt:Infinity` in payload-map target chips (regression:
 invalid per-item badge was collapsed into "2 selected").
+
+### 7c. DONE (2026-12-21) — `{event, entity, entities}` + disjoint `bulk_*` vocabulary
+
+Payload redesign landed and **verified live on the real broker**:
+
+- `event` = standard envelope only (`batch` REMOVED — it is an op outcome,
+  not envelope metadata). `entity` = single-entity state, label "Entità".
+  NEW `entities = {batch, uuids[]}` sibling section, label "Entità
+  coinvolte" — carries the grouped outcome on EVERY member event of a
+  bulk op (self-contained correlation, exact subjects still bind).
+- Actions DISJOINT, non-overlapping: single `create|update|delete|
+  restore|purge|duplicate` vs `bulk_create|bulk_update|bulk_delete|
+  bulk_restore|bulk_purge` at the 5 `*Many` emitters. Deferred-tx drain
+  keeps PLAIN actions (N atomic writes ≠ bulk op) + two-pass shared
+  `entities{batch, uuids}` commit correlation.
+- Root `uuids` dropped — it was schema-declared but never emitted.
+- Commits: dal `abc6a1f`, sdk `c59ab04`+`76829a1`+`2b95e35`, be `45a28d1`
+  (i18n patch `20261221170000` — `entities` namespace, soft-delete of
+  `event.batch`/root `uuids` keys), fe `b0ab0b4` (live spec).
+- Found+fixed en route: `parseBulkItems` rejected EVERY real bulk REST
+  call — `extJsonParse` delivers all ints as `bigint`,
+  `Number.isInteger(1n)` is false → permanent 400. Fixed to accept
+  bigint|integer → normalized `number` (sdk `2b95e35`, regression test
+  posts through the real `readJsonBody`).
+- LIVE PROOF (`entity-events-choreography` 4/4): real `/bulk-delete`
+  → per-uuid `events.job.job_trigger.<uuid>` events with
+  `action:"bulk_delete"`, no `event.batch`, `entities.batch` shared,
+  `entities.uuids` complete, `entity.after` null → a live watcher on the
+  exact member subject (`event.action eq "bulk_delete"` filter) bound a
+  fresh durable and dispatched a `job_runs` row (`trigger_uuid`-keyed;
+  `schedule_subject` NULL for immediate event triggers).

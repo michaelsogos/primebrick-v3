@@ -2,7 +2,7 @@
 
 **Type**: debt closure / lint + package-boundary hardening
 **Scope**: `primebrick-v3-sdk` (check-standards tool), `primebrick-dal-v3` (exports + DomainService), `primebrick-us-v3` (all services: job-handler done, ai/crm/emailsender/webhook pending)
-**Status**: TOC active — decisions taken 2026-11-18 (see below); empirical re-census done same day
+**Status**: ✅ **DONE 2026-12-21** — R1–R7 all landed (see table); both repos at zero consumer violations, `dalInfra()` door live, docs synced. Moved to COMPLETED.
 
 ## Objective
 
