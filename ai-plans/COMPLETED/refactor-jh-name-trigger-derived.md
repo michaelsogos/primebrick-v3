@@ -9,7 +9,21 @@
 > trigger: `job_run.trigger_uuid` → NOT NULL, every insert path carries
 > trigger lineage, uncorrelated own-lane inserts stop.
 
-## Status: ⚪ TODO — Plan date: 2026-11-19 / ~10:25 UTC
+## Status: ✅ DONE — verified empirically 2026-12-21 (moved to COMPLETED)
+
+> Landed as `69dfa4c` (revert `850c62a` → derived identity) + FE
+> `a549c89`/`88419b4`/`52fa69c`. Empirical re-verification: NO `@Column
+> name` on either entity; `trigger_uuid` NOT NULL both tables (DB live:
+> 0/356 NULL); `trigger` calc = `COALESCE(jt.name, uuid::text)` on both;
+> `display_field:"trigger"` in both metas (`jobTriggerMeta` keeps
+> `name`); `JobForwardEnvelope` has no `name`; forwarder resolves
+> `scheduleRow?.trigger_uuid ?? trampolineTriggerUuid(subject)` + stamps
+> `x-job-trigger-id`; recorder drops unresolvable lineage with warn;
+> patch `20261222090000` applied (legacy DELETE + NOT NULL + DROPs + i18n
+> `armed_by`→`trigger`); `ServiceRecordPanel` binds `context_row.trigger`;
+> E2E uses `columns-toggle-trigger`; JH vitest 158/158, standards clean.
+> Chain proven live by the choreography e2e (watcher fire → run row with
+> `trigger_uuid` recorded, 2026-12-21).
 
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
