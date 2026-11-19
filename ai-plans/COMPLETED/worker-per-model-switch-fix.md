@@ -1,5 +1,11 @@
 # Plan: Worker-per-model switch (no page reload)
 
+## Status: ✅ DONE — verified empirically 2026-12-22
+
+- Core landed in `use-ai-assistant.svelte.ts` (shared composable — better than the planned regex-only site): `switchModel` = `destroyWorker()` → 17-field reset → `init(true)`, zero `location.reload` (commit `5234e5d` ONNX migration era).
+- Drift cleaned 2026-12-22 (fe `f8e534d`): dead `regex-ai-auto-open` sessionStorage read + stale comment removed from `smart-regex-input.svelte` (key had no writer; panel stays mounted across switches).
+- Documented deviations vs plan (kept, deliberate): `destroyWorker` has **no 3s timeout** — graceful `dispose_complete` is mandatory before `terminate()` (worker deadlock would hang the switch rather than hard-kill); verbose `[VRAM] SWITCH REPORT` reduced to the single `heap_net > 50` leak warn; `is_loading_model=true` kept so the loading frame stays visible during switch.
+
 ## Objective
 Replace `switchModel()` page-reload approach with worker-per-model: terminate old worker + create new worker + load new model. This frees VRAM deterministically (GPUDevice dies with the worker) without losing page state.
 
