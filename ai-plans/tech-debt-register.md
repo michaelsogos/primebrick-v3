@@ -18,6 +18,8 @@
 | 6 | JH run idempotency — no dedup key on event id: a JetStream redelivery can double-dispatch a trigger (fan-out is per-trigger isolated but not idempotent) | entity-events choreography §6/§7c | ⏳ not done |
 | 7 | `matchFilter` has no `in` op — "delete OR restore" needs two triggers today (~10 lines: op + `TRIGGER_FILTER_SCHEMA` enum) | entity-events choreography review note | ⏳ not done |
 | 8 | Transport/infra subjects ungoverned — `jobs.result.*` carries **camelCase payloads** (data-model convention violation), plus `emailsender.response.*`, `webhook.*`, `jobs.ctl.*`, `e2e.*`, `config.changed`…: decide which deserve schema+envelope governance vs stay raw transport | choreography §7 family-C, deferred per user decision | ⏳ not done |
+| 9 | `api` module has no translations schema — BE-owned pages resolve dict-module `api` → `GET /translations/api/:lang` → 503 `TRANSLATIONS_SCHEMA_MISSING` (console spam). `api` should declare `translations_module: 'system'` in the census (or resolver special-cases it) | i18n config-keys restore investigation | ⏳ not done |
+| 10 | i18n citation census blind spots — any future "orphan cleanup" patch must count (a) FE `$t(...)` literals and (b) `\w*_key` fields inside `config_entries.type_config` JSON, not only `label_key`/`description_key` columns | `20261222100000` restore patch | ⏳ not done — guard for next cleanup |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 
