@@ -29,7 +29,11 @@ state and updates this file.
   resolved by `DynamicIcon` — this IS the fallback until upstream ships).
   `table-dictionary` is also the `dict` kind default in
   `@primebrick/core` `DEFAULT_ROUTE_ICONS` (BE discovery emits it for
-  icon-less dict routes; nav leaves inherit via the census map)
+  icon-less dict routes; nav leaves inherit via the census map).
+- **POC not yet submitted**: `list-dictionary` (`LIST_DICTIONARY_NODES`) —
+  detached-rows variant picked by user (3 rows h=4, code x3w6 + label
+  x12w9, uniform 3px gaps, 40/60 preserved). Held from upstream pending
+  live evaluation; payload not yet drafted in `temp/lucide-pr/`
 
 ## Check cadence
 

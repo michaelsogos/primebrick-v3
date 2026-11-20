@@ -8,7 +8,7 @@
 > Icon = `table` construction with the column divider moved to x=10.5
 > (narrow code column / wide label column — the dict row anatomy).
 
-## Status: 🟡 PARTIALLY DONE — Plan date: 2026-11-20 · session 2026-11-20 (TOC: glyph shipped in `CUSTOM_ICONS` + wired as dict-kind default in `@primebrick/core` + upstream PR #5269 opened; residual: PR review outcome via `lucide-icons-watch`)
+## Status: 🟡 PARTIALLY DONE — Plan date: 2026-11-20 · session 2026-11-20 (TOC: `table-dictionary` shipped in `CUSTOM_ICONS` + wired as dict-kind default in `@primebrick/core` + upstream PR #5269 opened; `list-dictionary` POC glyph shipped in `CUSTOM_ICONS` (user picked B3 geometry), upstream PR held pending live evaluation; residual: PR outcomes via `lucide-icons-watch` + POC verdict)
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -20,6 +20,9 @@
 | 6 | Verify: ui `pnpm check`+vitest+`pnpm build`, core `pnpm test`+`pnpm build`, be `pnpm check`+targeted vitest, fe targeted vitest | ✅ done | 2026-11-20 | ui svelte-check 0/0, standards clean, vitest 93/93, dist rebuilt · core 149/150+1skip, standards clean, tsc dist rebuilt · be tsc 0, module-discovery spec 24/24 · fe render spec 3/3 |
 | 7 | Lucide contribution: fork `feat/table-dictionary` → `icons/table-dictionary.{svg,json}` → PR upstream | ✅ done | 2026-11-20 | PR https://github.com/lucide-icons/lucide/pull/5269 — clean lucide-style commit on `michaelsogos/lucide` (no Devin trailer); `$extends:table-properties` verified against upstream usage; fork has no node_modules so `checkIcons` not run locally — CI will validate |
 | 8 | Registry + bookkeeping: `lucide-contrib/CONTRIBUTIONS.md` row+history, this plan's task table | ✅ done | 2026-11-20 | row added (status 🟡 open), history entry, payloads mirrored in `temp/lucide-pr/` |
+| 9 | Second icon POC — detached dict rows: variants A/B/C previewed, user picked B → refined B3 (gap inline 3px, code 6 + gap 3 + label 9 = 40/60 preserved); D thin-rows rejected | ✅ done | 2026-11-20 | `temp/table-dictionary-rows-preview.html`; geometry: 3 rows `h=4` y=3/10/17 (3px gaps — only symmetric integer split of 18u), cells `x3w6`/`x12w9` rx1 |
+| 10 | POC naming per lucide convention: `table-dictionary-rows` rejected by user (`table` misdescribes detached rows) → **`list-dictionary`** — upstream `list-*` subject-qualifier family (`list-todo`, `list-music`); zero `dictionary`/`lexicon`/`vocab` collision | ✅ done | 2026-11-20 | ui `9e30263` (register) + `9488652` (rename), fe `aba2ef0` (render spec 4/4); ui svelte-check 0/0, spec 8/8, dist rebuilt |
+| 11 | `list-dictionary` upstream PR — HELD pending live evaluation (POC stage) | ⏳ not done | — | files to mirror `temp/lucide-pr/list-dictionary.{svg,json}` when green-lit |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->
