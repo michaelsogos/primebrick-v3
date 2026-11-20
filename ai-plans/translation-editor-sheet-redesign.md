@@ -234,9 +234,45 @@ To add under `app.common.translations.*`: `generateAll`, `acceptAll`,
 
 ### Pending (need your go / open decisions)
 
+> **Rebased 2026-11-22** (empirical sweep): several items below were
+> already resolved in code while this block still listed them open —
+> stale markers collapsed into the "Rebased-closed" list at the bottom.
+> The genuinely open residue is the PARKED decision set.
+
+- **⏸️ PARKED — meaning-hint stand-by** (user-parked 2026-12-20):
+  reframed prompt shipped and meaning demonstrably drives output in
+  probes (8/8); the open question is whether reframed meaning output is
+  what users WANT (it translates the meaning phrase, not a disambiguated
+  label). Awaiting real-world usage / a discriminating test set.
+- **⏸️ PARKED — G10 TranslationKeyCell generalization**: cell stays
+  dict-coupled (`dict-cell-*` testids, `entities.<tk>.rows.*` suggestion).
+  Scope decision never answered: this round or follow-up.
+- **⏸️ PARKED — AI multi-variant** (`{variants:[{text,register}]}` →
+  choicebox): designed, never shipped — one suggestion per lang today.
+  Implicitly parked.
+- **⏸️ PARKED — tier-2 fallback `/api/v1/ai/chat`**: not shipped;
+  external blocker (dep `llm` down). Tier-0 (browser Translator = easy)
+  and powered POC are both shipped.
+- **⏸️ PARKED — `panel-chrome-class` 31 findings**: open policy question
+  on mini-badge/mini-button vocabulary — enforcement waits on the user's
+  policy call.
+- **⚠️ TO RATIFY — S2 stale-version 409 loop**: the shipped flush
+  contract chose "surface" over "silent refetch+retry once" — a requeued
+  stale-version row re-fails + re-notifies on EVERY host save until the
+  user reopens the sheet (fresh read model → fresh version). Deliberate
+  conservative choice ("NEVER silent, NEVER merged"); needs ratification
+  or a one-shot refetch+retry refinement.
 - **ComboSelect `multiBadge` + `multiSummaryAt`** — moved to its own
   plan: `combo-select-multi-badge-and-summary.md` (TIC done; the "N
   selected" counter never existed — documented there).
+- **Rebased-closed (verified in code 2026-11-22)**: G3 key filter (uses
+  generic `filters[{field:'key'}]` — no BE change needed); orphan key
+  `app.common.translations.base` (deleted in the 2026-12-19 dead-key
+  cleanup); dict-page batch (TableFooter anatomy + `bulk_revert` key
+  shipped); AI engine choice (easy = browser Translator, powered =
+  granite-4.0-micro q4f16 via cerebellum `translation`, score 4.60);
+  conflict-UX question answered in code ("NEVER silent, NEVER merged" —
+  see S2 above for the residual ratification point).
 - **AI translation context + multi-variant** — RESOLVED via history
   `6b95dc40` + codebase evidence: dedicated seq2seq MT models were
   surveyed (NLLB-200-distilled-600M = canonical but context-blind +

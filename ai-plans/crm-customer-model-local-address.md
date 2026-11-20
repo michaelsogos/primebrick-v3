@@ -78,13 +78,27 @@
     fake emitter + e2e spec + seed script + export template updated
   - dto/list-config/LA module updated (street2, no civic); seed-customers
     writes customer + contacts + legal account
-- [ ] **Step 4 — `dict` archetype: DESIGN CONSOLIDATED** (2026-11-25,
-  verified against code — base-class pattern via `ConfigEntityBase`
-  precedent, `updated_by_name` auto-join on `/list` confirmed,
-  `{entity,translations}` gateway-owned standard confirmed, collab
-  `mergeDelta`/`PresenceStatusChip` standard confirmed). See the
-  "Lookup/enum-like tables" section. Implementation not started —
-  first slice: `customer_type`.
+- [~] **Step 4 — `dict` archetype: IN PROGRESS** (design consolidated
+  2026-11-25; marker rebased 2026-11-22 — "not started" was stale:
+  machinery shipped, adoption 2/10)
+  - ✅ Machinery live: `DictEntityBase`+`@Dict()` marker → `dict` facet →
+    `kind:"dict"` route kind → `EntityDictPage` (reorder/bulk-save/
+    taint/`EntityDictRow`) + `dictDecl` factory + `/crm/settings`
+    prefix + `crm-settings` virtual sibling nav node (modules-shell
+    test) + e2e (`entity-dict-page{,-lifecycle}.spec.ts`)
+  - ✅ Migrated: `customer_type`, `customer_link_type`
+  - ⏳ Remaining 8 hand-rolled: `account_kinds`, `company_dimensions`,
+    `consent_types`, `contact_types`, `legal_forms`,
+    `local_address_types`, `marketing_qualifications`, `qualifications`
+  - ⏳ `config_entry` re-base onto `DictEntityBase` (the drift-proof
+    test — `key`→`code` rename + `sort` adoption; still
+    `ConfigEntityBase` today)
+  - 🔀 **Sub-plan extracted 2026-11-22**: `dict-page-create-flow-anatomy.md`
+    — create-flow polish (discard CTA, single-draft gate, state-vocabulary
+    chips, labeled inputs, validation, code-uniqueness probe, label_key
+    commit convention, required-extras fix) + E2E. The dict page must be
+    perfected BEFORE migrating the remaining 8 entities — the
+    required-extras bug (L1) blocks `contact_types` today.
 - [ ] Steps 5–10 — as listed below
 
 ## Scope (approved decisions — locked)
