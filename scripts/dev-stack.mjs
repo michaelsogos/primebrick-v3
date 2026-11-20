@@ -157,12 +157,51 @@ async function startOne(svc, procs) {
   if (/[\s"]/.test(svc.dir) || /[\s"]/.test(log)) {
     return `${pad(svc.name, 12)} path contains spaces/quotes — not started (fix paths, quoting unsupported)`;
   }
-  const child = isWin
-    ? spawn('cmd.exe', ['/c', `cd /d ${svc.dir} && pnpm run dev > ${log} 2>&1`],
-        { detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true })
-    : spawn('sh', ['-c', `cd "${svc.dir}" && pnpm run dev > "${log}" 2>&1`],
-        { detached: true, stdio: 'ignore' });
-  child.unref();
+  // Headed windows (user preference): `start "TITLE"` is the Windows-native
+  // way to open a named, visible console window — node-detached powershell
+  // dies instantly in this environment (verified: cmd detached works,
+  // powershell detached does not). A per-service launcher .ps1 + -File is
+  // required because `-Command`/redirected stdin exits immediately too.
+  // Tee-Object shows live output in the window AND keeps the log file for
+  // diagnosis; the window stays open on non-zero exit (Read-Host).
+  const launcher = resolve(STATE_DIR, `${svc.name}.ps1`);
+  // UTF-8 BOM is REQUIRED: Windows PowerShell 5.1 reads BOM-less .ps1
+  // files as ANSI (Windows-1252) — the em-dash mojibakes into the title.
+  // Stream recipe (all empirically verified):
+  // - Everything downstream of powershell stays in cmd at BYTE level:
+  //   `2>&1` merge inside cmd (PS's own merge wraps stderr lines in
+  //   NativeCommandError dumps), `tee.exe` (Git usr/bin, on PATH) writes
+  //   raw UTF-8+ANSI to the log AND passes it to the console untouched —
+  //   Tee-Object writes UTF-16 and pipes kill TTY-color detection.
+  // - `chcp 65001` + [Console]::OutputEncoding: the spawned console's
+  //   codepage is 850/1252 → UTF-8 output mojibakes (ÔÇö for —).
+  // - FORCE_COLOR keeps ANSI on through the pipe.
+  // - UTF-8 BOM above: PS 5.1 reads BOM-less .ps1 as ANSI.
+  writeFileSync(launcher,
+    `﻿$host.ui.RawUI.WindowTitle='${svc.name.toUpperCase()} — primebrick'\r\n` +
+    `Set-Location '${svc.dir}'\r\n` +
+    `$env:FORCE_COLOR='1'\r\n` +
+    `[Console]::OutputEncoding = [Text.Encoding]::UTF8\r\n` +
+    `cmd /c "chcp 65001 >nul & pnpm run dev 2>&1 | tee.exe ${log}"\r\n` +
+    `Write-Host ''; Read-Host 'service exited — premi invio per chiudere'\r\n`);
+  let child;
+  if (isWin) {
+    // `start` returns immediately — the real service root is the powershell
+    // whose cmdline contains our unique launcher path; find it by polling.
+    spawn('cmd.exe', ['/c', `start "${svc.name.toUpperCase()} — primebrick" powershell -NoProfile -ExecutionPolicy Bypass -File ${launcher}`],
+      { stdio: 'ignore', windowsVerbatimArguments: true }).unref();
+    child = null;
+    for (let i = 0; i < 40 && !child; i++) {
+      await sleep(250);
+      const p = processTable().find((x) => /powershell\.exe$/i.test(x.name) && x.cmd.includes(launcher));
+      if (p) child = { pid: p.pid };
+    }
+    if (!child) return `${pad(svc.name, 12)} FAILED — powershell -File never appeared (launcher ${launcher})`;
+  } else {
+    child = spawn('sh', ['-c', `cd "${svc.dir}" && pnpm run dev > "${log}" 2>&1`],
+      { detached: true, stdio: 'ignore' });
+    child.unref();
+  }
 
   writeState(svc.name, {
     pid: child.pid, port: svc.port, dir: svc.dir,
