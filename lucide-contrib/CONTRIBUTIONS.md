@@ -14,7 +14,7 @@ state and updates this file.
 | Icon | PR | Submitted | Author | Status | Last check | Notes |
 |------|----|-----------|--------|--------|------------|-------|
 | `trash-arrow-up` | [#5215](https://github.com/lucide-icons/lucide/pull/5215) | 2026-11-14 | michaelsogos | 🟡 open | 2026-11-14 | CI 5/5 green (PR Title Lint, Icon Preview, Generate PR Title, triage, Metadata Suggestions); bot posted icon render preview; awaiting maintainer review |
-| `table-dictionary` | [#5269](https://github.com/lucide-icons/lucide/pull/5269) | 2026-11-20 | michaelsogos | 🟡 open | 2026-11-20 | `table` construction, column split x=10.5 (7.5u/10.5u ≈ 42/58); tags `$extends:table-properties`, categories `$extends:table`+layout |
+| `table-dictionary` | [#5269](https://github.com/lucide-icons/lucide/pull/5269) | 2026-11-20 | michaelsogos | 🟡 open | 2026-11-20 | `table` construction, column split x=10.5 (7.5u/10.5u ≈ 42/58); tags `$extends:table-properties`, categories `$extends:table`+layout; CI 3/5 green at open (Title Lint, PR Title, triage), Icon Preview + Metadata Suggestions running |
 
 ## Local assets
 
