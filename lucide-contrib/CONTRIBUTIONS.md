@@ -14,6 +14,7 @@ state and updates this file.
 | Icon | PR | Submitted | Author | Status | Last check | Notes |
 |------|----|-----------|--------|--------|------------|-------|
 | `trash-arrow-up` | [#5215](https://github.com/lucide-icons/lucide/pull/5215) | 2026-11-14 | michaelsogos | 🟡 open | 2026-11-14 | CI 5/5 green (PR Title Lint, Icon Preview, Generate PR Title, triage, Metadata Suggestions); bot posted icon render preview; awaiting maintainer review |
+| `table-dictionary` | [#5269](https://github.com/lucide-icons/lucide/pull/5269) | 2026-11-20 | michaelsogos | 🟡 open | 2026-11-20 | `table` construction, column split x=10.5 (7.5u/10.5u ≈ 42/58); tags `$extends:table-properties`, categories `$extends:table`+layout |
 
 ## Local assets
 
@@ -22,10 +23,13 @@ state and updates this file.
   (re-clone if missing; the pushed branch `feat/trash-arrow-up` lives on the
   remote fork regardless)
 - **PR payloads**: `primebrick-workspace/temp/lucide-pr/` — the exact
-  `trash-arrow-up.svg` + `.json` + PR body submitted
-- **In-repo mirror**: `TRASH_ARROW_UP_NODES` in
+  `*.svg` + `.json` + PR bodies submitted (`trash-arrow-up`, `table-dictionary`)
+- **In-repo mirror**: `TRASH_ARROW_UP_NODES` + `TABLE_DICTIONARY_NODES` in
   `primebrick-v3-ui/src/lib/icons/custom-icons.ts` (`CUSTOM_ICONS` registry,
-  resolved by `DynamicIcon` — this IS the fallback until upstream ships)
+  resolved by `DynamicIcon` — this IS the fallback until upstream ships).
+  `table-dictionary` is also the `dict` kind default in
+  `@primebrick/core` `DEFAULT_ROUTE_ICONS` (BE discovery emits it for
+  icon-less dict routes; nav leaves inherit via the census map)
 
 ## Check cadence
 
@@ -59,3 +63,4 @@ state and updates this file.
 | Date | Event |
 |------|-------|
 | 2026-11-14 | `trash-arrow-up` designed (variant C: 8u baseline gap, canonical chevron, shaft on baseline), shipped in `CUSTOM_ICONS`, PR #5215 opened |
+| 2026-11-20 | `table-dictionary` designed (x=10.5 split, half-pixel user-approved), shipped in `CUSTOM_ICONS` + wired as `dict` kind default (`@primebrick/core`), PR #5269 opened |
