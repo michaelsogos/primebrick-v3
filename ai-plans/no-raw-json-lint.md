@@ -6,7 +6,7 @@
 > User directive: "non si può più passare per json standard — extjson
 > serializza e deserializza in automatico tutto".
 
-## Status: 🟢 MIGRATION COMPLETE (tasks 1-9 shipped 2026-12) — task 10 docs pending
+## Status: 🟢 COMPLETE — all tasks shipped 2026-12
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
@@ -20,7 +20,7 @@
 | 8 | **G7 tests+e2e** (54 files — `.spec.ts`, `__tests__`, e2e helpers): Playwright `APIResponse.json()` + fixture JSON.* → ext-json; e2e asserts `version` (bigint!) in `shield-identity` + the gate spec. **Requires `alsoTests` on the rule — `isTestFile()` skips test files unless `--tests` runs, and `pnpm check:standards` doesn't pass it** | ✅ fe `7b72423` | 57 files, 280→0 violations; e2e imports `@primebrick/core/ext-json` (node-safe); `helpers/nats.ts` local codec deduped to canonical; asserts updated to bigint (`1n`, `365n`) |
 | 8b | **`alsoTests` rule flag** in check-standards — a rule may opt into scanning test files (`no-raw-json` sets it; other rules stay prod-only — no noise) | ✅ | shipped with the rule |
 | 9 | **Other repos phase-2** — be-v3 (57), dal (24), sdk (16), ui (26), core (3): per-repo census → classify; codec lives in core/sdk (internal use legit, allowPath); us-v3 already at **0** | ✅ | sdk `84bc5d0` · be `968c8aa` (incl. `express.json()`→`extJsonBodyParser()` harness fix) · ui `6ba3026` · us `aa95b07` (+ `plainJson` gutted-by-496f7d6 restored) · dal/core clean — **0 violations all 7 repos** |
-| 10 | **Docs + verify** — update `docs/ai/` wire-codec doc (or create), `check-standards` run clean, full E2E re-run of touched surfaces | ⏳ | `sdk/docs/dev-guide/ext-json.mdx` exists — GAP: `Number(v)` boundary-coercion rule + per-context import convention (core/e2e vs api-ext/fe vs sdk/services) not documented |
+| 10 | **Docs + verify** — update `docs/ai/` wire-codec doc (or create), `check-standards` run clean, full E2E re-run of touched surfaces | ✅ sdk `docs(ext-json)` | `ext-json.mdx` + boundary-coercion section (Number(v) at consumption boundary, z.preprocess for declared-number schemas, BigInt() for versions) + per-context import matrix; TypeDoc api.json regenerated |
 
 ## Census (2026-11-20, `src/` non-test)
 
