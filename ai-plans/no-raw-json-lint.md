@@ -6,7 +6,7 @@
 > User directive: "non si può più passare per json standard — extjson
 > serializza e deserializza in automatico tutto".
 
-## Status: ⚪ TODO — Plan date: 2026-11-20 (TIC)
+## Status: 🟡 IN PROGRESS — enforcement landed 2026-11-20, migration pending
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
@@ -184,15 +184,62 @@ rawJSON replacer) behind a one-time feature-detect, json-bigint as
 fallback — strictly-more-correct + faster on our target runtime (Bun)
 + drops a dep on modern engines. Decision pending user TOC.
 
+## Step 1+2 DONE (2026-11-20) — strictFast shipped + enforcement live
+
+**Codec (core `9365cc8`, `0f7df0d` — `feature/ext-json-bench`)**
+`ext-json.ts` is strictFast: validateStrict (grammar + dup-key +
+trailing-comma) → native `JSON.parse` → flag-applied bigint walk.
+Strict, ~1.2–1.4× faster than json-bigint, fixes the ≥21-digit corruption.
+`extJsonStringify` = `JSON.rawJSON` replacer + json-bigint fallback.
+149/149 tests green; check-standards clean.
+
+**Enforcement (sdk `e8d278f` — `feature/no-native-dialog`)**
+- `ext-json` rule now flags `JSON.stringify|parse` AND argument-less
+  `.json()` wire reads (`res.json(body)` senders unaffected — verified).
+- New per-rule `alsoTests` flag — ext-json scans `__tests__`/`*.test.ts`
+  even without `--tests` (wire contracts hold in tests).
+- ext-json in `FE_RULES` (always-on for browser code incl. `fe/src`
+  remote surfaces) and `NO_EXEMPT_RULES` — inline `standards-exempt`
+  cannot suppress it; `exempt-governance` flags the attempt.
+- Checker suite: 52 tests incl. 7 new ext-json cases (dup-key read,
+  sender immunity, NO_EXEMPT, allowPaths, alsoTests, fe profile).
+
+**Exemption migration (all repos)** — inline `standards-exempt: ext-json`
+converted to `.devin/check-standards.json` `allowPaths` where the reason
+is a genuine external-format seam (be×7: Casdoor/JWS/JWT/webauthn/manifest;
+sdk×4: NDJSON logs, RFC7807, OpenAPI; dal×5: signed artifacts/CLI/quoting;
+us×6: mistral.rs/OpenAPI/embeddings/Brevo/webhook; decimal×1: the "…d"
+format itself; core×2: codec + its parity spec). UI editor/preview
+exempts were G5/G6-class claims — removed, NOT allowPathed (real debt).
+
+**Gate state after landing** — violations now VISIBLE (declared debt,
+the ratchet works; `--write-baseline` is dead by design — fix or
+allowPath are the only doors):
+- sdk 94 (~92 test sites G7-class + oidc-verifier, docs-pack-client prod)
+- be 97 (~52 ext-json: 45 test + oauth/mcp/openapi prod; ~45 pre-existing
+  i18n-key-ns composite debt unrelated to this change)
+- ui 24 (G5/G6: json-code-block/editor, json-value-editor,
+  payload-map-editor/viewer, DynamicIcon, numeric-input, ai service-api…)
+- us 17 across ai/emailsender/job-handler/boilerplate (incl. `fe/src`
+  remote surface hits)
+- fe — full census incl. tests pending run of step 2 (next: `bun
+  ../primebrick-v3-sdk/tools/check-standards.ts src --profile=fe`)
+- dal, core, decimal, webhook, crm: CLEAN
+
+**Commits**: sdk `e8d278f`, dal `b530548`, be `2395717`, ui `90f0144`,
+us `496f7d6`, decimal `f521136`, core `0f7df0d`.
+
 ## Open questions (decide at TOC)
 
 1. ~~G6 mechanism~~ — **resolved by user**: total ban, extJsonParse
    everywhere, no helpers/allowPaths in fe (Number() at consumption).
-2. **`.json()` scope**: ban all `*.json()` (uniform, catches Request bodies
-   too) vs Response-name-pattern only (fewer FPs, misses oddly-named vars).
+2. ~~`.json()` scope~~ — **resolved**: argument-less `.json()` only
+   (reader pattern); `res.json(body)` senders legitimately untouched.
 3. ~~e2e inclusion~~ — **resolved by user**: tests+e2e are in scope,
    enforced via `alsoTests` flag (task 8b).
-4. **phase-2 repos**: apply `consumer` profile now or after fe green?
+4. ~~phase-2 repos~~ — **resolved empirically**: ext-json was already in
+   `consumer`/`lib` — the rule landed everywhere at once; per-repo debt
+   is now quantified (above) and migrates with G-groups per repo.
 
 ## Acceptance
 
