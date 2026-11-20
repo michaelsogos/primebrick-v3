@@ -1,32 +1,18 @@
-# Primebrick dev stack - starts BE, FE and the US microservices DETACHED,
-# so the services survive the agent shell/session that launched them.
+# Primebrick dev stack — thin wrapper over dev-stack.mjs (the real manager).
 #
-# Idempotent: a service whose port already listens is skipped (never a
-# duplicate, never a migrated port - see docs/ai/dev-server.md rules).
-# Logs land in primebrick-workspace/temp/logs/<service>.log.
+# dev-stack.mjs is genuinely idempotent: per-service state files
+# (temp/dev/<name>.json), a serialized lockfile, process-TREE kills via
+# taskkill /T, and a `reap` command for untracked zombies. The previous
+# version of this script spawned detached cmd trees and forgot their PIDs
+# — repeated runs accumulated orphans that never died.
 #
-# Run:  powershell -ExecutionPolicy Bypass -File scripts/dev-stack.ps1
-$ErrorActionPreference = 'Stop'
-$logDir = 'D:\git\primebrick\primebrick-workspace\temp\logs'
-New-Item -ItemType Directory -Force -Path $logDir | Out-Null
-
-$services = @(
-  @{ name = 'be';          dir = 'D:\git\primebrick\primebrick-be-v3';             port = 3001 },
-  @{ name = 'fe';          dir = 'D:\git\primebrick\primebrick-fe-v3';             port = 5173 },
-  @{ name = 'emailsender'; dir = 'D:\git\primebrick\primebrick-us-v3\emailsender'; port = 3003 },
-  @{ name = 'ai';          dir = 'D:\git\primebrick\primebrick-us-v3\ai';          port = 3004 },
-  @{ name = 'webhook';     dir = 'D:\git\primebrick\primebrick-us-v3\webhook';     port = 3005 },
-  @{ name = 'job-handler'; dir = 'D:\git\primebrick\primebrick-us-v3\job-handler'; port = 3006 },
-  @{ name = 'crm';         dir = 'D:\git\primebrick\primebrick-us-v3\crm';         port = 3007 }
-)
-
-foreach ($s in $services) {
-  $listening = Get-NetTCPConnection -LocalPort $s.port -State Listen -ErrorAction SilentlyContinue
-  if ($listening) {
-    Write-Host ("{0,-12} port {1} already listening - skipped" -f $s.name, $s.port)
-    continue
-  }
-  $log = Join-Path $logDir "$($s.name).log"
-  Start-Process cmd.exe -WindowStyle Hidden -ArgumentList '/c', "cd /d `"$($s.dir)`" && pnpm run dev > `"$log`" 2>&1"
-  Write-Host ("{0,-12} started detached on :{1}  -> {2}" -f $s.name, $s.port, $log)
-}
+# Usage:
+#   powershell -ExecutionPolicy Bypass -File scripts/dev-stack.ps1            # = start all
+#   powershell -ExecutionPolicy Bypass -File scripts/dev-stack.ps1 status
+#   powershell -ExecutionPolicy Bypass -File scripts/dev-stack.ps1 stop [names]
+#   powershell -ExecutionPolicy Bypass -File scripts/dev-stack.ps1 reap
+param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Args)
+$here = Split-Path -Parent $MyInvocation.MyCommand.Path
+if (-not $Args) { $Args = @('start') }
+& node (Join-Path $here 'dev-stack.mjs') @Args
+exit $LASTEXITCODE
