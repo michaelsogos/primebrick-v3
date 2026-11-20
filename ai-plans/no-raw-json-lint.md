@@ -125,15 +125,34 @@ integers ≥21 digits — BigNumber `.toString()` emits exponential form →
 preserves them exactly. Real-world impact ~zero (bigint max = 19 digits)
 but it's a latent wire-fidelity hole.
 
-**What the fast path costs / why it was ignored until now:**
-- `strict:true` mode lost: json-bigint rejects duplicate keys +
-  non-standard tokens; native parse accepts silently (last-wins). A
-  corrupted payload with dup keys would pass instead of erroring —
-  minor on trusted wire, but it IS a fail-closed property given up.
-- Engine availability: `context.source`/`rawJSON` verified on modern
-  V8+JSC; an old engine without them → silent bigint loss. Gating =
-  feature-detect once at init, fallback to json-bigint — zero loss
-  when gated. (Firefox/SpiderMonkey support still to verify.)
+**What the fast path costs (verified empirically + spec):**
+- `strict:true` — narrower than it looks: native JSON.parse rejects
+  trailing commas, unquoted keys, comments, NaN identically (grammar
+  strictness is spec-identical). The ONLY difference is **duplicate
+  keys**: `{"a":1,"a":2}` → native last-wins (spec behavior), json-bigint
+  strict throws. And it CANNOT be recovered: the reviver sees `this`
+  (holder) with the dup already collapsed — last-wins applied before
+  any user code runs. Dup detection requires tokenizing the source =
+  exactly the cost json-bigint pays; a regex can't do it (strings can
+  legitimately contain `"a":` text → false positives). Verdict:
+  strict dup-key rejection is inherently a custom-parser feature —
+  you either pay a JS tokenizer or you don't get it. Real-world
+  impact ~zero on our server-generated wire (our serializer never
+  emits dup keys) — accepted loss, documented.
+- Engine availability — resolved, NOT a polyfill: `context.source`/
+  `JSON.rawJSON` are **TC39 stage-4 "JSON.parse source text access"** —
+  the proposal's canonical example IS this exact use case
+  (`digitsToBigInt`/`bigIntToRawJSON` = our fastJsonParse/Stringify
+  verbatim). Support: Chrome/Edge 114+ (2023-05), Firefox 135
+  (2025-02 — Mozilla delayed 132→135 over perf issues, consistent
+  with our V8 measurement), Safari 18.4 (2025-03). Gate = one-time
+  feature-detect at init → json-bigint fallback for pre-2023 engines.
+- Alternatives evaluated and rejected: WASM/simdjson — object
+  materialization into JS values dominates (wasm boundary per value),
+  parser benchmarks show it *slower* than native JSON.parse; wins only
+  for validate/traverse without materialization. Worker-offloaded
+  parse = the only remaining lever (bigint survives structuredClone)
+  but unjustified at our payload sizes.
 - FE caveat on the "80% Bun" estimate: FE extJsonParse runs in the
   **browser**, not Bun — Chromium=V8 (DES fast slightly LOSES there,
   ~+340µs @180KB), Safari=JSC (wins). Bun coverage = server-side
