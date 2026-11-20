@@ -8,7 +8,7 @@
 > Icon = `table` construction with the column divider moved to x=10.5
 > (narrow code column / wide label column — the dict row anatomy).
 
-## Status: 🟡 PARTIALLY DONE — Plan date: 2026-11-20 · session 2026-11-20 (TOC: `table-dictionary` shipped in `CUSTOM_ICONS` + wired as dict-kind default in `@primebrick/core` + upstream PR #5269 opened; `list-dictionary` POC glyph shipped in `CUSTOM_ICONS` (user picked B3 geometry), upstream PR held pending live evaluation; residual: PR outcomes via `lucide-icons-watch` + POC verdict)
+## Status: 🟡 PARTIALLY DONE — Plan date: 2026-11-20 · session 2026-11-20 (TOC: `table-dictionary` shipped + dict-kind default + PR #5269; `list-dictionary` approved B3 → shipped in `CUSTOM_ICONS` + PR #5270 opened; residual: both PRs' review outcomes via `lucide-icons-watch`)
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -22,7 +22,7 @@
 | 8 | Registry + bookkeeping: `lucide-contrib/CONTRIBUTIONS.md` row+history, this plan's task table | ✅ done | 2026-11-20 | row added (status 🟡 open), history entry, payloads mirrored in `temp/lucide-pr/` |
 | 9 | Second icon POC — detached dict rows: variants A/B/C previewed, user picked B → refined B3 (gap inline 3px, code 6 + gap 3 + label 9 = 40/60 preserved); D thin-rows rejected | ✅ done | 2026-11-20 | `temp/table-dictionary-rows-preview.html`; geometry: 3 rows `h=4` y=3/10/17 (3px gaps — only symmetric integer split of 18u), cells `x3w6`/`x12w9` rx1 |
 | 10 | POC naming per lucide convention: `table-dictionary-rows` rejected by user (`table` misdescribes detached rows) → **`list-dictionary`** — upstream `list-*` subject-qualifier family (`list-todo`, `list-music`); zero `dictionary`/`lexicon`/`vocab` collision | ✅ done | 2026-11-20 | ui `9e30263` (register) + `9488652` (rename), fe `aba2ef0` (render spec 4/4); ui svelte-check 0/0, spec 8/8, dist rebuilt |
-| 11 | `list-dictionary` upstream PR — HELD pending live evaluation (POC stage) | ⏳ not done | — | files to mirror `temp/lucide-pr/list-dictionary.{svg,json}` when green-lit |
+| 11 | `list-dictionary` upstream PR — user approved the glyph (no longer POC) | ✅ done | 2026-11-20 | PR https://github.com/lucide-icons/lucide/pull/5270 on `michaelsogos:feat/list-dictionary`; payloads mirrored in `temp/lucide-pr/`; "POC" wording scrubbed from code comments (ui `LIST_DICTIONARY_NODES` jsdoc + fe spec) |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->
