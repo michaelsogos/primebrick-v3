@@ -1,10 +1,18 @@
 # ext-json Rust→WASM codec — strict validator as native module
 
-> **Prerequisite:** strictFast JS codec (validate + native parse + flag-walk)
-> migrated everywhere — see `no-raw-json-lint.md`. This plan is the perf
-> headroom phase AFTER that migration; do not start it before.
+> **Prerequisite 1 — DONE:** strictFast JS codec (validate + native parse +
+> flag-walk) is shipped as `extJsonParse`/`extJsonStringify` in
+> `@primebrick/core` and migrated everywhere — `no-raw-json-lint.md`
+> executed; zero ext-json violations across all 7 repos (2026-12 commits).
+>
+> **Prerequisite 2 — OPEN GATE: full Bun runtime.** The BE still runs on
+> **Node** (tsx watch / node dist). This plan stays parked until every
+> service runs on **Bun** — the wasm headroom target is Bun-side
+> (`EXT_BENCH` acceptance below is measured on Bun @180KB). Do not start
+> before the BE→Bun migration lands; re-run the bench matrix then to
+> re-baseline on the final runtime.
 
-## Status: ⚪ FUTURE — recorded 2026-11-20
+## Status: ⚪ FUTURE — gated on BE→Bun migration (recorded 2026-11-20, re-gated 2026-12)
 
 ## Cosa
 
