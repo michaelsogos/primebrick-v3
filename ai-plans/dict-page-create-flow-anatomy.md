@@ -10,7 +10,7 @@
 > FormLabelWithPriorityHelp + TranslatedFormFieldErrors + reactive
 > convention placeholders + debounced key-exists probe).
 
-## Status: ⚪ TODO — Plan date: 2026-11-22 (TIC complete — awaiting TOC approval)
+## Status: 🔵 TOC IN PROGRESS — tasks 15–17 ✅ shipped; Phase A (1–3) TIC evidence recorded below with user-locked decisions — awaiting PROCEED on tasks 1–3 + 18
 
 ---
 
@@ -158,9 +158,12 @@ NEW disabled iff a composer is open — confirmed pendings do NOT block
 8. **label_key empty-commit**: config-create contract — empty label_key
    at confirm/save commits the reactive `suggestedKey` convention
    (tooltip promises "suggested automatically").
-9. **Required extras**: composer renders ALL `editableColumns` (not just
-   code+value) — L1 fix; `sort` stays auto-seeded +10, hidden
-   (server-owned ordering seed).
+9. ~~**Required extras**: composer renders ALL `editableColumns`~~ —
+   **SUPERSEDED by task-8 resolution (2026-11-22)**: composer stays
+   code+label_key per `entity-identity-column-standard`; required extras
+   complete on the PENDING row via `entity.dictExtras` (task 4b/8) —
+   `canSave` gates on full `missingRequired`, the extras CTA is the
+   remediation. `sort` stays auto-seeded +10, hidden.
 10. **DELETE ⇒ confirm by construction** (user, 2026-11-22 — mandatory
     after the incident; deepened 2026-11-23): a single governed invoker
     (`runEntityOp`-class in `lib/entity-list/` — same module as
@@ -200,11 +203,73 @@ NEW disabled iff a composer is open — confirmed pendings do NOT block
 
 ## TODO list (TOC candidates — one row per task)
 
+## Phase A TIC — empirical evidence + locked decisions (this session)
+
+Read-verified: `EntityDictPage.svelte`, `DictDraftRow.svelte`,
+`DictRow.svelte`, `TranslationKeyCell.svelte`, `SelectableRow.svelte`
+(ui), `pending-translations.svelte.ts`, `RuleFilterEditor.svelte`,
+`entity-metadata.mdx`, `column-constraints.ts`, `customer_type` /
+`customer_link_type` meta+list-config+dto, `customer_links/dto.ts`.
+
+**Supported by construction** (no workaround needed):
+- `pending[]` = second client array `{__draft, values}` beside `drafts`;
+  confirm = array move; `saveAll` POST loop repoints at pendings.
+- `✓` gated CTA = `rule-filter-add` precedent (ghost icon-sm, `text-info`,
+  `disabled`+`title`/`aria-label` — RuleFilterEditor:307).
+- Pending row identity: synthesize `row[uid] = d.__draft` (`"d1"` never
+  collides with real uuids); `taintedUids`/`values`/`originals` iterate
+  `list.rows` only — pendings stay on `d.values` (task-4b contract).
+- No audit line falls out of the synthesized row (no `version`/
+  `updated_at` → L3 renders nothing).
+- `dict-toolbar-add` disabled + `title` — Button already supports both.
+- `dropPendingTranslation(owner, key)` exists per-key
+  (pending-translations:55) — the discard/drop handler must drop queued
+  translations for every `*_key` value the row carried (orphan-write gap
+  G3 — same hole exists on today's draft discard since the composer can
+  queue translations via the languages CTA).
+
+**Locked by user (Phase A TIC):**
+
+- **D1 — composer-confirm gate**: `✓` enabled iff the COMPOSER-scoped
+  fields are filled (`code` + `label_key` non-empty). `missingRequired`
+  over ALL required columns stays the SAVE gate on pendings — required
+  extras complete via task-8 sheet CTA. Wiring `✓` to today's full
+  `draftValid` would deadlock `customer_link_type` (`inverse_label_key`
+  required, invisible to the composer).
+- **D2 — pending position**: appended AFTER the saved stream in
+  insertion order (todo-list semantics), reorderable so the rendered
+  order equals post-save order ("almost no visible difference
+  saved/not-saved"). Composer stays the top row while open. The reorder
+  chain must span the saved+pending boundary (sort swap across
+  `values[uid]` ↔ `d.values`).
+- **D3 — pending checkbox**: joins the shared `useSelection`. Bulk
+  delete partitions the selection: pendings → local drop (in-memory
+  "morte definitiva" — never persisted, no confirm needed beyond the
+  dialog copy); saved rows → governed `delete.bulk` path unchanged.
+  Select-all should include pendings for parity.
+- **D4 — INFO accent**: extend canonical `SelectableRow` with an `info`
+  tone prop (priority over `selected`, semantic `--info` token — the
+  same mechanism `warning` uses today). Plan line ~140 already prescribes
+  "SelectableRow prop"; the prop simply does not exist yet — it is an
+  extension to the canonical component, not a workaround.
+- **D5 — immutable TIC finding (new task 18)**: `code` immutability was
+  already locked 2026-11-22 (open-Q3) but is honored ONLY by FE anatomy
+  (DictRow badge). Empirically: no `immutable` flag on any dict
+  list-config; `customer_type`/`customer_link_type` update schemas are
+  `zPartialNoDefaults(BaseSchema)` → PUT **accepts `code`** today.
+  Canonical precedent for server enforcement: `CustomerLinkUpdateBodySchema`
+  (strict, narrowed to mutable fields only, comment cites meta
+  `immutable:true`). `withColumnConstraints` forbids authoring
+  `immutable` on `@Relation` ends only — authoring it on `code` is
+  legal. `label_key` stays mutable (locked open-Q4: value cell
+  UNCHANGED). Marking `code` `immutable:true` also prevents it leaking
+  into `entity.dictExtras` (task 4b binds `updateEditableColumns`).
+
 | # | Task | Status | Evidence/where |
 |---|------|--------|----------------|
-| 1 | Composer CTAs — `✓` confirm (`Check` primary, gated on composer validity — `rule-filter-add` precedent) + `✕` discard (`dict-draft-discard`); ✓ → `pending[]` push, ✕ → composer dies | ⏳ | `DictDraftRow` right 2/12 + `EntityDictPage` `handleConfirmDraft`/`handleDiscardDraft` |
-| 2 | Single-composer gate — `dict-toolbar-add` disabled iff composer open (pendings do NOT block) + tooltip reason | ⏳ | `EntityDictPage.svelte:663` |
-| 3 | `DictRow` `pending` variant — renders a confirmed pending like every row: INFO-tone row accent = "da salvare" marking (no in-row chips — badges stay footer-left), live checkbox, undo-drop item CTA (`dict-pending-undo`, zero server), no audit line | ⏳ | `DictRow` prop variant + `EntityDictPage` row render |
+| 1 | Composer CTAs — `✓` confirm (`Check` primary, gated on composer-scoped validity D1 — `rule-filter-add` precedent) + `✕` discard (`dict-draft-discard`); ✓ → `pending[]` push, ✕ → composer dies. Both drops must `dropPendingTranslation` the row's `*_key` values (G3) | ⏳ | `DictDraftRow` right 2/12 + `EntityDictPage` `handleConfirmDraft`/`handleDiscardDraft` |
+| 2 | Single-composer gate — `dict-toolbar-add` disabled iff composer open (pendings do NOT block) + tooltip reason | ⏳ | `EntityDictPage` toolbar; needs i18n reason key (task-10 subset pulled forward) |
+| 3 | `DictRow` `pending` variant — renders confirmed pendings APPENDED after the saved stream in insertion order, reorderable (D2): INFO-tone accent via extended `SelectableRow` (D4), shared-selection checkbox w/ bulk-delete partition (D3), undo-drop item CTA (`dict-pending-undo`, zero server + G3 translation drop), no audit line | ⏳ | `DictRow` prop variant + `SelectableRow` info prop (ui repo) + `EntityDictPage` render chain (reorder spans the saved/pending boundary) + `bulkDelete` partition |
 | 4 | `DictFieldCell` labeled wrapper — label + priority-help tooltip + error line for the composer's inputs (code, label_key, required extras on the composer? NO — composer stays code+label_key per convention; the cell serves composer inputs + any inline row inputs) | ⏳ | new cell component in `entity-dict-page/`; consumes meta `label_key`/`tooltip`/`tooltip_title`/`tooltip_priority` + `dict.directional` |
 | 4b | **`entity.dictExtras` sheet** — new registry panel: `SheetPanelLayout` + `EntityFormField` per `updateEditableColumns` bound to the row values-map (saved `values[uid]` / pending `d.values`) → taint → bulk-save; extras CTA `dict-row-extras` on saved+pending rows; label-family extras → `TranslationKeyCell`; required-missing extras gate `canSave` with the extras CTA as remediation | ⏳ | `sheet-manager` registry + new panel in `entity-dict-page/`; reuses `EntityFormField`/'update' mode |
 | 5 | Meta-derived client validation — required + max_length/length + pattern; `code` → snake_key charset; errors inline; composer-confirm AND `canSave` gate on aggregate | ⏳ | extends `missingRequired` in `EntityDictPage` |
@@ -220,6 +285,7 @@ NEW disabled iff a composer is open — confirmed pendings do NOT block
 | 15 | **ELT converge × gate** — row/bulk delete + restore through invoker (gains step-up); custom ops `confirm_key` → anatomy dialog (kills native confirm at :405 AND the row-side confirm_key hole) | ✅ DONE `e3b51b7` | `useRowActions`/`useBulkActions` — every op via `runEntityOp`; dead `confirmDeleteRowImpl`/`confirmBulkDeleteImpl` + `EntityListTableDialogs` mounts removed; `EntityOpConfirmHost` gained bulk-scope plumbing (totalCount + scope choicebox); custom `confirm_key` → anatomy dialog at BOTH scopes; svelte-check 0/0 |
 | 16 | **Peripheral surfaces** — roles/[uuid] purge + translations row delete → invoker/`DeleteDialog`; `EntityTablePage` alert ×2 → `pushNotification` + i18n keys; `useUnsavedChangesGuard` ×2 → anatomy dialog for in-app nav (beforeunload edge decided separately — see open-Q5) | ✅ DONE `e3b51b7` + be `0dfea8c` | **Empirical finding**: roles/[uuid] DeleteDialog was DEAD (deleteOpen never set, no CTA — purge unreachable) → dead dialog + handleDelete + `useRoleMappings.remove` removed; role deletion governed via ELT list. translations remove() → `runEntityOp` (custom executor carries `?module=`). EntityTablePage alert×2 → `pushNotification` (`app.common.popup_blocked`). useUnsavedChangesGuard ×2 → governed module-channel dialog (`UnsavedChangesGuardHost` in app layout); `beforeunload` keeps native contract (async dialog cannot block unload — decision recorded). i18n: be patch `20261223100000_i18n_confirm_gate_keys` (6 keys ×7, signed) + FE fallback app.* keys. Standards: **0 no-native-dialog violations** |
 | 17 | **E2E confirm coverage** — dialog-before-request on all 6 delete paths + dict restore; cancel → zero request; custom op with `confirm_key` shows anatomy dialog | ✅ DONE `b90ffbf` + be `9770466` | `entity-op-confirm-gate.spec.ts` — **8/8 headed green**: 4 dict + 3 ELT (row delete on `email_template`; bulk delete + row restore on `job_trigger` — only entity exposing the full op set) + 1 custom-op `confirm_key` (`user_profile` suspend/reactivate round-trip on the ephemeral actor — gated via new `actions_overrides` chrome + `20261223110000` i18n patch). Every test: dialog before request, cancel→0, confirm→1×200 |
+| 18 | **`code` immutable contract (server+meta)** — mark `code` `immutable: true` in dict list-configs; narrow each dict `*UpdateBodySchema` to drop `code` (+`.strict()` per `customer_links` precedent); bake the convention into every future migrated dict (account_kinds, company_dimensions, consent_types, contact_types, legal_forms, local_address_types, marketing_qualifications, qualifications) | ⏳ | D5 TIC evidence above; crm `list-config.ts` + `dto.ts` per dict; FE `updateEditableColumns` already consumes the flag |
 
 ## Open questions for the user
 
