@@ -217,15 +217,17 @@ function ownerClass(pid, procs) {
   let cur = byPid.get(pid);
   let root = cur && DEV.test(cur.name) ? cur : null;
   const seen = new Set();
+  const chain = new Set([pid]);
   while (cur && !seen.has(cur.ppid)) {
     seen.add(cur.ppid);
     const p = byPid.get(cur.ppid);
     if (!p) break;                     // parent dead/exited → detached orphan
-    if (IDE.test(p.name) || IDE.test(p.cmd)) return { klass: 'user', root };
+    chain.add(p.pid);
+    if (IDE.test(p.name) || IDE.test(p.cmd)) return { klass: 'user', root, chain };
     if (DEV.test(p.name)) root = p;    // keep walking: highest dev-chain root
     cur = p;
   }
-  return { klass: 'orphan', root: root || cur };
+  return { klass: 'orphan', root: root || cur, chain };
 }
 
 /** Zombies: dev processes we have no state file for — cmdline-matched,
@@ -239,14 +241,18 @@ function findZombies(procs) {
   const classified = new Map();
   for (const p of candidates) {
     const c = ownerClass(p.pid, procs);
+    if (c.chain && [...c.chain].some((q) => tracked.has(q))) continue; // inside a tracked tree
     if (c.klass === 'orphan' && c.root) byCmd.add(c.root.pid);
     if (c.klass === 'user') classified.set(p.pid, 'user');
   }
   // Port owners of managed ports — untracked → walk to their dev root.
+  // The listener (bun/node) is never the tracked root itself — the
+  // tracked cmd.exe root is an ANCESTOR: skip only if the chain hits it.
   for (const s of SERVICES) {
     const owner = portOwner(s.port);
     if (!owner || tracked.has(owner)) continue;
     const c = ownerClass(owner, procs);
+    if (c.chain && [...c.chain].some((p) => tracked.has(p))) continue; // ours
     if (c.klass === 'user') { classified.set(owner, 'user'); continue; }
     if (c.root) byCmd.add(c.root.pid);
   }
