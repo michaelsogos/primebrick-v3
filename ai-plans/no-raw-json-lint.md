@@ -125,34 +125,48 @@ integers ≥21 digits — BigNumber `.toString()` emits exponential form →
 preserves them exactly. Real-world impact ~zero (bigint max = 19 digits)
 but it's a latent wire-fidelity hole.
 
-**What the fast path costs (verified empirically + spec):**
-- `strict:true` — narrower than it looks: native JSON.parse rejects
-  trailing commas, unquoted keys, comments, NaN identically (grammar
-  strictness is spec-identical). The ONLY difference is **duplicate
-  keys**: `{"a":1,"a":2}` → native last-wins (spec behavior), json-bigint
-  strict throws. And it CANNOT be recovered: the reviver sees `this`
-  (holder) with the dup already collapsed — last-wins applied before
-  any user code runs. Dup detection requires tokenizing the source =
-  exactly the cost json-bigint pays; a regex can't do it (strings can
-  legitimately contain `"a":` text → false positives). Verdict:
-  strict dup-key rejection is inherently a custom-parser feature —
-  you either pay a JS tokenizer or you don't get it. Real-world
-  impact ~zero on our server-generated wire (our serializer never
-  emits dup keys) — accepted loss, documented.
-- Engine availability — resolved, NOT a polyfill: `context.source`/
-  `JSON.rawJSON` are **TC39 stage-4 "JSON.parse source text access"** —
-  the proposal's canonical example IS this exact use case
-  (`digitsToBigInt`/`bigIntToRawJSON` = our fastJsonParse/Stringify
-  verbatim). Support: Chrome/Edge 114+ (2023-05), Firefox 135
-  (2025-02 — Mozilla delayed 132→135 over perf issues, consistent
-  with our V8 measurement), Safari 18.4 (2025-03). Gate = one-time
-  feature-detect at init → json-bigint fallback for pre-2023 engines.
-- Alternatives evaluated and rejected: WASM/simdjson — object
-  materialization into JS values dominates (wasm boundary per value),
-  parser benchmarks show it *slower* than native JSON.parse; wins only
-  for validate/traverse without materialization. Worker-offloaded
-  parse = the only remaining lever (bigint survives structuredClone)
-  but unjustified at our payload sizes.
+**Strict-mode resolution (user: "INACCETTABILE" on silent last-wins):**
+dup-key rejection is non-negotiable — silent last-wins makes payloads
+look correct while wrong, near-impossible to debug. Verified: native
+`JSON.parse` CANNOT detect dup keys (reviver sees holder post-collapse;
+detection fundamentally requires tokenizing the source). Grammar
+strictness is otherwise spec-identical (trailing comma/unquoted/
+comments/NaN all rejected natively).
+
+**STRICT fast-path architecture — measured, working** (committed as
+bench candidate in `ext-json.test.ts`, branch `feature/ext-json-bench`):
+```
+validateStrict(text, flags, unsafe)  — JS tokenizer: grammar + dup-key
+                                       Sets + int-token flags (source
+                                       order) + unsafe-int digit strings
+JSON.parse(text)                     — native materialization
+bigintWalk(obj, flags, unsafe)       — DFS flag application
+                                       (walk order ≡ source order)
+```
+- **DES @180KB: strictFast 2.24ms bun / 1.55ms node vs ext 2.65/1.99**
+  → 1.18-1.28× FASTER than ext AND strict (tokenizer never materializes;
+  only the dup-key scan is JS, the expensive part is native)
+- dup keys thrown at every depth ✓ · trailing comma rejected ✓ ·
+  string-embedded `{"a":1,"a":2}` correctly NOT flagged ✓
+- unsafe ints EXACT (better than codec's ≥21-digit corruption) ·
+  float-notation integers (1e3/1.0) flagged value-based → codec parity
+- known hazard pinned by test: 16-digit SAFE ints must NOT populate the
+  unsafe-digit array (walk's isSafeInteger branch wouldn't consume it →
+  counter desync → wrong bigint values downstream — guard test added)
+- **Rust→WASM upgrade path** (user proposal — legit): swap only
+  `validateStrict` for a Rust tokenizer compiled to wasm — validate
+  ~1.4ms→~0.2ms @180KB → total ~1.0ms = **~2.5× over ext**. Same
+  flags/unsafe interface; single wasm artifact serves browser+Bun+Node.
+  Estimated boundary cost ~60-100µs (TextEncoder encode + wasm call).
+  Decision: phase-2 — the JS variant already beats ext AND is strict;
+  Rust is perf-headroom, not a requirement for correctness.
+- Engine availability for the alternatives — the non-strict
+  `context.source`/`JSON.rawJSON` path remains available as a
+  *secondary* candidate only if strict requirements ever change
+  (TC39 stage-4, Chrome/Edge 114+, Firefox 135+, Safari 18.4+);
+  SER fast-path (`rawJSON` replacer, −20/-40% both engines, no
+  strictness concern — stringify has no dup-key surface) is
+  unconditionally recommended.
 - FE caveat on the "80% Bun" estimate: FE extJsonParse runs in the
   **browser**, not Bun — Chromium=V8 (DES fast slightly LOSES there,
   ~+340µs @180KB), Safari=JSC (wins). Bun coverage = server-side
