@@ -6,9 +6,14 @@
 |---|---|---|
 | TIC census — bulk update usage today | ✅ done | n/a (analysis) |
 | TIC anatomy + wire contract (user-refined) | ✅ done | n/a (analysis) |
-| FE: bulk `edit` CTA in BulkActionsToolbar + export recolor | ⏳ | — |
-| FE: `entity.bulkEditor` sheet — builder + distribution + drill-down | ⏳ | — |
-| BE: `update.bulk` op + `POST {base}/bulk-update` route | ⏳ | — |
+| CORE: `update.bulk` in STANDARD_OPS | ✅ done | core `84065e5` |
+| SDK: `POST /bulk-update` route + OpenAPI `bulk_update` + EntityServiceLike | ✅ done | sdk `1222ddc` |
+| BE: Express route + entity-actions scan + spec op | ✅ done | be `5a3bf38` |
+| BE+SDK: served `update.bulk` chrome (primary/square-pen/confirm_key) | ✅ done | be `8273426`, sdk `8a8a97c` |
+| US: `bulkUpdate` permission wiring — 17 bulk-capable entities | ✅ done | us `10684a7` |
+| BE: bulk-editor i18n patch (signed devin-bulk-editor, applied) | ✅ done | be `8273426` |
+| FE: bulk `edit` CTA in BulkActionsToolbar + export recolor | ✅ done | fe `09c63a6` |
+| FE: `entity.bulkEditor` sheet — builder + distribution + drill-down | ✅ done | fe `09c63a6` |
 | DICT port: field-set apply → values[]/tainted (no new wire) | ⏳ later | — |
 | E2E spec | ⏳ | — |
 
