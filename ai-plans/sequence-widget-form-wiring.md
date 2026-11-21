@@ -170,3 +170,25 @@ CTA nel combo → `window.open('/{ns}/settings/sequences','_blank')` → dict in
 - `label_key`/`description_key` in colonna restano RAW (convenzione dict) — eventuale `format:"i18n_key"` = decisione prodotto.
 - `SequenceNotFoundError` status 500 vs 4xx typed per direttive operator-authored.
 - Orphan retry-loop osservato su hot-reload (`service.register` attempt 42-49 in parallelo al loop sano — retry chain non cancellata al reload; rumore, non un bug funzionale ma da segnalare).
+
+## TIC round 3 — `format:"i18n_key"` consegnato (label_key tradotta su ELT)
+
+L'utente ha corretto l'analisi precedente (4.2): le dict entities sono superfici TUTTE tradotte — combobox `TranslationKeyCell` con `isLabelTranslated`, titolo riga `$t(labelStem)`, desc/tooltip risolti. Il raw non era una convenzione: mancava il CONTRATTO per marcare "questa colonna contiene una chiave di traduzione".
+
+**Consegnato:**
+
+- **`MetaColumnFormat` + `"i18n_key"`** (core `entity-meta.ts`) — nuovo membro union: la colonna dichiara che i suoi VALORI sono chiavi di traduzione. Wiring automatico per dichiarazione — mai per convenzione di nome.
+- **`TableCell` branch `i18n_key`** (fe) — anatomia source/destination di `nats_subject` riusata: `Tooltip` wrapping `Badge variant="secondary"` con `DynamicIcon name="languages"` (`sky-500`, la convenzione `TranslationKeyCell`) + testo `$t(value)`; la chiave raw vive nel tooltip; chiave non risolta → `$t` ritorna la key stessa → badge mono-raw (il miss è visibile, mai inventato).
+- **Sweep dichiarazioni** — `format:"i18n_key"` su tutte le colonne `label_key`/`description_key` dict: `sequence-decl.ts` (dal builtin), 9 list-config crm (`account_kinds`…`qualifications`), 2 ai (`ai-models`, `ai-cerebellum`), `role-mappings.meta.ts` (be). 14 siti — ogni colonna i18n-keyed esistente ora dichiara il contratto.
+- **Dict page dispatch → format** — `DictRow`/`DictDraftRow`: `{#if valueColumn.format === 'i18n_key'}` al posto di `key === 'label_key'` per `TranslationKeyCell`. L'IDENTITÀ della value column resta `display_field`/nome canonico `label_key` (description_key ha lo stesso format ma non è la value column); il format governa il RENDERING. Chi dimentica il format perde il cell — visibile, onesto, mai convenzione.
+- **Shadow-type fix** — il brick `ai` teneva un `MetaColumn` locale (`modules/shared/entity-meta-types.ts`) senza `format`: aggiunto `format?: MetaColumnFormat` via `@primebrick/sdk` (re-export core). La deriva silenziosa ora compila contro l'unione canonica.
+- **Docs** — `entity-meta-schema.md` + `entity-metadata.mdx` (fe): il bullet/la riga `format` documentano `i18n_key`; api.json/mdx rigenerati (core, dal) dalla build.
+
+**E2E** (`sequences.spec.ts` **8/8**): meta asserisce `format:"i18n_key"` sulle due colonne; test dedicato "translated + raw fallback" — seq con `label_key` seedata → badge "Code" + icona + tooltip raw-key; seq con chiave inventata → badge mono-raw + icona.
+
+**Risposta a "perché non era wired automaticamente"**: esisteva il renderer write (`TranslationKeyCell`) dispatchato solo nella dict page e SOLO per nome colonna (`key === 'label_key'`); l'ELT non aveva il branch e il meta non aveva un formato per dichiarare il caso. Ora `format:"i18n_key"` è il contratto unico: ELT badge (read) + `TranslationKeyCell` (dict write) si attivano entrambi dalla stessa dichiarazione.
+
+### Residuo aperto
+- `SequenceNotFoundError` status 500 vs 4xx typed per direttive operator-authored.
+- Orphan retry-loop su hot-reload (`service.register` — rumore infra, da segnalare).
+- `format:"i18n_key"` nel FORM dispatcher cade su `text` — un controllo write dedicato (TranslationKeyCell fuori dalla dict page) è follow-up se serve editing i18n-key fuori dai dict surface.
