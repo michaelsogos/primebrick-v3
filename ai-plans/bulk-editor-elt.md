@@ -181,3 +181,254 @@ rows), builder zone in the middle.
   builder (default) vs fetched — default: exclude, revisit per-entity.
 - `update.bulk` default-on (like delete.bulk) vs opt-in per entity —
   default-on, chrome overridable via `meta.actions`.
+
+## 8. Delivered — status ledger (2026-12-26)
+
+| Layer | Commit | State |
+|---|---|---|
+| core | `84065e5` `update.bulk` op · `4f67423` `columnSchemaLeaf` (replaces invented icon maps — wire-shape leaf → shared `schemaTypeIcon`; badge→tags, ref→file-key) | pushed |
+| sdk | `1222ddc` route+validator+allowlist+OpenAPI · `8a8a97c` chrome | pushed |
+| be | `5a3bf38` Express route · `8273426` chrome + i18n patch (signed devin-bulk-editor, applied) | pushed |
+| us | `10684a7` bulkUpdate permission ×17 · `5e66652` revert code-immutable + `customers_code_alive_uidx` partial unique (applied 1/0) | pushed |
+| fe | `09c63a6` CTA+panel · `056d264` iconField · `568bb3e`→`e537737` icons via `schemaTypeIcon` | pushed |
+| e2e | `src/e2e/bulk-editor.spec.ts` — 3/3 headed (meta contract, CTA→sheet→confirm→rows updated, cleanup) | green |
+
+`crm.customers.code` stays **editable** (user decision — never immutable);
+uniqueness enforced by `UNIQUE (code) WHERE deleted_at IS NULL`.
+
+## 9. NEXT — `assign` sequencer for unique columns (user directive 2026-12-26)
+
+Problem: a uniform `set` on a unique column cannot update >1 row — `code`
+is editable+unique, so bulk `code` needs **per-row generated values**.
+
+Design direction (user): a sequence mechanism —
+
+- **Persistent sequences** table: `{key, pattern, counter, step}` — user
+  picks a registered sequence; the tx consumes N codes atomically.
+- **Ad-hoc pattern**: `{pattern, start, step}` with NO persisted counter —
+  codes generated at save.
+- FE always computes a deterministic preview (first..last of N) for the
+  forecast — SAME pure function the BE generation semantics mirror.
+
+Open design points →
+1. wire: extend bulk-update body `{items, set, assign: {code: {...}}}` —
+   `assign` fields resolve per-item inside the tx; `set` stays uniform.
+   `BulkUpdateItem = {uuid, version, ...fields}` already carries per-item
+   fields — the DAL path needs no change.
+2. generation authority: BE-only inside the tx (persistent counter MUST
+   be consumed under `FOR UPDATE`; FE-sent codes would skip the counter
+   and race). FE role = pure preview only.
+3. pattern grammar: to define — e.g. `PREFIX-{n:WIDTH}` (`CUST-{n:5}` →
+   `CUST-00042`); closed vocabulary, no free interpolation.
+4. sequences table ownership/schema (`system.sequences`?), management
+   surface (dict? config?), and whether `create.single` consumes it later.
+5. assign order = items order as sent (selection order preserved).
+6. does `code` also stay in uniform `set`? (1-row rename is legit —
+   set+assign mutually exclusive per column.)
+
+## 9bis. Sequencer — concurrency + ownership design (user directives)
+
+- Pattern: multiple segments incl. date tokens — state of the art.
+- Table = DOMAIN ENTITY (NOT `system.*` — that breaks ownership).
+- Interpolation in bun: projection yields `counter/step/pattern`, the
+  renderer computes `current` (counter as-allocated), `next`
+  (counter+step) — preview reads WITHOUT increment.
+- Allocation reads WITH increment: `UPDATE ... RETURNING` — single
+  atomic statement, row lock serializes concurrent claimers; lives in
+  the CONSUMING tx so rollback returns the range (no holes, no doubles —
+  unlike PG `nextval` which can gap).
+- Attribution without trail: `last_alloc_at/by/count` columns.
+- NO CACHE — counter always read fresh in-tx; invoice-grade semantics.
+- Open: table shared-kernel (entity_events precedent — every service's
+  tx may allocate) + entity facade owned by one service? per-period
+  counters when pattern carries date tokens? pattern grammar final.
+
+## 9ter. Who-does-what — the two sequence kinds (user demanded mechanical clarity)
+
+RUNTIME (ad-hoc, no persistenza): input {pattern,start,step}; start IS the
+first counter — zero state. FE previews via shared core fn; BE generates
+final codes in-tx (ONE authority — no FE-emitted codes on the wire).
+
+PERSISTED (counter in DB — `seq.counters` row {sequence_id, period_key,
+counter=next-to-emit, last_alloc_*}): 
+  preview = SELECT → next=counter, range=counter..counter+(n-1)*step
+  claim = ONE statement in the consuming tx:
+    INSERT..ON CONFLICT DO UPDATE counter=counter+n*step
+    RETURNING counter-n*step AS first, counter-step AS last
+  → row lock serializes claimers; rollback returns the range (no holes).
+  render = bun loop over the range (string concat, sub-ms even ×1000).
+  assign = per-item fields into the EXISTING updateMany temp-table write.
+SQL moves integers only; string interpolation is NEVER in SQL.
+
+## 10. TIC — sequence entity anatomy (user questions, 2026-12-26)
+
+**Entity kind**: NORMAL declared entity — full anatomy per module:
+`domain/entities/sequence_entity.ts` (shaper/DAL class) +
+`modules/sequences/{sequence.meta.ts,list-config.ts,dto.ts,sequences.service.ts}`
++ registration in `controllers/http/entities-route.ts` via makeServiceRoutes.
+ONE `sequence` registry entity per module that needs it — each service
+declares its own (`crm.sequences`, …); no global/shared one ever.
+
+**Cross-module access**: READ = governed entity ops (`sequence.list/get`
+permission → own `/list|/get|/meta` — usable by other modules' UIs via
+the normal entity API). INCREMENT = impossible by construction — the
+allocate statement exists only as an in-tx primitive inside the owning
+service; no route/RPC endpoint for it exists. Table lives in owner schema.
+
+**Visibility**: standard surface — module nav entry + ELT page (key,
+pattern, step, next preview, last_alloc_*) + record sheet + audit +
+`sequence.*` permissions + i18n. Where in nav: TBD per module.
+
+**Sezionali (Italian-invoice partitions)**: counter PK becomes
+`(sequence_id, period_key, partition_key)` — partition_key='' default.
+Pattern gains `{sez}` token rendering the partition value; assign
+directive carries `partition:"A"`. One def → N independent counters.
+Alternative (no grammar change): one sequence row per sezionale.
+
+**Template persistence**: `crm.sequences.pattern` stores the authored
+string verbatim; interpolation stays in bun (locked).
+
+**Counters table**: `crm.sequence_counters` — machine state, never an
+entity row: {sequence_id fk→sequences, period_key, partition_key,
+counter bigint (next-to-emit), last_alloc_at, last_alloc_by,
+last_alloc_count}.
+
+Open: `{sez}` token vs per-sezionale rows? nav placement? `next` preview
+as calculated projection vs computed in record sheet?
+
+## 11. TIC answers — round 2 (user directives)
+
+1. ONE `sequences` + ONE `sequence_counters` table per module — like
+   config_entry: many rows, different domains live in different MODULES
+   not different tables. Row lock only (UPDATE..RETURNING on the single
+   counter row); table lock never enters the design.
+2. `sequences.code` — unique per module, addressable on the wire:
+   `assign:{code:{sequence:"customer_code"}}` resolves by code, not uuid
+   (uuid stays internal PK). Single-seq state = entity facade /get|list.
+3. Nav placement: `/crm/settings/sequences` under the "Impostazioni"
+   sibling module node — settings-domain data, same tree section as the
+   dicts (CRM_NAV convention: dictDecl + entityPaths).
+4. Sezionali = partition_key column + `{sez}` pattern token (partition
+   value may be composite: "IT-GOODS"). The rendered year comes from the
+   SEQUENCE's period — `at` (business/document date) travels on the
+   assign directive (default now()): period_key AND date tokens both
+   derive from `at`, so a Jan-issued invoice CAN allocate into the Dec
+   period and render /26. Periods never "close": counter rows are
+   per-period append-only, auto-created on first allocation of a period
+   (INSERT..ON CONFLICT) — the old period row IS the immutable record
+   of where that year ended. No deleted/closed flag needed.
+5. Token spelling aligned to the user's grammar: `{seq:W}` counter
+   token (was {n:W}), `{yy}`/`{yyyy}` year tokens.
+
+## 12. TIC answers — round 3 (user directives)
+
+1. **SequenceEntity is construction-sealed** — unlike config_entry (where
+   subclassing into a new table is legal), the SEQ entity class must be
+   non-inheritable: `new.target !== SequenceEntity → throw` in the
+   constructor. Enforcement by construction (not lint, not docs): a
+   cloned seq table would fork the counter namespace and break the
+   one-registry-per-module ownership contract.
+4. **Up to 3 sezionali, any position, non-consecutive** — tokens
+   `{sez}` `{sez2}` `{sez3}` render directive fields sez/sez2/sez3
+   positionally. partition_key = the used slots joined in slot order
+   (deterministic; values validated: non-empty, no separator chars).
+   `{sez3}` alone is legal — PK is slot-ordered join, gaps stay
+   meaningful. PK: (sequence_id, period_key, partition_key).
+
+## 12bis. TOC step 1 done — core engine final grammar (commit pending)
+
+sequence.ts: `{seq:W}` + `{sez}|{sez2}|{sez3}` + date tokens + `at`
+(business date, drives period AND render) + fixed 3-slot partition tuple.
+43-test matrix green.
+
+## 12ter. TOC step 2 done — dal sequence primitive (commit pending)
+
+`SequenceEntity` (sequences def, sealed) + `SequenceCounterEntity`
+(machine state, sealed, events off) in dal-pg `entities/` — concrete
+shared classes, schema resolves per service domain. `Repository.
+sequenceAllocate`: INSERT..ON CONFLICT DO UPDATE..RETURNING first/last —
+row lock serializes claims, rollback frees ranges, partition+period
+identity isolated. 11-test spec on real PG: concurrency disjoint, back-
+dated periods, sealed construction, fail-closed validation. 763/763.
+
+## 12quater. TIC CORRECTION — shared concrete classes were wrong
+
+Empirical answer on config_entry ownership: `crm.ConfigEntryEntity` is
+a LOCAL class with `@Entity("config_entries","crm")` — the schema pin
+lives in the per-module entity decorator; `ConfigEntityBase` is only an
+OPTIONAL abstract column shape (crm re-declares its columns). Sealed
+concrete classes in dal resolved `public` under compare → wrong by
+construction. REVISED MODEL:
+- dal: `SequenceEntityBase` + `SequenceCounterEntityBase` = abstract,
+  canonical column contract (no @Entity on them, or schema-less)
+- per module: `@Entity("sequences","crm") class SequenceEntity extends
+  SequenceEntityBase {}` + `@Entity("sequence_counters","crm") class
+  SequenceCounterEntity extends SequenceCounterEntityBase {}` in
+  domain/entities — the module contributes table+schema ONLY
+- `sequenceAllocate(spec, counterEntity)` — caller passes its module's
+  concrete counter class (ownership explicit at the call site)
+- annotation extraction works again (local concrete class flattens
+  inherited .d.ts props) → drop the redundant pgType pins; the
+  *_by semantic pins added to entity-ts-to-pg stay (correct for any
+  annotation-less consumer)
+
+## 12quater-B. TIC CORRECTION v2 — boilerplate construction (not subclass-per-module)
+
+The REAL config_entries mechanism: `primebrick-us-v3/boilerplate/` is the
+module template — it carries `domain/entities/config_entry_entity.ts`
+(`@Entity("config_entries","boilerplate")`, "rename the schema token on
+clone"), config routes, service, registry entry and the DDL patch.
+Every module is cloned with the table + management routes INCLUDED BY
+CONSTRUCTION — the dev never hand-copies anything.
+
+REVISED SEQ MODEL (mirror of config_entries):
+- dal: `SequenceEntityBase` + `SequenceCounterEntityBase` = ABSTRACT
+  bases holding the full canonical column contract (no hand-copying)
+- boilerplate: `sequence_entity.ts`/`sequence_counter_entity.ts` =
+  `@Entity("sequences","<module>")` thin classes extending the bases —
+  schema token renamed at clone, IDENTICAL mechanism to config_entries
+- boilerplate gains the full module anatomy (service/meta/list-config/
+  dto), registry entries, route decl, nav, DDL patch — every cloned
+  module owns sequences + counters + management surface by construction
+- crm (existing module) receives the same boilerplate files once — as
+  config_entries already exists there
+- `sequenceAllocate(spec, counterEntity)` takes the caller module's
+  concrete counter class — ownership explicit at the call site
+- seal semantics: bases stay abstract (uninstantiable alone); shape
+  integrity comes from the boilerplate-stable thin classes, not from a
+  constructor guard
+
+## 12quater-C. TIC FINAL — framework mounting (NOT boilerplate, NOT subclass)
+
+Requirement locked: seq is mounted ONLY by construction at boot by
+facades+createMicroservice — never a module-declared entity, never a
+subclass. Boilerplate/convention is eludible → rejected. The schema
+comes from the module's own domain (DATABASE_SCHEMA → schemas[0] →
+domain.primary at runtime; `--schema` flag or domain config for CLI).
+
+THE CONSTRUCTION:
+- dal: SequenceEntity/SequenceCounterEntity — shared CONCRETE sealed
+  classes, no schema pin → resolve domain.primary (module schema) at
+  runtime; already correct
+- sdk builtin: SequencesService (DomainService over SequenceEntity) +
+  meta (entities_ns = module code) + dto — lives in sdk, never in a
+  module
+- makeServiceRoutes auto-mounts a builtin `sequence` decl on every
+  service (like the auto health route); consumer decl with
+  entityName "sequence" → BOOT ERROR (existing collision pattern)
+- permissions derived as `<module>.sequence.<op>.<scope>` strings —
+  decl type is readonly string[], no static enum needed
+- primebrick-db compare/check learn the builtin entity set internally
+  (not via per-module registry convention) + `--schema` flag (symmetric
+  with `apply --schema`) configuring the domain before snapshotting
+- i18n/permission seed rows remain per-module patches (crm.* keys)
+
+## 12quinquies. TOC step — framework mounting foundation (in progress)
+
+`BUILTIN_ENTITIES` in dal — the canonical platform-owned entity set
+(sequence registry + counters), consumed by primebrick-db compare/check
+and later by the sdk facade mount. CLI: `--schema` / DATABASE_SCHEMA
+configures the schema domain so un-pinned builtins resolve the module
+schema (crm.* emitted, not public.*); a builtin in a module registry →
+hard error. Composite-unique uuid members no longer get uuidv7()
+default; sequence_id → sequence_uuid (ref naming). 763/763.
