@@ -140,10 +140,17 @@ CTA nel combo → `window.open('/{ns}/settings/sequences','_blank')` → dict in
 
 **`tz` spiegazione**: IANA zone per i token data del pattern + il confine `period_key` (es. `CUST-{YYYY}-{seq:4}` materializza la data e decide "a che anno appartiene questa allocazione" nel fuso dichiarato; `null` → UTC).
 
-### Decisioni prodotto aperte (post-TIC)
+### Fix consegnati (fe `7b2e8c2`, dal `0eb02f0`)
 
-- **Edit surface**: `kind:"detail"` builtin + `page_props.form` → `entity_form` archetype, oppure `EntityRecordSheet` inline via `onEditAction` dedicato.
-- **Bulk delete/restore**: dichiarare `bulkDelete`/`bulkRestore` nel decl per parità con le altre entity?
-- **Colonne counter**: quale proiezione? (default-partition@now vs aggregate; "interpolated next" = materializzazione read-only in list).
+- **Service threading (bug 1·3·4)**: `service?: string` viaggia su tutta la superficie — `decl.module` → `BuiltinEntityListPage` → `EntityTablePage` → `EntityListTable` → `useRowActions`/`useBulkActions`/`useExport` → `runEntityOp({service})`/`openSheet({service})`. `entityApiBase(entity, service?)` + `serviceApiPrefix(entity, service?)` accettano il contesto esplicito. Bug secondari trovati e fixati nel percorso: declared endpoint senza prefisso `/svc` in `resolveOpUrl` (row+bulk) e `useExport` — i path service-local sparivano sull'origin FE.
+- **Modifica → record sheet** (scelta utente: "sheet sufficiente"): `EntityTablePage` senza `editPath`/detail route apre `entity.record` con `edit: true` — edit mode diretto, gated su `update.single` dalla sheet stessa. Non più silent no-op.
+- **Bulk delete/restore**: `bulkDelete`/`bulkRestore` dichiarati (`delete.bulk`/`restore.bulk` perms) — `enabled(a)` = presenza chiave in `permissions` → `meta.actions` li emette, ELT espone le CTA.
+- **Bug `version` wire**: `vWriteEntity` partial accettava solo `number` ma ext-json decoda ogni intero a `bigint` → save del record sheet 400. Ora accetta il dominio vBigint e down-casta (stessa normalizzazione `parseBulkItems`).
+
+**E2E prova** (`sequences.spec.ts` **7/7**): edit sheet PUT, Edit Log audit fetch, delete confirm→DELETE 200→dialog si chiude, bulk-delete CTA→POST `/svc/crm/bulk-delete` 200 — tutto su `/svc/crm`, zero leak di schema; cascade soft-delete; sequence_set chain.
+
+### Decisioni prodotto aperte (residue)
+
+- **Colonne counter**: quale proiezione? (default-partition@now vs aggregate `MAX(last_alloc_at)`; "interpolated next" = materializzazione read-only pattern+counter in list — forecast già lo fa per-chiamata). Serve: current/next interpolated, last emitted, `last_alloc_at`/`last_alloc_by`.
 - **label_key display**: raw (convenzione dict, l'operatore gestisce la key) vs nuovo formato cell "translate-on-display" (`$t(value)` con fallback raw).
-- **`SequenceNotFoundError` status**: oggi 500 `INTERNAL_ERROR` con title typed — accettabile (rottura contratto dati lato server) o va mappato a 4xx + `internal_code:"SEQUENCE_NOT_FOUND"`?
+- **`SequenceNotFoundError` status**: oggi 500 `INTERNAL_ERROR` con title typed — distinzione proposta: direttiva operator-authored → 4xx typed (`internal_code:"SEQUENCE_NOT_FOUND"`); binding server-side rotto → resta 500.
