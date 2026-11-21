@@ -140,7 +140,37 @@ persists. Same builder UX, zero new endpoints.
 `FormFieldDispatcher`/`EntityFormField` · `SheetPanelLayout` ·
 `findActionEndpoint` · duplicate-style partial-error reporting.
 
-## 6. Open residuals
+## 6. Verified contracts (round 2)
+
+**Atomicity — all-or-nothing with per-row diagnosis.** `updateMany`
+runs one transaction: temp-table → ambiguity guard (ERR10) →
+stale-diagnose pre-check → UPDATE → race guard → audit insert →
+COMMIT (`repository.ts:3856-3953`). Any guard failure = full ROLLBACK;
+partial writes are impossible by construction — correct for a uniform
+set. The diagnose pre-check raises pg_raise carrying
+`{stale, rows[≤10]}` — each row `{row_ix, match:{uuid},
+expected_version, actual_version, vanished, code}`:
+ERR01 stale → **409**, ERR03 vanished → **404**, ERR10 incoherent →
+**400/409**. `dal-error-mapper` maps them to RFC7807 with
+`extra.issues` — the FE `RfcErrorDialog` **already renders
+`extra.issues`** (config-bulk precedent): the user sees exactly which
+rows conflicted and why → targeted refresh + retry.
+
+**Two-sheet stack.** `openSheet(id, props, {stack: true})` — max 2
+panes; stacked opens put the new panel right, left keeps state
+(`sheet-manager.svelte.ts:52-58,314-321`). Distribution-chip
+drill-down opens a stacked pane listing the rows holding that value
+(precedent: ref-cell drill-through).
+
+**Immutable/audit visibility** — `EntityRecordSheetBody` partition:
+uid glyph at top (never a widget), normal fields middle, `audited`
+columns pinned to a bottom `system.common.sections.audit` Accordion
+rendered as VALUES (`TableCell`), `version` included. The bulk sheet
+reuses the same partition: immutable columns visible read-only at
+top, audit columns in the bottom accordion (informational across N
+rows), builder zone in the middle.
+
+## 7. Open residuals
 
 - Aggregates/calculated entities: non-projected fields excluded from
   builder (default) vs fetched — default: exclude, revisit per-entity.
