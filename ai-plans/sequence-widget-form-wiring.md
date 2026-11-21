@@ -154,3 +154,19 @@ CTA nel combo → `window.open('/{ns}/settings/sequences','_blank')` → dict in
 - **Colonne counter**: quale proiezione? (default-partition@now vs aggregate `MAX(last_alloc_at)`; "interpolated next" = materializzazione read-only pattern+counter in list — forecast già lo fa per-chiamata). Serve: current/next interpolated, last emitted, `last_alloc_at`/`last_alloc_by`.
 - **label_key display**: raw (convenzione dict, l'operatore gestisce la key) vs nuovo formato cell "translate-on-display" (`$t(value)` con fallback raw).
 - **`SequenceNotFoundError` status**: oggi 500 `INTERNAL_ERROR` con title typed — distinzione proposta: direttiva operator-authored → 4xx typed (`internal_code:"SEQUENCE_NOT_FOUND"`); binding server-side rotto → resta 500.
+
+## TIC round 2 — consegnato (sdk `e6a8563`, dal `15e7f6b`, fe `810cce0`, us `364aa71`)
+
+- **Ownership per costruzione**: `entityApiBase`/`serviceApiPrefix` ora THROW se una multi-service entity (census `entity→service` con ≥2 owner — tracciate in `_multiService` durante `registerEntityServices`) è chiamata SENZA `service` esplicito. Il guess censario resta solo per entità non ambigue — la violazione è un errore di programmazione, non una condizione dati.
+- **Confirm-busy leak risolto**: `useMfaStepUp.executeWithToken` ora espone `pendingCancel` — chiudere il dialog MFA con retry pendente risolve la promise come `MFA_STEP_UP_CANCELLED` (RFC7807, status 499). Prima la promise restava pending → `entityOpState.busy/confirm` non resettavano → ogni confirm successivo nasceva "in loading" (sintomo osservato: dialog in loading ALLO SHOW).
+- **Bulk default-on (modello chiesto)**: `opPermissions` (sdk entity-router) è la singola sorgente per registration + `meta.actions` + spec — `bulkDelete`/`bulkRestore`/`bulkUpdate` default-ON quando il single counterpart ha perms (eredita le STESSE permission strings). Off esplicito: `permissions.<op> === false` (type esteso `| false`). Stesso modello `duplicate`. Regression test `service-routes` 24/24.
+- **Disable/Enable chrome**: `actions_overrides` su `sequenceMeta` — delete → "Disable" (`exec-stop`, destructive), restore → "Enable" (`exec-start`, success), single+bulk, confirm/busy keys per-scope — convenzione `job_trigger`.
+- **Counter projection (i valori chiesti)**: `attachCounterProjection` (list+get) proietta, per riga, su partizione default `""` al `period_key` corrente: `value_next` (= `counter ?? start`, next-to-emit), `value_actual` (= `counter - step`, null pre-first-claim), `emitted_next`/`emitted_actual` (pattern renderizzato con ciascuno), `last_alloc_at`/`last_alloc_by`. Colonne `kind:"virtual"` — sort/filter/search forzati off per contratto. **`counter` è NEXT-TO-EMIT** (semantica verificata su entity + forecast).
+- **Bug emerso — registry wedge**: le virtual column finivano nello `entityEventPayloadSchema` (`before`/`after`/`delta` da meta.columns) → `last_alloc_by` trippava l'honest-format gate (`_by` → uuid/actor_token) → `service.register` REJECTED per OGNI brick → stack stale. Fix strutturale: virtual columns escluse dallo schema eventi (mai presenti negli snapshot write-path — RETURNING/oldRecord sono righe fisiche). Lezione: enrich post-query ≠ entity state.
+- **i18n**: 14 chiavi ×7 in patch crm `20261229120000` (actions + fields projection).
+- **E2E**: suite 7/7 con asserzioni nuove (virtual cols in meta+campi sulle righe, label `.actions.` disable/enable).
+
+### Residuo aperto
+- `label_key`/`description_key` in colonna restano RAW (convenzione dict) — eventuale `format:"i18n_key"` = decisione prodotto.
+- `SequenceNotFoundError` status 500 vs 4xx typed per direttive operator-authored.
+- Orphan retry-loop osservato su hot-reload (`service.register` attempt 42-49 in parallelo al loop sano — retry chain non cancellata al reload; rumore, non un bug funzionale ma da segnalare).
