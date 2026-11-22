@@ -116,3 +116,52 @@ Everything dispatched through metadata — no page-level hardcoding.
   **pre-existing rot**, identical failure on clean stash.
 - svelte-check: fe 0/0, ui 0/0. core 199/199+1skip, dal 834/834.
 - i18n patch applied to dev DB (keys resolve, no raw fallbacks).
+
+## Iteration 2 — token-sheet ergonomics + time grammar (done)
+
+User refinements, all implemented and verified:
+
+- **Single `{seq}` row** — `seq_width` catalog entry removed; the counter
+  padding is authored in a sub-form under the row (0 = no padding,
+  default; `N` → `{seq:N}`). While used it mirrors `counter_width`,
+  disabled.
+- **`-` unuse CTA** — used slots carry the `Tags` badge PLUS a `Minus`
+  CTA; core `removeSequenceToken` strips the whole token span
+  (`{seq:W}` included, `{{`/`}}` escapes untouched); host `on_write`
+  replaces the whole pattern through the live DOM channel.
+- **Descriptions wrap fully** (no truncate).
+- **Eraser → sheet reactivity** — `clearValue` writes via the DOM channel
+  (`el.value` + `input` event) so the sheet's `on_change` feed reacts
+  exactly like keyboard deletion.
+- **Time tokens** `{HH}` `{hh}` `{mm}` `{ss}` — new
+  `SequenceTimeToken`/segment kind; cosmetic claim-time stamps, NEVER
+  period-scoped. Case IS the grammar (`MM`≠`mm`, `HH`≠`hh`).
+- **`spec.key`** — explicit i18n key segment; lowercase-only key grammar
+  collides case-meaningful ids (`MM`/`mm`→`mm`/`min`, `HH`/`hh`→`hh`/`hh12`).
+- **Two real bugs found empirically**:
+  - `bind:ref={inputRef}` on a `$derived` never wrote back → `inputRef`
+    permanently null → caret tracking dead. Fixed: `bind:ref` shorthand.
+  - DAL `sequenceAnalyze` regex builder lacked a `time` branch (TypeDoc
+    caught it) + latent `{q}` width bug (`Q4` renders 2 chars, regex was
+    `[0-9]{1}`). Both segment→regex sites fixed.
+- **Caret architecture** — `pick.get_caret()` freezes with the widget
+  instance at remount; the dispatcher now keeps a sheet-lifetime
+  `liveCaret` fed by real select/keyup/mouseup/focus/input events on the
+  live element (a click at position 0 post-open lands at 0).
+- i18n patch `20261231120000` signed + applied (hh, hh12, min, ss,
+  remove, seq_width label).
+
+Verification: e2e 17/17 (dedicated test covers padding insert/removal,
+time tokens, pos-0 insert via real Home keystroke, eraser reactivity);
+screenshot-verified token sheet; core 208/209, dal 834+57, svelte-check
+0/0 both. Commits: core f79361f, dal 6172c22, ui 7b17c8d, fe ecc872e,
+be fed39dc.
+
+## Sezionali — why they are NOT columns
+
+`sez`/`sez2`/`sez3` are **claim-time context**, not sequence config:
+the sequence row declares the slots via the pattern; the values arrive
+per-allocation through `SequenceDirectiveContext` on the write directive
+(`sequence-input` collect, `SequenceSetDialog` forecast/set). Partition
+identity = `(sequence, period, partition_key)` — values belong to the
+claiming document, not to the sequence.
