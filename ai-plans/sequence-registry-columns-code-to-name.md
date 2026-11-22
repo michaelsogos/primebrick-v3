@@ -167,3 +167,28 @@ Open residuals (deliberate): `tz` redesign deferred to the user's own
 idea; `{seq:"<uuid>"}` string form retained (same identity, compact
 literal); `sequenceAllocate` public API kept (orphan primitive — no
 callers, no route).
+
+## Follow-up — stale persisted list criteria self-heal (fe `83546b0`)
+
+The `code→name` rename exposed a live-profile hazard: persisted ELT
+state (`pb:*:list:sort`, filters, `search_in`) still referencing `code`
+made every `/list` call 400 — page unusable. Delivered a two-layer heal:
+
+- `sanitizeListState` now also drops a stale persisted `sortKey`
+  (bootstrap layer — stale keys never leave the browser).
+- A `/list` 400 carrying the fail-closed FIELD rejection
+  (`internal_code` VALIDATION + `detail` matching
+  `sort_key|search_in|filter|BETWEEN`, or UNKNOWN_COLUMN) ⇒ the served
+  meta itself is stale ⇒ `invalidateEntityMeta(basePath)` (data +
+  in-flight), re-fetch, re-sanitize, retry ONCE (`healing` recursion
+  guard — never a loop). `isStaleFieldRejection` in
+  `api-list-error.ts` keeps the gate narrow: envelope rejections
+  (page/page_size/deleted_records) never heal.
+- `sequences.spec.ts` +3 tests (bootstrap heal, mid-session heal via
+  injected 400, non-field no-retry) and `mode:"serial"` — shared DB
+  state + route interception raced under parallel workers. **12/12**.
+
+Ops note surfaced during this turn: an orphan agent-shell `tsx watch`
+tree had stolen `:3001` from the dev-stack-tracked be (watcher alive,
+server child dead — EADDRINUSE). Orphans reaped via
+`dev-stack.ps1 reap` + be restarted tracked; stack verified 7/7.
