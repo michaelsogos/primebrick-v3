@@ -157,6 +157,37 @@ screenshot-verified token sheet; core 208/209, dal 834+57, svelte-check
 0/0 both. Commits: core f79361f, dal 6172c22, ui 7b17c8d, fe ecc872e,
 be fed39dc.
 
+## Iteration 3 — borderless sheet + interpreter strip (done)
+
+User refinements, all implemented and verified:
+
+- **Borders removed** — the token list and the preview no longer sit in
+  `rounded-md border` cards; flat rows under the section titles.
+- **Counter/sez sample inputs removed** — the sheet preview is
+  display-only; the example counter rides `context.start` (the form's
+  authored first value) else `sequenceTokenExampleDefaults.counter`,
+  partitions ride the shared catalog defaults.
+- **`sequenceTokenExampleDefaults` exported from core** — ONE set of
+  illustrative sample values (`counter: 42n`, `partitions sez/sez2/sez3`)
+  shared by the catalog, the sheet preview and the in-input strip.
+- **Interpreter strip under the input** — the widget renders a
+  scheduler-style strip (`flex items-start gap-1.5 px-1 text-xs`, no
+  box): `CircleCheck` + `Preview: <rendered>` on valid parse,
+  `CircleAlert` + parser error on invalid, hidden on empty. Driven by
+  `context` prop (the form record) — `start`/`tz` siblings feed the
+  example, same `renderSequenceValue` engine as the sheet.
+- **Layout invariant** — the `relative` positioning scope wraps
+  input+CTAs only; the strip lives in the outer `w-full` div so absolute
+  `top-1/2` chips still center on the input.
+- Widget `context` prop added; dispatcher already passed the record.
+
+Verification: sequences.spec.ts 17/17 — new assertions cover
+strip-visible-error, strip example `INV-0001` parity with the sheet
+preview, zero counter/sez sample inputs, `not.toHaveClass(/border/)` on
+token-list + preview parents, strip hidden after eraser. Screenshots
+verified: `✓ Preview: INV-2026-0001` under the input; borderless token
+sheet. svelte-check 0/0 ui+fe; ui sveld + core TypeDoc regenerated.
+
 ## Sezionali — why they are NOT columns
 
 `sez`/`sez2`/`sez3` are **claim-time context**, not sequence config:
