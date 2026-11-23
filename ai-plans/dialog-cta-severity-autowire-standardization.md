@@ -7,7 +7,7 @@
 > designed per-op, overrides explicit. Same target as before (export
 > dialog = primary top-strip) but the fix is at contract root.
 
-## Status: ⚪ TODO — Plan date: 2026-11-23
+## Status: 🟡 IN PROGRESS — tasks 1-5 ✅ shipped 2026-11-23 — Plan date: 2026-11-23
 
 ## TIC evidence — the full anatomy
 
@@ -69,13 +69,13 @@ contract.
 
 | # | Task | Status | When | Notes |
 |---|---|---|---|---|
-| 1 | core: `ActionVariant` closed set (`'standard'\|'outline'`) + `ACTION_VARIANTS` + `EntityAction.variant?` + `validateActionChrome` ext | ⏳ | — | additive `?:` — contract versioning safe |
-| 2 | be `entity-actions.ts` + sdk `service-routes.ts`: merge `o.variant` into `EntityAction` + served default `export`→`{color:"primary",variant:"outline"}` (same spot as duplicate/update served defaults) | ⏳ | — | the variant channel end-to-end |
-| 3 | ui: `actionChromeButtonProps(chrome)` resolver → `{variant,tone}` (color→tone, variant→shape; `standard`→filled severity variant) — replaces `actionColorButtonVariant` call sites | ⏳ | — | keep old fn as deprecated alias or migrate all callers |
-| 4 | fe: `ActionChrome` pick + `variant`; `opChrome` carries it; toolbar export buttons → chrome-driven (`bulkExportChrome = opChrome('export')`); row/export CTAs aligned | ⏳ | — | removes the hardcoded `variant="outline"` — the debt itself |
-| 5 | fe: `chrome` prop on ExportDialog/HtmlExportDialog/ChangePasswordDialog → `severity = chrome?.color ?? <op default>`; EntityListTableDialogs threads export chrome | ⏳ | — | target: primary top-strip |
-| 6 | enforcement: `no-raw-dialog` check-standards rule (BorderedDialog-only outside the component itself) + `dialog-chrome-prop` guard (dialogs under `entity-list-table/dialogs/` resolve severity from `chrome`, literals only via allowPaths) | ⏳ | — | mirror `no-native-dialog` registration |
-| 7 | `roles/[uuid]` hand-rolled overlay → migrate or allowPath with reason | ⏳ | — | verify first |
+| 1 | core: `ActionVariant` closed set (`'default'\|'outline'`) + `ACTION_VARIANTS` + `EntityAction.variant?` + `ActionsOverrides/Row/BulkCustomAction.variant` + `validateActionChrome` ext (membership + outline-needs-color) | ✅ | core `babce85` | tsc clean; RowCustomAction/BulkCustomAction carry variant too |
+| 2 | be `entity-actions.ts` + sdk `service-routes.ts`/`entity-router.ts`/`rpc-router.ts`: merge `variant` end-to-end + served default `export`→`{color:"primary",variant:"outline"}` + resolved-triple validation (be had NONE before) | ✅ | sdk `0d835d1`+`1693870`, be `8c90e1a` | sdk cta 14/14, be entity-actions 7/7 — incl. NEW tests: export served chrome + both construction errors |
+| 3 | ui: `actionChromeButtonProps(chrome, fallback?)` → `{variant,tone}`; dialog confirms keep `actionColorButtonVariant` (filled) | ✅ | ui `61edfc6` | svelte-check 0/0, built |
+| 4 | fe: `ActionChrome` pick +`variant`; `opChrome` carries it; `bulkExportChrome=opChrome('export')`; toolbar ALL buttons → resolver; **hardcoded `variant="outline" tone="info"` REMOVED** (CTA was info, now contract-primary) | ✅ | fe `49730f3` | svelte-check 0/0, eslint 0/0 |
+| 5 | fe: `chrome` prop on Export/HtmlExport/ExportPreview (`?? 'primary'`)/ChangePassword (`?? 'warning'`) dialogs; EntityListTableDialogs threads `exportChrome`; `extraDialogs` gains `row_custom_actions` → users page passes the SAME action color | ✅ | fe `49730f3` | CTA+dialog+confirm-button all follow severity |
+| 6 | enforcement: `no-raw-dialog` check-standards rule — **CENSUS CLEAN**: zero `Dialog.Root/Content/Portal/Trigger`, `DialogContent`, `AlertDialog`, raw bits-ui Dialog import in fe src + us/*/fe outside `dialogs/` (only hit: `Dialog.Close` INSIDE BorderedDialog = legal content part, migrations/+page:470). Draft: unconditional LINE_RULE in `check-standards.ts` (same class as `no-native-dialog` → `FE_RULES`+`NO_EXEMPT_RULES`); pattern bans surface-creating anatomy `Dialog.(Root\|Content\|Portal\|Trigger\|Overlay)`, `AlertDialog`, `DialogContent/Portal/Overlay`, `Dialog` from vendor/bits-ui; `Dialog.(Close\|Header\|Title\|Description\|Footer)` = legal parts → excluded. ui profile allowPath: `lib/components/dialog/`+`dialog-bordered`+`command-dialog`. `dialog-chrome-prop` guard deferred — all 4 dialog families now take `chrome`, a literal-scan would false-positive on intentional `?? default` fallbacks. **HALT for user review before implementation** | ⏳ | — | evidence presented in chat — awaiting approval |
+| 7 | `roles/[uuid]` hand-rolled overlay → **VERIFIED: no dialog/overlay in the file** — nothing to migrate | ✅ | — | empirical: zero matches for fixed/inset-0/z-50/overlay/Dialog |
 | 8 | E2E headed: sequence ELT bulk-export dialog = primary top-strip + CTA unchanged visually + lint negative probes | ⏳ | — | |
 | 9 | docs: `entity-confirm-dialogs.md` — contract extends to any CTA→dialog pair; `entity-meta` docs gain `variant` axis | ⏳ | — | |
 
