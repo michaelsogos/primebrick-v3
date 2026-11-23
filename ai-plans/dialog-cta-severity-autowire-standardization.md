@@ -81,9 +81,32 @@ contract.
 
 ## Locked decisions
 
-- `variant` vocabulary: `standard|outline` only (user-locked). `soft`/
-  `ghost` join only when a real op needs them — closed set.
+- `variant` vocabulary: **`default|outline`** — SAME names as the svelte
+  Button shape axis (user-locked: "lo stesso che usiamo in svelte").
 - Dialog `tone` is NOT meta-addressable: `soft` = reserved auth/security
   family; every action dialog is `tone=""` top-strip. (user-locked)
 - Variant is a CTA-only axis by design — it can never produce an
   "outline dialog" by accident.
+- **Illegal pairs are construction errors, never fallbacks** (user-
+  locked, "NO workaround arbitrari"): `validateActionChrome` rejects
+  `variant:"outline"` without an explicit non-`neutral` `color` —
+  neutral-outline has no designed look.
+- Both export dialogs share the `export` op chrome (user: "per adesso
+  si") — splitting later is free: a distinct op key inherits the channel.
+- `ChangePasswordDialog` gets `chrome` and `users/+page.svelte` passes
+  the `change_password` custom-action's OWN color — row item and dialog
+  coherent BY CONSTRUCTION (same meta field, two surfaces).
+- `ExportPreviewDialog` (95vw result surface) inherits the same `export`
+  chrome — part of the same action flow; no lint exception needed.
+- `no-raw-dialog` rule: census + rule draft, then **HALT — show user
+  the evidence and proposed rule BEFORE any fixes** (user-locked).
+- Served-defaults placement (answered in TIC survey): the layered-
+  default architecture EXISTS but has no central registry — defaults
+  live per-layer per-purpose: (1) wire/scan served defaults
+  (`be/entity-actions.ts:158-163` + `sdk/service-routes.ts` custom-CTA
+  push), (2) convention-derived (`{ns}.actions.{op}`, `placement??`
+  heuristic), (3) component `??` fallbacks as last line. Action-chrome
+  defaults belong at layer 1 — `export` goes INLINE where duplicate/
+  update already are (existing pattern, no new machinery). A shared
+  `DEFAULT_OP_CHROME` table would only dedupe the be↔sdk mirror —
+  optional follow-up, not this fix.
