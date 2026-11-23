@@ -155,6 +155,8 @@ on a clean slate. `tz` is `'UTC'` on every row after the
 | `switch_at` | timestamptz NULL | `expire_at + revive_grace` — when the row stops being default and gets soft-deleted. |
 | `default_from` | timestamptz NULL | when the row starts serving as the binding default — `created_at` for first rows, predecessor's `switch_at` for successors. |
 | `revived_from` | uuid NULL | chain link to the retired predecessor (job idempotency + audit navigation + stale-uuid detail). |
+| `revived_at` | timestamptz NULL | when the revive actually ran — may be far after `expire_at` (late job); the honest record of WHEN. |
+| `revived_by` | varchar NULL | who fired the revive — `system`/job actor today; column exists so a user-triggered revive RPC later is a data change, not a schema change. |
 | `tz` | **KEPT** — `NOT NULL DEFAULT 'UTC'` | Q1 resolved 2026-12-30: the row owns the render zone (UTC default, overridable at create via IANA combobox). Decl/ctx `tz` stay resolve-time context. |
 
 Wire: `revive_every`/`revive_grace` as text `'N unit'`
@@ -221,15 +223,38 @@ user's model.
 ### 5. `sequenceRevive()` — the job's two phases
 
 Phase A (`expire_at <= now`, no successor with `revived_from = uuid`,
-not deleted): insert successor — same name/pattern/step/start/
+not deleted): insert successor — same pattern/step/start/
 description_key/revive_*/binding_key; `revive_slot` value ←
 `derivePeriodLabel(prev_value, revive_unit)` (see spec table above);
-`expire_at`/`switch_at`/`default_from` chained; `revived_from` = old uuid;
-new counter implicitly starts at `start` (new uuid → new counter
-namespace — reset by identity, never a counter write).
+name ← name convention (below); `expire_at`/`switch_at`/`default_from`
+chained; `revived_from`/`revived_at`/`revived_by` = old uuid / now /
+job actor; new counter implicitly starts at `start` (new uuid → new
+counter namespace — reset by identity, never a counter write).
 
 Phase B (`switch_at <= now`, successor exists, not deleted): soft-delete
 via entity service (audited).
+
+#### Successor `name` convention (Q4 resolved 2026-12-30)
+
+`#` is the splitter — the convention suffix carries the row's own sez
+values, self-documenting the period:
+
+```
+base      = name with a trailing "#<SEZ-charset>" suffix stripped
+            ("/#[A-Za-z0-9_.\-/]*$/" — SEZ_VALUE_RE charset)
+name_next = base + "#" + usedSlotValues.join("-")
+```
+
+- `MySeq` → first revive → `MySeq#27` (sez 26→27) → next → `MySeq#28`.
+- Multi-slot `sez="2026" sez2="Q1"` → `MySeq#2027-Q1`.
+- The base name is whatever the decl/user authored (`name` required in
+  the decl) and stays user-editable — the convention regenerates only
+  the suffix at each revive; a user rename between revives becomes the
+  new base. Requires ≥1 used sez slot — a revive row always has one
+  (`revive_slot` must be a used slot).
+- Alternative `#N` self-increment counter was rejected by the user in
+  favor of the sez-derived suffix — no separate counter state, the
+  period documents itself.
 
 ### 6. Job mounting — partition_maintenance twin
 
@@ -242,6 +267,34 @@ reviver by construction, same "OGNI MODULO" contract).
 Also a governed `sequence-revive` RPC on `SequencesService` (permission
 `<ns>.sequence.revive.all`) — the callable and operators share the same
 service method; tests invoke the RPC directly.
+
+### 6b. Observability — who/what/when + missed runs (Q5 resolved 2026-12-30)
+
+**Audit on the row**: `revived_from` (what preceded), `revived_at` (when
+the revive ran — honest, may lag `expire_at`), `revived_by` (who —
+`system`/job actor; the column exists so a future user-triggered revive
+is data, not schema).
+
+**Events already wired by construction** (the user's "emetti l'evento,
+tanto nessuno ascolta" is literally the current architecture):
+
+- Successor INSERT + old-row soft-delete go through the **entity
+  service** → dal write path emits `events.<svc>.sequence.<uuid>` on the
+  durable ENTITY_EVENTS JetStream — `emitted_by`/`emitted_at` in the
+  envelope, before/after/delta in the payload. JH is the sole consumer;
+  a `job_triggers` row can already react.
+- The job's own executions land on `jobs.result.<svc>.sequence_revive`
+  (governance tap) → `job.job_runs` rows with the closed status
+  vocabulary `dispatched|succeeded|failed|lost|skipped` + `error_code`.
+
+**Missed run ≠ blocked run** — a late job RESUMES, never halts. The
+"should have fired but didn't" case is detectable **by construction**
+today: `job.job_schedules.next_fire_at` (engine-maintained NATS mirror)
+is overdue with no covering `job_runs` row. The detector + the LOG
+INTERCEPTOR that escalates (mail/push) are a separate plan — JH owns
+schedules+runs data; this plan's contract is only that emission lanes
+(entity events, `jobs.result`, `job_runs`) carry enough signal for that
+interceptor to consume later.
 
 ### 7. `tz` disposition — column KEPT, governed (Q1 resolved 2026-12-30)
 
@@ -294,59 +347,57 @@ as step/start). Hidden-toggleable: `sez`,`sez2`,`sez3` (key-class),
    `{yyyy}` keeps rendering `at` (business date, row tz) on every row.
    Both may coexist in one pattern. See "The two period axes" above.
 
-### Still open — answers needed
+4. **Successor `name`** — ✅ RESOLVED 2026-12-30: `#` splitter
+   convention — `base + "#" + usedSlotValues.join("-")`, regenerated each
+   revive from the new slot values (see §5).
+5. **Late job** — ✅ RESOLVED 2026-12-30: late jobs RESUME, never halt —
+   current-period successor only, `revived_from` to the actual
+   predecessor; `revived_at`/`revived_by` audit columns added; missed-run
+   detection + log-interceptor escalation = separate plan, lanes already
+   wired (see §6b).
 
-4. **Successor `name`** — WHY: the job clones the row; `name` is the
-   display string in the registry list. (a) *Verbatim copy* — the series
-   appears under one name; the retired rows surface only via
-   deleted-filter/audit, `sez`/`expire_at` columns distinguish instances.
-   (b) *Suffix* `… (2027)` — period visible in the name itself, but it
-   bakes period data into a display field and changes the name users
-   search for. `name` is NOT unique (uuid-only identity shipped), so
-   either is legal. **Proposal: (a) verbatim** — name is display data,
-   the columns carry the period.
-5. **Late job** — WHY: the job is scheduled (e.g. `*/15 * * * *`) but the
-   service can be down across a boundary: `expire_at` Jan-1, job wakes
-   Mar-15 on a `month` revive → 2 periods missed. (a) *Current-only* —
-   create just the successor covering NOW; missed periods are skipped
-   (their counters were never claimable — during downtime every write
-   resolved to the still-live old row, so nothing was lost; the chain
-   link `revived_from` points at the actual predecessor, audit stays
-   honest). (b) *Full chain rebuild* — materialize Jan + Feb + Mar rows;
-   historically complete but creates rows whose default windows are
-   entirely in the past (dead weight, and they'd instantly be
-   switch-eligible anyway). **Proposal: (a) current-only** — the missed
-   periods never existed as claimable counters; fabricating them
-   pretends a history that didn't happen.
-6. **Stale explicit `{seq:{uuid}}`** — WHY: a directive can pin a uuid
-   verbatim; after phase-B soft-delete that uuid is dead. Today the
-   error is bare `SequenceNotFound`. (a) keep bare error; (b) error
-   detail gains `revived_to` (the successor uuid the chain knows) so a
-   caller CAN follow — deliberately, by re-issuing with the new uuid.
-   We deliberately do NOT auto-follow: silent cross-uuid allocation
-   would violate uuid-is-identity and hide an expired pin the caller
-   must fix. **Proposal: (b)** — the error carries the map; the caller
-   still owns the decision.
-7. **Revive config mutability** — WHY: `revive_every`/`revive_grace`/
-   `revive_slot` define the period contract, but `expire_at`/`switch_at`
-   are computed once at create (calendar-anchored, immutable). If the
-   config were editable, changing `'1 year'`→`'1 month'` mid-series
-   either recomputes anchors (history rewritten — the successor the job
-   will build shifts retroactively) or leaves stale anchors (row lies
-   about its own expiry). Both corrupt the chain. **Proposal: immutable
-   post-create** — the period contract is the row's identity; a
-   different cadence is a different sequence. (`revive_grace` is the
-   only arguable one — operational slack, not period identity — but a
-   uniform immutable rule is simpler to reason about; allowing
-   grace-only edits is the fallback.)
-8. **Operator-row `binding_key`** — WHY: `binding_key` is the series
-   identity that makes default re-pointing a resolution rule
-   (`WHERE binding_key=X AND default_from<=now ORDER BY default_from
-   DESC`). If operators could SET it freely, two unrelated field
-   bindings could collide on one series — or one module could hijack
-   another's series by writing its key. **Proposal: bound-only** —
-   `binding_key` is always system-derived (`<table>.<field>` /
-   `…@expr_<hash>`), never operator-authored; operator rows still carry
-   `revive_*` and revive their own chain — callers follow via
-   `revived_from`/`revived_to` error detail. A future `{seq:{series}}`
-   directive form can open deliberate operator series when designed.
+### Still open — answers needed (re-explained with scenarios)
+
+6. **Stale pinned uuid — `{seq:{uuid:"aaa-…"}}`** — SCENARIO: a
+   payload_map/config stores a directive pointing at ONE specific row by
+   uuid ("invoice counter — exactly this one"). At `switch_at` the job
+   soft-deletes `aaa`; the next write carrying that pinned directive hits
+   a dead uuid → today the error is a bare `SequenceNotFound`. The
+   question is what the caller learns:
+   (a) *status quo* — "not found", figure it out yourself;
+   (b) *error carries the map* — the row knows its successor
+   (`revived_from` chain, read backwards = `revived_to`), so the error
+   detail includes `"revived_to": "bbb-…"`. The caller still must
+   re-issue with the new uuid — deliberately. We NEVER auto-follow:
+   a pinned uuid means "that exact counter namespace"; silently
+   allocating on a different row would mint numbers the caller believes
+   came from the old counter — corrupt data by stealth.
+   **Proposal: (b)** — the error tells you where the series went; the
+   fix stays an explicit caller decision.
+7. **Revive config after create** — SCENARIO: row created
+   `revive_every='1 year'` → `expire_at=2027-01-01` computed once,
+   calendar-anchored, immutable. In June the user edits it to
+   `'1 month'`. Two bad outcomes: recompute `expire_at` → the whole
+   successor calendar the job may have ALREADY materialized contradicts
+   the new one; or don't recompute → the row says "monthly" but expires
+   in January — the row lies about itself. WHY immutable wins: the
+   period contract IS the row's identity (same class as `pattern`,
+   also locked). A different cadence is a different sequence → create
+   it, rebind the field. **Proposal: `revive_every`/`revive_slot`
+   immutable post-create**; `revive_grace` is the only arguable member
+   (operational slack, not period identity — allow it or lock all
+   three, pick one).
+8. **Who may write `binding_key`** — SCENARIO: `binding_key` is the
+   series name that survives row death — field binding `customers.code`
+   resolves "the current default row of THIS series". If a hand-created
+   row could set `binding_key="crm.customers.code"`, it silently joins
+   the customer-code series: at the next switch it could win resolution
+   and start minting customer codes — hijack by configuration, or two
+   admins accidentally collide on one series. **Proposal: bound-only** —
+   `binding_key` is always system-derived from the declared binding
+   (`<table>.<field>` / `…@expr_<hash>`), never in `SEQUENCE_WRITE_KEYS`.
+   Operator rows (created by hand) keep `binding_key=NULL` but still
+   revive their own private chain — `revived_from` links their
+   generations and `revived_to` error detail lets callers follow. A
+   `{seq:{series:"…"}}` directive form can open deliberate named series
+   later, when designed.
