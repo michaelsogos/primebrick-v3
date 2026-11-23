@@ -1,6 +1,6 @@
 # Feature Plan: Unified Bordered Dialog with `tone` attribute
 
-> Status: DRAFT — awaiting user approval (PROCEED keyword).
+> Status: ✅ COMPLETED — shipped and verified 2026-12-30: BorderedDialog severity+tone live, full border-*-gradient utility set in app.css, success/info Button variants shipped, SessionExpired migrated to destructive soft tone, MfaStepUpDialog mounted (RemotePageMount, RemoteSheetMount, EntityOpConfirmHost, configurations page). The only follow-up (MfaStepUpDialog mount wiring) is resolved.
 > Repo: `primebrick-fe-v3`
 > Date: 2026-07-24 (re-verified against current code)
 > Mode: PLAN (no source code changes until approval)
