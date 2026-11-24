@@ -8,8 +8,8 @@
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
-| 1 | core: `SequenceDecl`/`SequenceBound` + `SequenceDirectiveContext` gain `tz`, sez defaults, revive fields; `derivePeriodLabel(prev_label, unit)` — parse-and-preserve the slot label format; grammar comment updated (date tokens = `at`, never ambient) | ⏳ | — | |
-| 2 | dal: `SequenceEntity` new columns (binding_key, sez*, revive_*, expire_at, switch_at, default_from, revived_from); validators + OpenAPI + meta columns updated — `tz` stays (NOT NULL DEFAULT 'UTC' ✅ shipped) | ⏳ | — | |
+| 1 | core: `SequenceDecl`/`SequenceBound` + `SequenceDirectiveContext` gain `tz`, sez defaults, revive fields; `derivePeriodLabel(prev_label, unit)` — parse-and-preserve the slot label format; grammar comment updated (date tokens = `at`, never ambient) | ✅ | 2026-12-30 | core `8f706e4` — 57/57 seq tests, 213 suite green; `SequenceBound` inherits via `SequenceDecl &` |
+| 2 | dal: `SequenceEntity` new columns (binding_key, sez*, revive_*, expire_at, switch_at, default_from, revived_from); validators + OpenAPI + meta columns updated — `tz` stays (NOT NULL DEFAULT 'UTC' ✅ shipped) | ✅ | core `4f67ab1` (`reviveExpireAt`/`reviveAddInterval`/`SEZ_VALUE_RE`); dal `874d914` | dal 842/842 + validator 14/14; revive_every/grace stored varchar not interval — pg output normalizes ('3 months'→'3 mons') breaking the closed wire format |
 | 3 | dal: binding resolution → `binding_key` + `default_from ≤ now()` series lookup (replaces fixed detUuid); row-owned sez defaults merge into allocation ctx (owned slots immutable); `querySequence` spec widened | ⏳ | — | |
 | 4 | dal: `sequenceRevive()` primitive — phase A create successors (detUuid series\|period, aligned expire, sez_slot incremented via `derivePeriodLabel`), phase B soft-delete switched rows; `SequencesService.revive` RPC + `sequence-revive` route | ⏳ | — | |
 | 5 | sdk: `mountSequenceReviveJob` — `<svc>.sequence_revive` callable + system trigger (partition_maintenance twin); `createMicroservice` wiring gated on sequence registry | ⏳ | — | |
