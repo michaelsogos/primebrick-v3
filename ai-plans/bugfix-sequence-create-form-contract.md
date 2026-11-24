@@ -5,7 +5,7 @@
 > Parent: `sequence-reviver-sections-and-tz.md` (task 7 shipped the meta
 > columns — this is the post-review form-contract fix found on that surface).
 
-## Status: 🟡 TOC wave-2 in progress — explicit-date requirement + labels/tooltips — Plan date: 2026-11-24
+## Status: 🟡 TOC wave-2 — 13+14 done, i18n/align/e2e left — explicit-date requirement + labels/tooltips — Plan date: 2026-11-24
 
 ## The bug (user report)
 
@@ -149,5 +149,5 @@ Race mechanics (vs the sweep): (1) clone's due-row SELECT gains `FOR UPDATE` —
 | 10 | Tooltips: `MetaColumn.tooltip*` on `revive_every`/`default_from`/`revive_slot`/`revive_grace`/`sez*` (copy explains the gate + literal-only sez shapes) + i18n patch ×schemas | ⏳ | | static copy carries the disabled_when rule |
 | 11 | Labels (W2+W6): `revive_grace`→"Attivazione", `expire_at`→"Rinnovo il", `switch_at`→"Attivato il", `revive_every`→"Rinnovo ogni" (+fr/de/es) — i18n patch ×schemas | ⏳ | | moment/mode label pairs |
 | 12 | `NumericInput` `align` default `left`→`right` (GLOBAL) + consumer audit | ⏳ | | W1 resolved — every FE numeric flips right |
-| 13 | Explicit date (W3/W4): core grammar `'N unit'|'at <ISO>'`+`'until <ISO>'`, `parseReviveInterval`/`reviveExpireAt`/`reviveAddInterval` branches, clone sanitization + `FOR UPDATE` + `'1 '+period_kind` sez advance, `sequenceReviveShapeIssues` both branches + `at`-requires-period_kind≠none + `until`≥expire, `ReviveIntervalInput` every/at mode (ScheduleSpecInput anatomy), wire validator, e2e, i18n | ⏳ | | biggest chunk — touches core/dal/ui/fe/i18n |
-| 14 | Editable-while-in-tempo (W5): drop `immutable` on `revive_every`/`revive_grace`, atomic conditional UPDATE guards (expire-axis: `expire_at>now AND no successor`; switch-axis: `switch_at>now`), recompute branches incl. `NULL`→revive-off, wire validator accepts axis keys on update, typed `sequence_revive_closed` error, unit+e2e | ⏳ | | depends on 13 grammar |
+| 13 | Explicit date (W3/W4): core grammar `'N unit'|'at <ISO>'`+`'until <ISO>'`, `parseReviveInterval`/`reviveExpireAt`/`reviveAddInterval` branches, clone sanitization + `FOR UPDATE` + `'1 '+period_kind` sez advance, `sequenceReviveShapeIssues` both branches + `at`-requires-period_kind≠none + `until`≥expire, `ReviveIntervalInput` every/at mode (ScheduleSpecInput anatomy), wire validator, e2e, i18n | ✅ | core `037c228`, dal `f2b889d`, ui `0943410`, fe `b943988` | grammar + clone sanitize + widget + dispatcher done |
+| 14 | Editable-while-in-tempo (W5): drop `immutable` on `revive_every`/`revive_grace`, atomic conditional UPDATE guards (expire-axis: `expire_at>now AND no successor`; switch-axis: `switch_at>now`), recompute branches incl. `NULL`→revive-off, wire validator accepts axis keys on update, typed `sequence_revive_closed` error, unit+e2e | ✅ | dal `1974908` | SELECT FOR UPDATE serialization + version in guarded write; 42/42 + 894/894 green |
