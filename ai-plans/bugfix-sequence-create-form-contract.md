@@ -5,7 +5,7 @@
 > Parent: `sequence-reviver-sections-and-tz.md` (task 7 shipped the meta
 > columns — this is the post-review form-contract fix found on that surface).
 
-## Status: ✅ TOC complete — all 9 tasks done — Plan date: 2026-11-24
+## Status: 🟡 TOC wave-2 in progress — explicit-date requirement + labels/tooltips — Plan date: 2026-11-24
 
 ## The bug (user report)
 
@@ -95,3 +95,34 @@ label collision: `revived_from` and `revived_by` both serve it-IT
 - **D: drive disconnect mid-TOC** — `date-wire.ts` tail truncated by the failed write; restored verbatim. All commits pushed per-repo for safety (user directive: commit every turn while the fault may recur).
 - fe svelte-check green (0/0); pre-existing strict-null error in `elt-export-chrome.spec.ts` fixed with `?.` (semantics preserved).
 - **e2e session (task 8)** — `sequence-form-contract.spec.ts` 2/2 green on live stack. Findings the spec caught: (a) `ReviveIntervalInput` mount-clobber — outward `$effect` emitted `''` over a bound stored value before the inward pass parsed it; fixed by seeding n/unit from the initial prop (ui `ece19ad`); (b) e2e infra stale after schema moves — `public.config_entries`→`system.config_entries` (test-users, 2 queries) and `ON CONFLICT (provider)` now needs `WHERE deleted_at IS NULL` arbiter for the partial index (db.ts); (c) cross-field validator live-verified: `"2026" cannot be advanced by "3 months"` flags sez on the composite — month-grain cadence needs month-grain sez shape; (d) sheet stays open in view mode after create (product behaviour), POST 201 + API list assertions carry the wire truth — `default_from=23:00Z` (tomorrow 00:00 Europe/Rome) → `expire_at=2027-01-01`.
+
+---
+
+## Wave 2 — explicit-date requirement + labels/tooltips (TIC 2026-11-25)
+
+### Verified — wave-2 TIC
+
+- **Component taxonomy answered** (user asked, no task): ONE `NumericInput` for every numeric surface — anatomy is prop-driven slots `[stepper+][uom-prefix][input][uom-suffix][stepper−][eraser]`. `ReviveIntervalInput` renders that same component (zero own markup) — it exists solely for the text↔number dual-state (`"3 months"` varchar ↔ n+unit pair). `align` defaults `"left"` globally; no FE consumer passes it (`step`/`start` identical).
+- **Screenshot captured** (`test-results/tmp-sheet.png`, tmp spec deleted): `[3…month ▾ ⌫]` — canonical suffix-uom anatomy, the "gap" is the input's `flex-1` space between left-aligned n and the right-clustered CTAs.
+- **Tooltips**: `MetaColumn.{tooltip, tooltip_title, tooltip_priority, show_form_tooltip, show_list_tooltip}` exist (entity-meta.ts:732-741) — i18n-keyed, static copy.
+- **`section` is a dead prop** — `FormFieldPlacement.section` (page-route.ts:136) has zero renderer consumers; user dropped the fieldset idea ("no fa niente").
+- **Anchor chain**: `expire_at` create = calendar-boundary after `default_from`; SUCCESSORS already arithmetic `expire_pred + revive_every` (reviver plan:181) — an explicit first `expire_at` flows through the chain day-preserving.
+- **`switch_at = expire_at + revive_grace`** (sequence-decl.ts:577) — the overlap window: the expired row serves until `switch_at` so in-flight/backdated minting keeps the old series (`revive_grace` edit recomputes `switch_at` only — operational slack, not identity). Editable on update ✓.
+
+### Decisions needed — wave-2
+
+| # | Decision | Options |
+|---|----------|---------|
+| W1 | `align` on the composite | `left` (status quo, matches every NumericInput) vs `right` (number hugs unit — compact token look) |
+| W2 | Label rename `"Tolleranza rinnovo" → "Attivazione"` | **Ambiguous**: `Attivazione` semantically fits `default_from` (the activation instant), NOT `revive_grace` (the overlap window). Propose: `default_from` → `"Attivazione"`/it `"Attivazione"`; `revive_grace` keeps `"Tolleranza rinnovo"` or → `"Sovrapposizione"` |
+| W3 | Explicit-date grammar | **A — grammar extension** `'N unit' \| 'at <ISO>'` on `revive_every`, `'N unit' \| 'until <ISO>'` on `revive_grace` (single column per axis, composite gains every/at mode — ScheduleSpecInput anatomy); **B — anchors as optional write keys** (`expire_at`/`switch_at` authored-optional on create, `immutable`, derived when absent — re-opens the audited taxonomy, +2 form fields) |
+| W4 | `'at'` successor semantics (if W3=A) | (a) one-shot: the job clones once, successor `revive_every` cleared — explicit date applies exactly once (SAFE: same `'at'` on the successor = past instant → revive loop); (b) `at`+interval pair — needs second field, drops the single-column model |
+
+### Wave-2 tasks (post-decision)
+
+| # | Task | Status | Commits | Notes |
+|---|------|--------|---------|-------|
+| 10 | Tooltips: `MetaColumn.tooltip*` on `revive_every`/`default_from`/`revive_slot`/`revive_grace`/`sez*` (copy explains the gate + literal-only sez shapes) + i18n patch ×schemas | ⏳ | | static copy carries the disabled_when rule |
+| 11 | Label: `default_from` → "Attivazione"/"Activation" (pending W2) + `revive_grace` label per W2 — i18n patch ×schemas | ⏳ | | |
+| 12 | W1: `align="right"` on `ReviveIntervalInput` (if chosen) — one prop | ⏳ | | |
+| 13 | Explicit date (W3+W4): core grammar+parse+validator branches, `reviveAnchors` explicit branch, `ReviveIntervalInput` every/at mode, wire validator, e2e, i18n | ⏳ | | biggest chunk — touches core/dal/ui/fe/i18n |
