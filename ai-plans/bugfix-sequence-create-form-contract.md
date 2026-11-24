@@ -111,18 +111,29 @@ label collision: `revived_from` and `revived_by` both serve it-IT
 
 ### Decisions needed — wave-2
 
-| # | Decision | Options |
-|---|----------|---------|
-| W1 | `align` on the composite | `left` (status quo, matches every NumericInput) vs `right` (number hugs unit — compact token look) |
-| W2 | Label rename `"Tolleranza rinnovo" → "Attivazione"` | **Ambiguous**: `Attivazione` semantically fits `default_from` (the activation instant), NOT `revive_grace` (the overlap window). Propose: `default_from` → `"Attivazione"`/it `"Attivazione"`; `revive_grace` keeps `"Tolleranza rinnovo"` or → `"Sovrapposizione"` |
-| W3 | Explicit-date grammar | **A — grammar extension** `'N unit' \| 'at <ISO>'` on `revive_every`, `'N unit' \| 'until <ISO>'` on `revive_grace` (single column per axis, composite gains every/at mode — ScheduleSpecInput anatomy); **B — anchors as optional write keys** (`expire_at`/`switch_at` authored-optional on create, `immutable`, derived when absent — re-opens the audited taxonomy, +2 form fields) |
-| W4 | `'at'` successor semantics (if W3=A) | (a) one-shot: the job clones once, successor `revive_every` cleared — explicit date applies exactly once (SAFE: same `'at'` on the successor = past instant → revive loop); (b) `at`+interval pair — needs second field, drops the single-column model |
+| # | Decision | Resolution |
+|---|----------|------------|
+| W1 | `align` on numeric inputs | ✅ **right — GLOBAL**: "il value è sempre allineato a destra… PER TUTTI A LIVELLO BASE" — change `NumericInput` `align` default `left`→`right` (table cells already right-align); audit every consumer for regression |
+| W2 | Label rename | ✅ **`revive_grace` → "Attivazione"/"Activation"**: the user's two-moment model — (1) `expire_at` = il revive, (2) `switch_at` = quando il successore sostituisce nel mapping = "Attivazione". `default_from` keeps "Valida dal" |
+| W3 | Explicit-date grammar | **Pending** — user rejects bare A/B: wants the `ScheduleSpecInput` anatomy (`@every`/`@at` NATS dialect, cron off) evaluated first. Verified design below |
+| W4 | `'at'` successor semantics | Depends on W3 — deep-dive findings below |
+
+### Wave-2 deep-dive — `@at` design space (clone code read: `repository.ts:991-1057`)
+
+The clone copies `revive_every`/`revive_grace` **verbatim** to the successor and computes `expire_succ = expire_pred + revive_every` (arithmetic — a pinned day propagates). An instant literal copied verbatim is poison:
+
+- `revive_every='at <ISO>'` on the successor → `reviveExpireAt` can't add → and a past instant would re-fire the sweep every pass (infinite revive loop). Fix: **explicit literals never propagate** — successor gets `revive_every=NULL` → the arbitrary date applies exactly once; the successor is the permanent final generation until hand-edited.
+- `revive_grace='at/until <ISO>'` on the successor → its `switch_at` would land in the past → instant phase-B death at creation. Same rule: explicit grace literal → successor `revive_grace=NULL` (immediate switch at its own expire).
+- `derivePeriodLabel("2026", 'at <ISO>')` — `at` has no unit → the successor sez advance has no rule. Options: (a) `at` mode requires the user to ALSO author the successor's slot value (extra field or same sez field reads "next value"?); (b) `at` advances the label with the unit IMPLIED by the instant's granularity? (c) `at` mode allowed only when `revive_slot=NULL`?? — but slot is required iff revive axis is set. **Open sub-decision — the real W4**.
+
+**Model A — grammar extension** `'N unit' | 'at <RFC3339>'` on `revive_every`; `'N unit' | 'until <RFC3339>'` on `revive_grace`. Single column per axis, composite gets every/at mode (ScheduleSpecInput anatomy, `@at` keeps dialect alignment). Clone sanitizes 'at'/'until' → NULL on successor.
+**Model B — `expire_at`/`switch_at` optional write keys** — pure intervals stay in every/grace; explicit pins live on the audited columns (flag change `audited`→write-key, +2 form fields, taxonomy re-opened). Rejected by user implicitly — "ne A ne B" pending deeper eval; keep as fallback.
 
 ### Wave-2 tasks (post-decision)
 
 | # | Task | Status | Commits | Notes |
 |---|------|--------|---------|-------|
 | 10 | Tooltips: `MetaColumn.tooltip*` on `revive_every`/`default_from`/`revive_slot`/`revive_grace`/`sez*` (copy explains the gate + literal-only sez shapes) + i18n patch ×schemas | ⏳ | | static copy carries the disabled_when rule |
-| 11 | Label: `default_from` → "Attivazione"/"Activation" (pending W2) + `revive_grace` label per W2 — i18n patch ×schemas | ⏳ | | |
-| 12 | W1: `align="right"` on `ReviveIntervalInput` (if chosen) — one prop | ⏳ | | |
-| 13 | Explicit date (W3+W4): core grammar+parse+validator branches, `reviveAnchors` explicit branch, `ReviveIntervalInput` every/at mode, wire validator, e2e, i18n | ⏳ | | biggest chunk — touches core/dal/ui/fe/i18n |
+| 11 | Label: `revive_grace` → "Attivazione"/"Activation" (+fr/de/es) — i18n patch ×schemas | ⏳ | | W2 resolved |
+| 12 | `NumericInput` `align` default `left`→`right` (GLOBAL) + consumer audit | ⏳ | | W1 resolved — every FE numeric flips right |
+| 13 | Explicit date (W3): core grammar `'N unit'|'at <ISO>'`+`'until <ISO>'`, `parseReviveInterval`/`reviveExpireAt`/`reviveAddInterval` branches, clone sanitization (successor axes NULL on explicit literals), `sequenceReviveShapeIssues` both branches, `derivePeriodLabel` 'at' rule (W4), `ReviveIntervalInput` every/at mode (ScheduleSpecInput anatomy), wire validator, e2e, i18n | ⏳ | | biggest chunk — touches core/dal/ui/fe/i18n |
