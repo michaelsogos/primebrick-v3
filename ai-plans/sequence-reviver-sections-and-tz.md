@@ -4,7 +4,7 @@
 > identity TOC is shipped; this plan covers the TZ question and the missing
 > auto-revive mechanism (one-row-per-period lifecycle).
 
-## Status: ⏳ TIC done — Q4–Q8 re-explained, awaiting user answers — Plan date: 2026-12-29
+## Status: ✅ ALL QUESTIONS RESOLVED — ready for TOC — Plan date: 2026-12-29
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -366,48 +366,27 @@ as step/start). Hidden-toggleable: `sez`,`sez2`,`sez3` (key-class),
    detection + log-interceptor escalation = separate plan, lanes already
    wired (see §6b).
 
-### Still open — answers needed (re-explained 2026-12-30, round 3)
+### All resolved — 2026-12-30
 
-6. **Pinned-uuid directives** — TERMINOLOGY FIX: the field→sequence map
-   for declared bindings IS the entity decl (`SequenceBound` →
-   boot-materialized row) — a table relation, no payload_map involved
-   (my earlier example was wrong). The pinned case is a DIFFERENT
-   surface: `SequenceDirective` (`core/sequence.ts:604`) has three forms
-   — `{seq:"<uuid>"}`, `{seq:{uuid:"…", sez…, at…}}`,
-   `{seq:{…inline decl}}`. A stored directive VALUE or a trigger/expr
-   ctx literally names one row by uuid; when phase-B retires it,
-   `SequenceNotFound`. The question is only what the error carries:
-   (a) bare error (today); (b) `revived_to` in the detail — the
-   successor's uuid, read off the `revived_from` chain — so whoever
-   authored the pin can re-point deliberately. NEVER auto-follow: the
-   pin means "that exact counter namespace"; silently allocating on the
-   successor would mint numbers on a counter the caller doesn't know —
-   stealth corruption. **Proposal: (b).**
-7. **Post-create mutability** — `revive_grace` DEFINED first: the
-   overlap window between `expire_at` (period boundary on the `at`
-   axis) and `switch_at` (physical soft-delete) during which a
-   backdated doc (`at` in the old period) still resolves the old row
-   (see §3). So the three members split by identity-vs-operation:
-   `revive_every`/`revive_slot` define the period contract = row
-   identity → editing them mid-chain either recomputes `expire_at`
-   (rewrites the calendar the job may have already materialized) or
-   leaves stale anchors — **immutable** (same class as `pattern`).
-   `revive_grace` only moves `switch_at` — operational slack, never
-   materialized until expire → honestly **editable** (write path
-   recomputes `switch_at = expire_at + grace`). **Proposal:
-   every/slot immutable, grace editable.**
-8. **`binding_key` authority** — TECHNICALLY: today
-   `loadOrMaterializeBound` resolves decl binding `crm.customers.code`
-   → `detUuid(seed)` → ONE row for the binding's whole life: the
-   binding IS the uuid. With revive the series is N rows over time —
-   the field must name the SERIES, not a row. `binding_key` is that
-   name: `WHERE binding_key='crm.customers.code' AND deleted_at IS NULL
-   AND default_from <= at ORDER BY default_from DESC` — the current
-   member wins by construction. If `binding_key` were in
-   `SEQUENCE_WRITE_KEYS`, any operator row could claim
-   `crm.customers.code`: it would join the resolution set and — with a
-   `default_from` crafted newer — WIN the field's allocations. That's
-   a hijack by insert, no exploit needed. **Proposal: bound-only** —
-   written only by the system at binding materialize (decl / expr
-   `@expr_<hash>`); never a write key. Operator rows: `NULL` — revive
-   their own private chain via `revived_from`/`revived_to`.
+6. **Pinned-uuid directives** — ✅ bare `SequenceNotFound` stays, ZERO
+   new machinery. `revived_to` error detail rejected as overengineering:
+   `revived_from` only points backward, so reverse lookup is new
+   machinery for a rare ad-hoc surface. The chain stays navigable via
+   served meta columns: filter `revived_from=<dead-uuid>` in the
+   registry → the successor; `expire_at`/`switch_at`/`revived_*` explain
+   why the pinned row is gone. NEVER auto-follow regardless — a pinned
+   uuid means "that exact counter namespace"; silent re-pointing is
+   stealth corruption. (The pinned case is a `SequenceDirective`
+   surface — `{seq:{uuid:"…"}}` stored values / trigger ctx — NOT the
+   declared field→seq map, which resolves through `binding_key` series
+   and follows revives automatically.)
+7. **Post-create mutability** — ✅ `revive_every`/`revive_slot`
+   immutable (period contract = row identity, same class as `pattern`);
+   `revive_grace` EDITABLE — only moves `switch_at`, recomputed on
+   write; never materialized until expire.
+8. **`binding_key` authority** — ✅ bound-only — written only by the
+   system at binding materialize (decl / `@expr_<hash>`); never in
+   `SEQUENCE_WRITE_KEYS`. A writable key would let a hand-made row
+   claim `crm.customers.code` and win the resolution set — hijack by
+   insert. Operator rows keep `NULL`, revive their own private chain
+   via `revived_from`.
