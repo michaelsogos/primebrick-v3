@@ -266,13 +266,31 @@ name_next = base + "#" + usedSlotValues.join("-")
   favor of the sez-derived suffix — no separate counter state, the
   period documents itself.
 
-### 6. Job mounting — partition_maintenance twin
+### 6. Job mounting — partition_maintenance twin (anatomy verified)
 
-`dal.makeSequenceReviveJob(registry)` → `{needed, run, i18nNs}`;
-`sdk.mountSequenceReviveJob` mounts `<svc>.sequence_revive` callable +
-system trigger (seed e.g. `*/15 * * * *`, user-editable). Needed-gate =
-the module owns `sequences` (every module with the builtin decl →
-reviver by construction, same "OGNI MODULO" contract).
+Exact clone of `sdk/microservice/partition-maintenance-job.ts` — every
+piece of the user's requested shape already exists:
+
+- **dal owns the logic**: `dal.makeSequenceReviveJob(registry)` →
+  `{needed, run, i18nNs}` (dal.ts:780 pattern) — `run` calls
+  `getDal().sequenceRevive()`; zero per-service code, every module
+  owning `sequences` gets the reviver BY CONSTRUCTION.
+- **sdk mounts once at registration**: `mountSequenceReviveJob` inside
+  `createMicroservice` `deferredOnReady` (makeRunOnceInit) — callable
+  `makeNatsRoutes({subject:"<svc>.sequence_revive", queue:svc,
+  permissions:[]})` (work item, exactly one replica per fire, L1
+  shield only) + `declareSystemJobs` → `jobs.ctl.triggers.materialize`
+  → JH arms `jobs.schedule.*` → due lane fires back to the callable.
+- **Needed-gate**: `options.sequenceRevive?.needed` — registry owns the
+  `sequences` builtin decl → mounted; else nothing is declared
+  (a trigger for a job that can't run is a lie).
+- **Ownership split** (materialize contract): code owns
+  `target_subject`/`run_as:"system"`/`event_subject`; user owns
+  `schedule_spec`/`name`/enable — seed `*/15 * * * *`, user-editable,
+  never resurrected after disable.
+- **JH receives nothing new** — standard materialize→arm→due→result
+  machinery; executions land on `jobs.result.<svc>.sequence_revive` +
+  `job_runs` by construction.
 
 Also a governed `sequence-revive` RPC on `SequencesService` (permission
 `<ns>.sequence.revive.all`) — the callable and operators share the same
