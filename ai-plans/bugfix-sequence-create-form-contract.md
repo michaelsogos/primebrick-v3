@@ -5,7 +5,7 @@
 > Parent: `sequence-reviver-sections-and-tz.md` (task 7 shipped the meta
 > columns — this is the post-review form-contract fix found on that surface).
 
-## Status: 🟡 TOC in progress — tasks 1-8 ✅ (docs remain) — Plan date: 2026-11-24
+## Status: ✅ TOC complete — all 9 tasks done — Plan date: 2026-11-24
 
 ## The bug (user report)
 
@@ -77,7 +77,7 @@ label collision: `revived_from` and `revived_by` both serve it-IT
 | 6 | fe: `FormFieldDispatcher` — `revive_interval` → `ReviveIntervalInput`; `depends_on` resolution already generic (no work). `default_from` prefill: `default_value`/`col.default` are literal-only — the computed baseline precedent is `format:"i18n_key"` → `i18nKeyInitial` in `buildInitial` (EntityFormSurface:207,229). RESOLVED: authored `default` gains a computed spec `{kind:"next_day_start_local"}` (closed vocab — the authored-default channel already exists for non-SQL values, entity-meta.ts:560-571); `buildInitial` resolves it to tomorrow 00:00 browser-local → Date, control emits UTC ISO. No per-column hardcoding | ✅ | fe `0b8e62f`; core `a0017c9` | spec lives on `col.default` (`ColumnDefaultSpec`), resolved by `resolveColumnDefault` → `date-wire.nextDayStartLocalIso` |
 | 7 | i18n patch ×N schemas: `<ns>.entities.sequence.fields.revived_from` value → "Cloned From"/"Clone Di"/"Cloné Depuis"/"Clonado Desde"/"Geklont Von"/"Clonado De"; `<ns>.entities.sequence.fields.default_from` → "Starts from"/"Valida dal" copy; `<ns>.entities.sequence.fields.revive_slot` label check | ✅ | be `e89b16e`, us-v3 (crm+ai+job-handler+emailsender), fe `ef1a32c` | `20261231240000_*` patches signed+applied; crm canonical, mirrors `INSERT SELECT` from crm; DB-verified 35+56 rows |
 | 8 | e2e: sequence create sheet field census — exactly the 13 write-key fields render; `default_from` gated-disabled until `revive_every`; revive_interval control round-trips `"1 year"`; update sheet: sez/revive_every/revive_slot/default_from disabled; expire/switch/revived_* in audit accordion | ✅ | fe `9477cd9`, ui `ece19ad` | `sequence-form-contract.spec.ts` 2/2 green. Found+fixed: ui mount-clobber (seed fix), e2e helpers stale (`public.config_entries`→system, partial-index ON CONFLICT arbiter) |
-| 9 | docs: `entity-metadata.mdx` — `depends_on.disabled_when` + `audited`/`immutable` flag taxonomy recap; `sequence` dev-guide revive section — create contract (default_from anchor, derived expire/switch); commit per repo | ⏳ | | |
+| 9 | docs: `entity-metadata.mdx` — `depends_on.disabled_when` + `audited`/`immutable` flag taxonomy recap; `sequence` dev-guide revive section — create contract (default_from anchor, derived expire/switch); commit per repo | ✅ | fe `3e8bcab`, be `adc24fb`, dal `6f67b6d` | dal `sequences.mdx` new dev-guide (taxonomy + revive contract + 3-surface validation); fe: `revive_interval`/`meta.form`/`set:false`/default-spec/census rule |
 
 ## Open questions — resolved or none
 
