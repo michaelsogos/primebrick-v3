@@ -115,8 +115,10 @@ label collision: `revived_from` and `revived_by` both serve it-IT
 |---|----------|------------|
 | W1 | `align` on numeric inputs | ✅ **right — GLOBAL**: "il value è sempre allineato a destra… PER TUTTI A LIVELLO BASE" — change `NumericInput` `align` default `left`→`right` (table cells already right-align); audit every consumer for regression |
 | W2 | Label rename | ✅ **`revive_grace` → "Attivazione"/"Activation"**: the user's two-moment model — (1) `expire_at` = il revive, (2) `switch_at` = quando il successore sostituisce nel mapping = "Attivazione". `default_from` keeps "Valida dal" |
-| W3 | Explicit-date grammar | **Pending** — user rejects bare A/B: wants the `ScheduleSpecInput` anatomy (`@every`/`@at` NATS dialect, cron off) evaluated first. Verified design below |
-| W4 | `'at'` successor semantics | Depends on W3 — deep-dive findings below |
+| W3 | Explicit-date grammar | ✅ **Model A**: `'N unit' | 'at <RFC3339>'` on `revive_every`; `'N unit' | 'until <RFC3339>'` on `revive_grace`. User: literal = "solo un modo diverso di impostare expire_at diretto invece che calcolato dal default_from" — the `*_at` columns stay always-computed-persisted; the varchar carries HOW the moment was expressed (interval → derived, literal → direct). Composite gets every/at mode (ScheduleSpecInput anatomy, cron off). Clone sanitizes literals → NULL on successor. |
+| W4 | `'at'` successor sez | ✅ **unit = `pattern.period_kind`**: clone synthesizes `'1 '+period_kind` → `derivePeriodLabel` — shape-preserving (`'26'`→`'27'`), reuses existing parse-and-preserve, no new machinery. `'at'` requires `period_kind ≠ 'none'` (no grain → nothing to advance) + `revive_slot` (already mandatory with axis). `'until'` requires `switch_at ≥ expire_at`. |
+| W5 | Immutability | ✅ **editable while in-tempo** — `revive_every`/`revive_grace` lose `immutable` post-create under atomic guards (mechanics below). `revive_slot`/`sez*`/`default_from`/`pattern` stay immutable (identity, not timing). Enabling revive on a never-reviving row stays impossible (revive_slot immutable+NULL) — boundary case, revisit only if asked. |
+| W6 | Labels (moment/mode pairs) | ✅ `expire_at`→"Rinnovo il", `switch_at`→"Attivato il", `revive_every`→"Rinnovo ogni" (mode-composite: interval or date), `revive_grace`→"Attivazione", `default_from`→"Valida dal" — i18n patch ×schemas |
 
 ### Wave-2 deep-dive — `@at` design space (clone code read: `repository.ts:991-1057`)
 
@@ -124,16 +126,28 @@ The clone copies `revive_every`/`revive_grace` **verbatim** to the successor and
 
 - `revive_every='at <ISO>'` on the successor → `reviveExpireAt` can't add → and a past instant would re-fire the sweep every pass (infinite revive loop). Fix: **explicit literals never propagate** — successor gets `revive_every=NULL` → the arbitrary date applies exactly once; the successor is the permanent final generation until hand-edited.
 - `revive_grace='at/until <ISO>'` on the successor → its `switch_at` would land in the past → instant phase-B death at creation. Same rule: explicit grace literal → successor `revive_grace=NULL` (immediate switch at its own expire).
-- `derivePeriodLabel("2026", 'at <ISO>')` — `at` has no unit → the successor sez advance has no rule. Options: (a) `at` mode requires the user to ALSO author the successor's slot value (extra field or same sez field reads "next value"?); (b) `at` advances the label with the unit IMPLIED by the instant's granularity? (c) `at` mode allowed only when `revive_slot=NULL`?? — but slot is required iff revive axis is set. **Open sub-decision — the real W4**.
+- ~~`derivePeriodLabel("2026", 'at <ISO>')`~~ → **W4 resolved above**: `pattern.period_kind` supplies the unit.
 
-**Model A — grammar extension** `'N unit' | 'at <RFC3339>'` on `revive_every`; `'N unit' | 'until <RFC3339>'` on `revive_grace`. Single column per axis, composite gets every/at mode (ScheduleSpecInput anatomy, `@at` keeps dialect alignment). Clone sanitizes 'at'/'until' → NULL on successor.
-**Model B — `expire_at`/`switch_at` optional write keys** — pure intervals stay in every/grace; explicit pins live on the audited columns (flag change `audited`→write-key, +2 form fields, taxonomy re-opened). Rejected by user implicitly — "ne A ne B" pending deeper eval; keep as fallback.
+**Model A — grammar extension** `'N unit' | 'at <RFC3339>'` on `revive_every`; `'N unit' | 'until <RFC3339>'` on `revive_grace`. Single column per axis, composite gets every/at mode (ScheduleSpecInput anatomy, `@at` keeps dialect alignment). Clone sanitizes 'at'/'until' → NULL on successor. **← chosen**
+~~Model B — `expire_at`/`switch_at` optional write keys~~ — rejected; the varchar carries the authored syntax, the `*_at` columns stay the computed contract.
+
+### W5 — editable-while-in-tempo update contract (race-safe)
+
+Two independent axes, each editable only while its moment is still future — enforced in ONE atomic conditional UPDATE (guards in WHERE, not check-then-write):
+
+| Axis | Guard (WHERE) | On accept → recompute |
+|---|---|---|
+| expire (`revive_every`) | `expire_at > now() AND NOT EXISTS(successor)` | `'N unit'` → `reviveExpireAt(now, every, tz)` (next boundary from NOW — `default_from` is past); `'at X'` → `expire_at=X` (X>now required); `NULL` → clears `expire_at`/`switch_at` (revive off — row becomes permanent generation) |
+| switch (`revive_grace`) | `switch_at > now()` | `'N unit'` → `switch_at=expire_at+grace`; `'until X'` → `switch_at=X` (X≥expire_at AND X>now); `NULL` → `switch_at=expire_at` |
+
+Race mechanics (vs the sweep): (1) clone's due-row SELECT gains `FOR UPDATE` — serializes with concurrent updates on the predecessor row; post-lock EvalPlanQual re-checks the due predicate, so an expire_at moved future mid-flight drops out of the due set. (2) Update takes the row lock with guards evaluated atomically — if the clone committed first, `NOT EXISTS(successor)` sees it → 0 rows → typed error kmsg (`sequence_revive_closed`); if the update committed first, the clone's post-lock re-read sees the new expire_at → skips. (3) Grace edits during the grace window (successor exists, predecessor not yet switched) are allowed by design — that's exactly what the window is for.
 
 ### Wave-2 tasks (post-decision)
 
 | # | Task | Status | Commits | Notes |
 |---|------|--------|---------|-------|
 | 10 | Tooltips: `MetaColumn.tooltip*` on `revive_every`/`default_from`/`revive_slot`/`revive_grace`/`sez*` (copy explains the gate + literal-only sez shapes) + i18n patch ×schemas | ⏳ | | static copy carries the disabled_when rule |
-| 11 | Label: `revive_grace` → "Attivazione"/"Activation" (+fr/de/es) — i18n patch ×schemas | ⏳ | | W2 resolved |
+| 11 | Labels (W2+W6): `revive_grace`→"Attivazione", `expire_at`→"Rinnovo il", `switch_at`→"Attivato il", `revive_every`→"Rinnovo ogni" (+fr/de/es) — i18n patch ×schemas | ⏳ | | moment/mode label pairs |
 | 12 | `NumericInput` `align` default `left`→`right` (GLOBAL) + consumer audit | ⏳ | | W1 resolved — every FE numeric flips right |
-| 13 | Explicit date (W3): core grammar `'N unit'|'at <ISO>'`+`'until <ISO>'`, `parseReviveInterval`/`reviveExpireAt`/`reviveAddInterval` branches, clone sanitization (successor axes NULL on explicit literals), `sequenceReviveShapeIssues` both branches, `derivePeriodLabel` 'at' rule (W4), `ReviveIntervalInput` every/at mode (ScheduleSpecInput anatomy), wire validator, e2e, i18n | ⏳ | | biggest chunk — touches core/dal/ui/fe/i18n |
+| 13 | Explicit date (W3/W4): core grammar `'N unit'|'at <ISO>'`+`'until <ISO>'`, `parseReviveInterval`/`reviveExpireAt`/`reviveAddInterval` branches, clone sanitization + `FOR UPDATE` + `'1 '+period_kind` sez advance, `sequenceReviveShapeIssues` both branches + `at`-requires-period_kind≠none + `until`≥expire, `ReviveIntervalInput` every/at mode (ScheduleSpecInput anatomy), wire validator, e2e, i18n | ⏳ | | biggest chunk — touches core/dal/ui/fe/i18n |
+| 14 | Editable-while-in-tempo (W5): drop `immutable` on `revive_every`/`revive_grace`, atomic conditional UPDATE guards (expire-axis: `expire_at>now AND no successor`; switch-axis: `switch_at>now`), recompute branches incl. `NULL`→revive-off, wire validator accepts axis keys on update, typed `sequence_revive_closed` error, unit+e2e | ⏳ | | depends on 13 grammar |
