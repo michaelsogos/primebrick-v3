@@ -52,6 +52,7 @@ not aspirational:
 | Per-record timezone-aware datetimes (IANA field on the row) | `datetime_iana_toggle.record_iana_field`, DateWheelPicker | global teams, correct times per record |
 | Readonly record sheets on shared form widgets (pencil-toggle ready) | EntityRecordSheet / EntityFormField | inspect any record without mutating it |
 | 6-language UI/DB translations managed in-product | system.translations | real i18n, not a plugin |
+| MCP OAuth clients self-register via RFC 7591 Dynamic Client Registration | `mcp_oauth_clients` + oauth-dcr.router | "AI tools onboard themselves — no admin-provisioned credentials" |
 
 ## Constraints
 
