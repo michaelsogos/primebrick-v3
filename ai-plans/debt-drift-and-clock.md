@@ -59,10 +59,10 @@ Every turn, in this order, NO EXCEPTIONS:
 | 4 | Emit db patch via `primebrick-db compare` → review → sign → apply → drift-clean boot | ✅ done | 2026-11-24 | waves ×6+7 applied live (Phase 3/4/5/6 patches), `snapshot-check: clean` everywhere |
 | 5 | Audit-clock: DB-clock doctrine — `clock_timestamp()` literals + `DAL_NOW` sentinel + sequenceRevive conditional (spec.now) | ✅ done | 2026-11-24 | Q1=clock_timestamp (coherence→session/operation id); Q2/Q3=defaulted→DB-clock else JS date (no mix per field); Q4=read-side OUT; Q5=emitted_at app-clock |
 | 6 | Expressibility gaps catalog (partial unique idx, undeclared unique constraints) → propose decl extensions | ✅ done | 2026-11-24 | folded into Phase 3a: `sort`/`nulls`/`with` + class-level `@Index` spec form |
-| 7 | `client_registry` audit col `created_at` warn (withColumnConstraints order/band) | ⏳ not done | | STEP 5 — investigate be-side |
+| 7 | `client_registry` audit col `created_at` warn (withColumnConstraints order/band) | ⏸ deferred | | posticipato alla form-review quando il BE passa a sistema — vedi piano bugfix-module-label-timing |
 | 8 | Docs: dev-guide entry on audit-clock doctrine + decl defaultSql semantics | ✅ done | 2026-11-24 | `column-types.mdx` "Clock doctrine" + entities/repository/optimistic-lock now()→clock_timestamp() |
-| 9 | BE drift remediation (decision table below — user-approved direction per column) | ⏳ not done | | STEP 2b — same protocol as us step 2 |
-| 10 | DCR RFC 7591 doc: what it is, what it solves, why we implement it (dev-guide) + website value-prop mention | ⏳ not done | | doc text proposed to user first; website item logged in `website-landing-value-props.md` |
+| 9 | BE drift remediation (decision table below — user-approved direction per column) | ✅ done | 2026-11-24 | applied across Phase 3b/4/6 waves: B-group defaultSql, mcp cols+defaults, api_keys NOT NULL, event_at/client_id_issued_at defaults, matchBy→uuid, OWNED_SCHEMAS flip |
+| 10 | DCR RFC 7591 doc: what it is, what it solves, why we implement it (dev-guide) + website value-prop mention | ✅ done | 2026-11-24 | `docs/dev-guide/oauth-dcr.mdx` + _order.json; value-prop già nel piano ASTRO `website-landing-value-props.md:55` |
 
 ## TOC — phase map (user-approved 2026-11-24, model = closed schema perimeter)
 
