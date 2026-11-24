@@ -149,11 +149,11 @@ on a clean slate. `tz` is `'UTC'` on every row after the
 | `binding_key` | varchar(130) NULL | series identity: `<table>.<field>` for decl-bound rows, `<table>.<field>@expr_<hash>` for expr rows; NULL for operator rows. Backfilled where `uuid = detUuid(name)` via the SQL digest already proven in the re-key patch. |
 | `sez`,`sez2`,`sez3` | varchar NULL | **row-owned section defaults** — fill the pattern's slots when the directive doesn't supply them. The period IS `sez="2026"` on the row. |
 | `revive_every` | interval NULL | `'1 year'`, `'3 months'`, `'15 days'`, `'2 years'`, `'1 month'`, `'1 week'`. NULL = never revives. |
-| `revive_grace` | interval DEFAULT `'0'` | switch delay — the Jan-15 grace. |
+| `revive_grace` | interval DEFAULT `'0'` | **the overlap window**: how long the retired row stays alive (not soft-deleted) after `expire_at`, so documents whose business date `at` falls in the OLD period can still legally mint the old series. `grace=0` → expire and switch coincide, backdated minting impossible. |
 | `revive_slot` | varchar DEFAULT `'sez'` | which sez slot the period label advances. Must be a slot the pattern uses AND whose value parses under `derivePeriodLabel` for the revive unit. |
-| `expire_at` | timestamptz NULL | **immutable**, computed at create (see anchoring). |
-| `switch_at` | timestamptz NULL | `expire_at + revive_grace` — when the row stops being default and gets soft-deleted. |
-| `default_from` | timestamptz NULL | when the row starts serving as the binding default — `created_at` for first rows, predecessor's `switch_at` for successors. |
+| `expire_at` | timestamptz NULL | **immutable**, computed at create (see anchoring) — the PERIOD BOUNDARY on the `at` axis: successor's `default_from`, and the split point for backdated-vs-current resolution during grace. |
+| `switch_at` | timestamptz NULL | `expire_at + revive_grace` — when the row is physically retired (phase-B soft-delete). Recomputed on `revive_grace` edits. |
+| `default_from` | timestamptz NULL | when the row starts serving as the binding default — `created_at` for first rows, **predecessor's `expire_at`** for successors (the period boundary, NOT switch — at-routing needs the new row to claim new-period docs immediately). |
 | `revived_from` | uuid NULL | chain link to the retired predecessor (job idempotency + audit navigation + stale-uuid detail). |
 | `revived_at` | timestamptz NULL | when the revive actually ran — may be far after `expire_at` (late job); the honest record of WHEN. |
 | `revived_by` | varchar NULL | who fired the revive — `system`/job actor today; column exists so a user-triggered revive RPC later is a data change, not a schema change. |
@@ -182,22 +182,32 @@ Successors: `expire_at_successor = expire_at_predecessor + revive_every`
 — **chain-aligned, never from now()** — a job that runs late produces the
 same calendar the uninterrupted one would have.
 
-### 3. Binding resolution → series lookup
+### 3. Binding resolution → series lookup (`at`-aware — the grace semantics)
 
 ```
-resolve binding `<table>.<field>`:
+resolve binding `<table>.<field>` for directive.at (default now()):
   SELECT * FROM sequences
   WHERE binding_key = $seed
     AND deleted_at IS NULL
-    AND default_from <= now()
+    AND default_from <= COALESCE(at, now())
   ORDER BY default_from DESC LIMIT 1
 ```
 
-- Before switch: successor's `default_from` > now → old row wins → **grace
-  served by resolution** (Dec-dated invoices keep emitting the old series)
-- At `switch_at` (job phase B): old row soft-deleted → new row wins
-- If the job is down at expire: no successor exists → old still resolves →
-  writes keep working (graceful degradation by construction)
+The split is on the BUSINESS date, not wall-clock — this is what makes
+`revive_grace` meaningful:
+
+- Doc with `at` in the old period (backdated invoice during grace) →
+  successor's `default_from = expire_at` > `at` → **old row wins** →
+  mints the old series. Exactly the Jan-15 case.
+- Doc with `at` in the new period → successor wins immediately at
+  `expire_at` — no dead window.
+- After `switch_at` (phase-B): old row soft-deleted → a doc backdated
+  past `expire_at` finds no candidate → `SequenceNotFound`. **Honest
+  enforcement**: you cannot mint December numbers on a dead series in
+  February — the grace window is the legal allowance, not an arbitrary
+  fallback.
+- If the job is down at expire: no successor exists → old still
+  resolves → writes keep working (graceful degradation by construction).
 
 `loadOrMaterializeBound` becomes: series lookup → miss → materialize
 `detUuid(seed)` first row (operator-managed rows keep winning via ON
@@ -356,48 +366,48 @@ as step/start). Hidden-toggleable: `sez`,`sez2`,`sez3` (key-class),
    detection + log-interceptor escalation = separate plan, lanes already
    wired (see §6b).
 
-### Still open — answers needed (re-explained with scenarios)
+### Still open — answers needed (re-explained 2026-12-30, round 3)
 
-6. **Stale pinned uuid — `{seq:{uuid:"aaa-…"}}`** — SCENARIO: a
-   payload_map/config stores a directive pointing at ONE specific row by
-   uuid ("invoice counter — exactly this one"). At `switch_at` the job
-   soft-deletes `aaa`; the next write carrying that pinned directive hits
-   a dead uuid → today the error is a bare `SequenceNotFound`. The
-   question is what the caller learns:
-   (a) *status quo* — "not found", figure it out yourself;
-   (b) *error carries the map* — the row knows its successor
-   (`revived_from` chain, read backwards = `revived_to`), so the error
-   detail includes `"revived_to": "bbb-…"`. The caller still must
-   re-issue with the new uuid — deliberately. We NEVER auto-follow:
-   a pinned uuid means "that exact counter namespace"; silently
-   allocating on a different row would mint numbers the caller believes
-   came from the old counter — corrupt data by stealth.
-   **Proposal: (b)** — the error tells you where the series went; the
-   fix stays an explicit caller decision.
-7. **Revive config after create** — SCENARIO: row created
-   `revive_every='1 year'` → `expire_at=2027-01-01` computed once,
-   calendar-anchored, immutable. In June the user edits it to
-   `'1 month'`. Two bad outcomes: recompute `expire_at` → the whole
-   successor calendar the job may have ALREADY materialized contradicts
-   the new one; or don't recompute → the row says "monthly" but expires
-   in January — the row lies about itself. WHY immutable wins: the
-   period contract IS the row's identity (same class as `pattern`,
-   also locked). A different cadence is a different sequence → create
-   it, rebind the field. **Proposal: `revive_every`/`revive_slot`
-   immutable post-create**; `revive_grace` is the only arguable member
-   (operational slack, not period identity — allow it or lock all
-   three, pick one).
-8. **Who may write `binding_key`** — SCENARIO: `binding_key` is the
-   series name that survives row death — field binding `customers.code`
-   resolves "the current default row of THIS series". If a hand-created
-   row could set `binding_key="crm.customers.code"`, it silently joins
-   the customer-code series: at the next switch it could win resolution
-   and start minting customer codes — hijack by configuration, or two
-   admins accidentally collide on one series. **Proposal: bound-only** —
-   `binding_key` is always system-derived from the declared binding
-   (`<table>.<field>` / `…@expr_<hash>`), never in `SEQUENCE_WRITE_KEYS`.
-   Operator rows (created by hand) keep `binding_key=NULL` but still
-   revive their own private chain — `revived_from` links their
-   generations and `revived_to` error detail lets callers follow. A
-   `{seq:{series:"…"}}` directive form can open deliberate named series
-   later, when designed.
+6. **Pinned-uuid directives** — TERMINOLOGY FIX: the field→sequence map
+   for declared bindings IS the entity decl (`SequenceBound` →
+   boot-materialized row) — a table relation, no payload_map involved
+   (my earlier example was wrong). The pinned case is a DIFFERENT
+   surface: `SequenceDirective` (`core/sequence.ts:604`) has three forms
+   — `{seq:"<uuid>"}`, `{seq:{uuid:"…", sez…, at…}}`,
+   `{seq:{…inline decl}}`. A stored directive VALUE or a trigger/expr
+   ctx literally names one row by uuid; when phase-B retires it,
+   `SequenceNotFound`. The question is only what the error carries:
+   (a) bare error (today); (b) `revived_to` in the detail — the
+   successor's uuid, read off the `revived_from` chain — so whoever
+   authored the pin can re-point deliberately. NEVER auto-follow: the
+   pin means "that exact counter namespace"; silently allocating on the
+   successor would mint numbers on a counter the caller doesn't know —
+   stealth corruption. **Proposal: (b).**
+7. **Post-create mutability** — `revive_grace` DEFINED first: the
+   overlap window between `expire_at` (period boundary on the `at`
+   axis) and `switch_at` (physical soft-delete) during which a
+   backdated doc (`at` in the old period) still resolves the old row
+   (see §3). So the three members split by identity-vs-operation:
+   `revive_every`/`revive_slot` define the period contract = row
+   identity → editing them mid-chain either recomputes `expire_at`
+   (rewrites the calendar the job may have already materialized) or
+   leaves stale anchors — **immutable** (same class as `pattern`).
+   `revive_grace` only moves `switch_at` — operational slack, never
+   materialized until expire → honestly **editable** (write path
+   recomputes `switch_at = expire_at + grace`). **Proposal:
+   every/slot immutable, grace editable.**
+8. **`binding_key` authority** — TECHNICALLY: today
+   `loadOrMaterializeBound` resolves decl binding `crm.customers.code`
+   → `detUuid(seed)` → ONE row for the binding's whole life: the
+   binding IS the uuid. With revive the series is N rows over time —
+   the field must name the SERIES, not a row. `binding_key` is that
+   name: `WHERE binding_key='crm.customers.code' AND deleted_at IS NULL
+   AND default_from <= at ORDER BY default_from DESC` — the current
+   member wins by construction. If `binding_key` were in
+   `SEQUENCE_WRITE_KEYS`, any operator row could claim
+   `crm.customers.code`: it would join the resolution set and — with a
+   `default_from` crafted newer — WIN the field's allocations. That's
+   a hijack by insert, no exploit needed. **Proposal: bound-only** —
+   written only by the system at binding materialize (decl / expr
+   `@expr_<hash>`); never a write key. Operator rows: `NULL` — revive
+   their own private chain via `revived_from`/`revived_to`.
