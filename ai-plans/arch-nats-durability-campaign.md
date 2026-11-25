@@ -837,3 +837,53 @@ A5 TOC notes (trascritte dal design sopra):
   tempestivo — il nak transitorio di A4 copre lo skew).
 - lint allowlist no-fnf-nats-publish: secrets/secret-vault.ts da aggiungere
   (hint = eccezione effimera governata, consumers re-pull da PG).
+
+## WP-A5 IMPLEMENTATO (2026-11-25 — commit dd3634d sdk, 825fbdf sdk fix, c15cd18 be)
+
+Implementazione completa e verificata live sul dev stack:
+
+- SDK `dd3634d` — feat(secrets): SecretVault engine + SecretVaultReader +
+  SqlPoolPort strutturale. 14/14 test unit verdi con fake-pool che emula
+  la semantica READ COMMITTED per-statement (re-read-after-lock verificata
+  per costruzione del test, non solo del codice). Probe contro PG reale
+  docker: 12/12 check — provisioning iniziale, rotazione monotona, trim
+  fisico della finestra, 5 rotazioni concorrenti serializzate dall'advisory
+  lock senza duplicati, query estranee mai bloccate durante la critical
+  section, hint pubblicato solo post-commit, zero materiale in Redis.
+- BE `c15cd18` — migration governata 20270101140000_secret_vault_generations.sql
+  (MANIFEST ri-firmato dev-micha-3, 91 patch), wiring thin in
+  src/modules/secrets/secret-vault.ts (istanzia il vault SDK col pool DAL,
+  avvia la cadence oraria, idempotente per i re-run del lifecycle),
+  getPool seam in dal-gateway ri-documentata come seam per SQL
+  infrastrutturale non-entity (migration tooling + vault).
+- Verifica boot live: `[secret-vault] The secret vault is ready` nei log,
+  generation 1 raw-v1 in PG, standards check pulito, typecheck pulito.
+
+SCOPERTA TOC — correzione al punto 5 del design ratificato sopra:
+  il design diceva "hint su subject esistente secret.rotated". Verificato
+  live sul dev stack che questo e' SBAGLIATO: startSecretProvider (in ogni
+  microservizio, per lo shield secret legacy) reagisce a QUALUNQUE hint su
+  secret.rotated rifacendo il fetch via secret.get — esattamente il canale
+  bandito per il materiale vault. Il BE rifiutava correttamente (allowlist
+  enforcement ha retto — prova empirica che il canale e' chiuso), ma i
+  servizi entravano in retry-loop infinito ogni 5s. Fix sdk `825fbdf`:
+  subject dedicato `secret_vault.rotated` (VAULT_SUBJECTS). La reazione
+  consumer corretta per il vault e' "re-read via direct DAL" (A6), non
+  "fetch via secret.get" — reazioni diverse = subject diversi. Lo shape
+  del payload resta identico (scope/name/generation/rotated_at, mai
+  materiale). Registrato come deviazione documentata: l'intento ratificato
+  (materiale mai su NATS, hint = solo invalidazione) e' rispettato, la
+  lettera del punto 5 e' corretta dall'evidenza empirica.
+
+A6 — rimane da fare:
+- wiring reader nei servizi: SecretVaultReader direct-DAL al boot +
+  subscription a secret_vault.rotated per refresh cache, feeding
+  MessageKeyProvider (la shape e' gia' compatibile — una riga).
+- createMicroservice integration: il provider del key material diventa
+  vault-backed invece dello static dev placeholder.
+- valutare refresh periodico di sicurezza (vedi nota TOC sopra).
+- A7: chiusura plaintext fallback dopo che tutti i consumer sono wired.
+
+Ledger hash WP-A completo: A3 sdk 1e7b80b — A4 sdk 89280b8 — A4-cleanup
+sdk 5ae1ddc — A5 sdk dd3634d + 825fbdf — A5 be c15cd18 — ratifica design
+workspace 6d97efe.
