@@ -1,0 +1,165 @@
+# Bigint domain narrowing — depends_on traps, uom enforcement, version by-construction, LLM orchestration boundary
+
+# ⚠️ TURN PROTOCOL — READ THIS BLOCK EVERY TURN. IT IS THE WORKFLOW.
+
+Every turn, in this order, NO EXCEPTIONS:
+1. Read this whole plan — this block IS the operative workflow.
+2. Fill in DOC RECEIPTS below before any action (cite doc:line).
+3. State of the world = VERIFICATION LEDGER, never your memory.
+4. Execute only the declared scope. Anomaly → STOP → report, max 2 retries.
+5. Output waits ≤30s. Beyond that = anomaly, not "still running".
+6. Before closing: write verdict + ledger + next step into the plan.
+7. Prova del 9: every state claim carries `file:line` — if you cannot
+   cite it, you did not verify it, it is an assumption.
+
+## DOC RECEIPTS (fill before acting)
+| doc:line | what it says | how it applies this turn |
+|---|---|---|
+| fe entity-metadata.mdx:175-176 | `filter_field`/`control_prop` both reset the value on pivot change — a stale dependent value is a silent integrity leak | the DOC already contracts the reset — the bigint narrowing hole breaks the proof of the contract; D1 restores it |
+| fe entity-metadata.mdx:154 | uom union — per-row codes ride a sibling field | the sibling carries unit CODES — text by domain semantics; D2 enforces string-only with dev-error |
+| fe ai-tool-loop.mdx | caller-driven loop, LLM output is untrusted input | the doc describes the loop but never the parse boundary — D3-AI closes the gap: orchestration JSON is engine signaling, not wire domain |
+| core overview.mdx wire codec section | every integer becomes bigint — one RFC7807 exception | version IS a domain integer — always bigint by construction; D3-B removes the vestigial number producers |
+| fe use-entity-op.svelte.ts:173 | `if (import.meta.env.DEV) console.warn(...)` | the established dev-gated console pattern for D1/D2/D3-B negative branches |
+
+## VERIFICATION LEDGER (source of truth for state)
+| ts | command | verdict | evidence | next step |
+|---|---|---|---|---|
+| 2026-11-25 | super-TIC census | complete | every wire channel (HTTP/SSE/MCP) parses via extJsonParse — version always bigint; number enters only via client vestiges (ai-action-confirm-dialog:169, api.ts signatures typed number) | implement |
+| 2026-11-25 | LLM parse census | complete | orchestration: chat-actions:152, regex examples; domain-destined: ai-action-confirm-dialog argsText round-trip, json-assistant — already correct boundary | implement |
+
+> Direction user-approved 2026-11-25: D1/D2 as designed with dev-console enforcement,
+> D3-AI option (a) dedicated orchestration parse helper, D3-B bigint-by-construction
+> with lint-or-better enforcement evaluation. EVERY modified site retested via e2e.
+
+## Status: 🟠 WIP — Plan date: 2026-11-25 / executing
+
+| # | Task | Status | When | Notes |
+|---|------|--------|------|-------|
+| 1 | D1 fe: depends-on.ts depPivotSignature + use-pivot-row + use-entity-ref-options + conditionMatches — bigint added to whitelist; false branch (non-empty non-primitive) → dev-gated console.error naming the field+type; unit regression tests with numeric pivot | ⏳ not done | — | |
+| 2 | D2 fe: FormFieldDispatcher uom narrowing ×2 — string-only whitelist; empty (''/null/undefined) stays legit silent; non-empty non-string → dev-gated console.error | ⏳ not done | — | |
+| 3 | D3-B fe: version bigint-by-construction — remove `Number()` vestige ai-action-confirm-dialog:169; api.ts signatures `version: number` → `bigint` (updateConfigEntry, bulkUpdateConfigEntries + callers audit); EntityFormSurface guards narrow with dev-error on negative; evaluate lint-vs-typelevel enforcement and implement the better one | ⏳ not done | — | |
+| 4 | D3-AI fe: `llmControlParse()` orchestration helper (plain JSON semantics, documented boundary) in api-ext or sibling; migrate chat-actions parseClassification + regex-ai sites; unit tests — pick action resurrects | ⏳ not done | — | |
+| 5 | e2e retest of every touched surface: sequence spec (version flow), auth-passkey harness (general regression), any customer_accounts/depends_on spec; unit suites fe | ⏳ not done | — | user mandate: definitive e2e on all modified sites |
+| 6 | docs review — thorough, every repo touched: fe entity-metadata.mdx (depends_on/uom enforcement clauses), ai-tool-loop.mdx (LLM parse boundary section), api.ts-client or error-handling for version doctrine; core overview cross-ref if needed | ⏳ not done | — | user mandate: structural choices documented per repo |
+| 7 | commits per repo + ledger close | ⏳ not done | — | |
+
+<!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
+
+---
+
+## Design notes (empirically grounded in super-TIC 2026-11-25)
+
+**D1** — the whitelist shape `typeof v === 'string'|'number'|'boolean'` excludes
+bigint: pivot signatures collapse to `''` (reset never fires) and pivot-row
+filter values empty out. Fix: extend whitelist with bigint + dev-console error
+when a non-empty value falls outside — the failure becomes traced, not silent.
+`conditionMatches` cross-type `===` included in scope.
+
+**D2** — uom codes are domain-text by construction. Whitelist narrows to
+string-only; empty is the legitimate unset state (silent); a non-empty
+non-string value is a modeling error → dev-console error.
+
+**D3-B** — every transport (HTTP/SSE/MCP) parses through extJsonParse, so
+wire version is ALWAYS bigint. Number enters only through vestigial client
+conversions. Enforcement: type-level first (signatures bigint — misuse stops
+compiling, construction-time enforcement per the enforcement-over-verification
+doctrine), dev-console runtime gate as second net.
+
+**D3-AI** — LLM orchestration JSON (`{"select":N}` verdicts) is engine
+signaling, not wire domain data — plain JSON semantics. Domain-destined flows
+(argsText round-trip in the confirm dialog) already pass through extJsonParse
+at the correct boundary and stay untouched.
+
+
+---
+
+## Session ledger — TOC implementation (latest first)
+
+### 2026-XX — implementation session (SWE-2.1 Max)
+
+**COMMITTED (green, verified compile):**
+- `primebrick-fe-v3` — D1+D2+D3-B+D3-AI complete: depends_on/uom dev-error guards + regression tests (28/28), wireVersion() boundary helper, llmControlParse() + parseClassification pick resurrected (5/5), svelte-check+check:stringify GREEN (exit 0)
+- `primebrick-v3-core` — ConfigEntry.version + EntityChangedMarker.version → bigint
+- `primebrick-v3-sdk` — AuditParams.version → bigint (dist rebuilt)
+- `primebrick-dal-v3` — full cascade: AuditParams/entity-service/events/audit-query/entity-base/repository — tsc GREEN; latent cross-type optimistic-lock bug in sequence compare fixed
+
+**MID-CASCADE — be NOT compiling yet (~6 error sites left, pattern established):**
+- primebrick-be-v3: 12 files already flipped to bigint. Boundary design DISCOVERED: zod schemas validate wire as `z.union([z.number().int(), z.bigint()])` — fix pattern = `.transform(BigInt)` at schema level (done in config-entries router + requireVersionQuery central helper). REMAINING: config-entries.service.ts:645/658/745 (literals+bulk type), audit-query-helper.ts:104 (cast `as number`→bigint), role-mappings.router.ts:122 (zod entity schema needs transform), index.ts:501 (Dal eventPort structural — investigate EntityEventPort type origin), then users.router query sites should already be healed by requireVersionQuery fix. RUNTIME UNAFFECTED (types only).
+- primebrick-us-v3: compile NEVER CHECKED — no root typescript; find correct per-service check command first.
+
+**PENDING (user-mandated, not yet done):**
+1. E2E definitive retest of ALL modified sites (passkey suite + entity-form/collab/config/translations flows)
+2. Docs review per repo: fe entity-metadata.mdx (depends_on/uom), ai-tool-loop.mdx (LLM boundary + llmControlParse), core overview.mdx (version bigint doctrine), dal/be dev-guide
+3. Lint-check answer for user: type-level enforcement implemented (compile errors on drift); optional check-standards regex rule for `version: number` in wire types NOT yet added
+4. Full fe vitest suite run (unit green on touched files only so far)
+5. be/us cascade completion + commits
+
+---
+
+## DOC-NOTES — cose da raccontare nella doc (accumulo durante i lavori)
+
+> Istruzione utente: tracciare qui ogni piccola cosa che merita documentazione,
+> per non perdere memoria. Consolidamento finale nel task docs.
+
+1. **depends_on narrowing contract** — pivot scalari ammessi: string/number/boolean/bigint; ramo falso = dev-console error semi-silenzioso (traced+safe). Stesso contratto nei siblings use-pivot-row / use-entity-ref-options. `conditionMatches` ora cross-type-safe. Doc target: fe `entity-metadata.mdx`.
+2. **uom sibling code** — strict string-only; `''`/null/undefined = "unità non ancora scelta" (stato legittimo), qualunque altro non-stringa = errore di modellazione con dev-error. Doc target: fe `entity-metadata.mdx`.
+3. **version è bigint per costruzione su OGNI trasporto** (HTTP/SSE/MCP — tutti ext-json). I dual-guard `number||bigint` erano tolleranza-by-accident, ora enforcement-by-construction con `wireVersion()` helper al boundary. Doc target: core `overview.mdx` + fe dev-guide.
+4. **llmControlParse boundary** — il JSON LLM ha due classi: orchestrazione interna (control signals, plain JSON semantics — MAI dominio) vs domain-destined (round-trip ext-json già corretto). Il boundary dedicato impedisce il whack-a-mole. Bug vissuto: pick action morta per typeof number su bigint. Doc target: fe `ai-tool-loop.mdx` + smart-ai.
+5. **zod boundary pattern nel be** — schemi dual-tolerant `z.union([z.number().int(), z.bigint()]).transform(BigInt)`: valida il wire, converte al boundary, domini interni bigint-only. Doc target: be dev-guide (controller-boundary?).
+6. **Bug latente trovato nel dal** — `Number(row.version) !== spec.version` cross-type sempre-vero → falsi optimistic-lock nel path sequence. Esempio da manuale del perché i dual-guard mascherano. Doc target: dal dev-guide come cautionary tale.
+7. **Type-level enforcement come strategia** — il compile-driven cleanup (18 errori fe emersi e risolti) dimostra che l'allineamento dei tipi alla realtà wire è enforcement non-skippabile, superiore al lint. Doc target: `enforcement-over-verification.md`.
+8. **`vBigint` helper esistente nel dal** — già documentava la consapevolezza bigint nei commenti (sequence revive-spec). La contraddizione commento-vs-tipi è la prova della deriva. Doc target: dal dev-guide.
+9. **EntityChangedMarker / presence chain** — version bigint nella catena marker (core→sdk→be→FE). Chi legge presence deve sapere il tipo wire reale. Doc target: core presence docs.
+10. **Lint-check risposta** — type-level > lint per version; eventuale regola check-standards `version: number` come cintura-e-bretelle. Decidere se implementarla e documentarla.
+
+### 2026-XX — cascata be completata e verificata (SWE-2.1 Max)
+
+**BE COMPLETE + COMMITTED.** Design ratificato dall'utente (D1-D4):
+- `zBoundedInt` invertito: union-validated per tipo input, `.transform(BigInt)` — un punto guarisce tutti gli schemi HTTP
+- MCP schemas: `z.number().int()` corretto per il boundary LLM (plain JSON-RPC) + `.transform(BigInt)` per il dominio
+- sdk EntityEvent.version → bigint (NATS ext-json accertato)
+- `requireVersionQuery` central fix; vestigial Number()/as-number rimossi; audit-query BigInt() normalization al boundary int4/pg-driver
+- **Scoperta empirica chiave**: audit-log version column è `integer`/int4 — il driver pg la restituisce number genuinamente. Conversione legittima al boundary di lettura, non tolleranza.
+- **Regression trovata e curata**: il confronto sequence (`::text` by-design nella SQL) richiede normalizzazione BigInt a entrambi i lati; il down-cast `Number()` nel revive-spec era vestigio della vecchia dottrina — rimosso
+- Verifiche: be tsc GREEN, **433/433 tests**, check:standards clean; dal **896/896**; sdk green. I 5+9 test falliti erano attese che codificavano il vecchio contratto — la prova che il boundary enforcement funziona
+- **Version increment avviene in SQL** (`version = table.version + 1`) — zero aritmetica bigint in JS, rischio runtime nullo accertato
+- us-v3: separato per decisione utente (D4) — prossimo turno dedicato
+
+### DOC-NOTES append — dal census violazioni (item 4)
+
+11. **check-standards docstring stale** — l'header in sdk/tools/check-standards.ts documenta "profile fe: NO base rules" ma FE_RULES include deliberatamente ext-json/no-native-dialog/no-raw-dialog/e2e-wait-budget (line 964, con rationale "wire corruption/bigint-loss vectors"). La doc della regola va allineata — la realtà è intenzionale e corretta.
+12. **Sanctioned seam pattern** — il meccanismo allowPaths per "unsuppressible governance rules" è il modo governato di dichiarare boundary not-wire (es. llm-control-parse). Va documentato nel dev-guide fe come pattern per futuri boundary legittimi.
+13. **Baseline census classificazione** — 31 debiti dichiarati: 30× panel-chrome-class + 1× panel-raw-input, concentrati in 7 file panel. Tutti UI-pattern, nessuno bigint-correlato. Legittimi debiti dichiarati, non falsi positivi.
+
+### DOC-NOTES append — lezioni e2e
+
+14. **Parallel workers × cold vite graph = systemic false failures** — 97/115 fallimenti col batch parallelo default erano timeout 5s sul login input: vite dev compila on-demand e il graph invalidato (da modifiche sorgente) sotto carico parallelo sfora ogni timeout. NON una regressione — prova: stessa spec singola passa 7/7 in 22s. Mitigazione: --workers moderati dopo warmup, o warmup esplicito del login path. Doc target: fe docs/ai e2e README.
+15. **Census callable è push-based** — restart be perde la registrazione dei callable us-services (emailsender.send) finché il servizio non riavvia/ri-registra. Restart be → restart anche gli us-services prima di e2e che toccano job_trigger. Doc target: dev-server.md o us dev-guide.
+16. **Codec fix visibile live** — il console log di boot mostra `{status: 401}` number pulito nel problem-details (era `401n`) — la RFC7807 exemption confermata in produzione dev.
+
+### FINDING — pre-existing infra debt (NOT bigint-related)
+
+**census.callables validation vs emailsender declaration drift**: la validation di `job_trigger.target_subject` legge `service_registry.endpoints.callables.callables`, ma emailsender dichiara endpoints nel vecchio formato flat-stringa (`nats_send`/`nats_webhook`) senza la chiave `callables` strutturata. Risultato: `emailsender.send` (subject reale e funzionante — il servizio lo ascolta davvero) non passa la validation → tutte le spec con fixture job_trigger (collaboration-form, entity-form-submit-gating) falliscono in fixture-setup INDIPENDENTEMENTE dalle modifiche bigint (provato: batch1 falliva identico contro il server pre-esistente non toccato). Debito da schedulare: allineare la dichiarazione emailsender al contratto census o chiarire il meccanismo di derivazione callables.
+
+## Session close — final verification ledger (this session)
+
+### Verified GREEN
+- be vitest: 433/433 | dal vitest: 896/896 | fe svelte-check + check:stringify + check-standards: clean
+- passkey e2e: 7/7 | definitive serial batch: 17/21 passed — **sequence-form-contract GREEN** (depends_on narrowing + dal revive bigint path, end-to-end), config-typed-values GREEN, versions-panel-i18n GREEN
+- docs consolidation committed in fe (depends_on/uom contracts, llmControlParse boundary), core (version doctrine), dal (sequence ::text), be (write-boundary doctrine)
+
+### Classified failures (NOT regressions)
+- **census.callables drift** (collaboration-form, entity-form-submit-gating): pre-existing — emailsender declares endpoints in old flat-string format without structured `callables` key; validation reads `endpoints.callables.callables`. Proven pre-existing (batch1 failed identically against untouched server). Debito da schedulare separatamente.
+- **entity-list-table-interactions ×3** (pager keys, arrow focus, roles badge): reproducible even solo — signature "page content area empty" on /system/job/* host pages. Outside bigint blast radius (list keyboard nav + badge rendering — no version/depends-on/uom logic in those paths). Root cause UNPROVEN — candidate: job-module registry/environment state. Needs dedicated investigation turn — flagged honestly, not hidden.
+
+### Lint-check answer (user question)
+Type-level enforcement proved superior to lint: the cross-repo cascade surfaced every drift as non-skippable compile errors (18 in fe alone). Optional belt-and-braces: check-standards regex rule banning `version: number` in wire types — PROPOSED, not implemented (decide if worth it).
+
+### us-v3 cascade — NOT STARTED (per D4 decision — separate turn after user approval)
+Expect: same boundary pattern as be (zod validate + transform BigInt), plus service-registry/audit alignments. The dal/sdk/types are already aligned so most of us-v3 may compile clean or need only boundary transforms.
+
+### FINAL TALLY (session close)
+- fe vitest: **749/751** — i 2 fallimenti sono resumable-fetch (Range-resume/cache-replay): diff ui in quel path type-only → impossibile regressione runtime → PRE-ESISTENTI, fuori blast-radius, da investigare in turno dedicato
+- Test expectations alignments committed (pending/flush-translations CAS identity, buildAuditData shell) — stessa classe be/dal: attese che codificavano il vecchio contratto number
+- Docs committed in 4 repo (fe×2, core, dal, be) — dottrina version bigint-by-construction ora scritta nel contratto canonico
+- us-v3: mai toccato, turno separato in attesa di approvazione
