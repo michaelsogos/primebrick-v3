@@ -610,3 +610,49 @@ resta all'edge HTTP dove il threat model e reale
 - ⏳ prossimi: A3 publish path integration → A4 subscribe path → A5 engine
   re-channel a PG → A6 bootstrap wiring createMicroservice + rimozione static
   key dev → A7 freshness removal. Poi WP-B (_system_process).
+
+## SESSION HANDOFF 2026-11-26 — ripresa in sessione fresca, tutto il contesto necessario
+
+### Dove siamo nella campagna
+- WP0 ✅ WP1 ✅ (sessioni precedenti) — emailsender durable taken-charge live-verified
+- due-forwarder re-stamp fix ac6d434 ✅ — probe6 E2E chain provata (job_runs=succeeded,
+  sender_log=failed-per-Breputable, dedupe key presente)
+- WP-A (encryption foundation) IN CORSO: A1+A2 ✅ — A3→A7 da fare
+
+### Fatto in questa sessione (committato+pushato)
+- sdk arch/nats-durability: src/nats/message-envelope.ts (seal/open/isEnvelope AES-256-GCM),
+  src/nats/message-key-provider.ts (MESSAGE_KEY_PART_A + deriveMessageKey + MessageKeyProvider),
+  src/nats/__tests__/message-envelope.test.ts (14 spec) — suite sdk 49/49 verdi
+- workspace: design ratificato + TIC spec + decisioni + ledger — tutto in questo file
+
+### Prossimi passi ESATTI (spec pseudo-codice completa sopra in "WP-A TIC COMPLETO")
+1. A3 publish path: integrare seal in nats-client.ts:240 (publishEphemeralLossy) e :422
+   (publish durable) — split headers sensitive (x-user-*) dentro busta, transport (otel,
+   job-correlation, shield) fuori. keyProvider non-ready → plaintext fallback + warn-once
+   (transizione), poi enforcement
+2. A4 subscribe path: openEnvelope in nats-client.ts:304/559/626 + nats-routes.ts:202;
+   merge inner headers nella view del handler; decrypt failure → nak/term MAI delivery
+3. A5 secret-engine re-channel (be-v3 rotating-secret.ts): ref
+   {scope:'global', name:'service_message_key_material'}, UPSERT system.config_entries
+   row {generation, generations:{gen:partB}}, rotation oraria boot+interval, trimming 7gg,
+   MAI su NATS/secret.get
+4. A6 wiring: createMicroservice costruisce MessageKeyProvider con reader DAL diretto su
+   system.config_entries, refresh al boot + su config.changed; rimozione static key
+   service_client_shield_key=4ee3d069... da config_entries dev (patch correttiva)
+5. A7 rimozione freshness-check rotating dal user-layer NATS (resta edge HTTP)
+6. POI WP-B: _system_process sentinel + rimozione bypass isSystem in rbac.ts + sweep
+   route + vincolo costruttivo trigger (spec in "DESIGN RATIFICATO" sopra)
+
+### Gotcha tecnici registrati
+- ext-json materializza TUTTI gli interi come bigint — envelope normalizza enc/gen
+  via Number() al boundary (vedi commenti in message-envelope.ts)
+- psql non in PATH — usare docker exec primebrick-postgres-18 psql -U primebrick
+- Windows bash: backtick in heredoc mangiano contenuto — usare file temp + cat append
+  o quote singole senza backtick
+
+### Verifiche di ripresa (fresh session checklist)
+1. rileggere docs/ai/workflow.md (obbligatorio ogni turno)
+2. rileggere questo piano — sezioni DESIGN RATIFICATO + WP-A TIC COMPLETO + questa
+3. git status/audit su sdk prima di toccare codice
+4. riprendere da A3 — i test esistenti guidano: nats-client.test.ts ha la suite di
+   regressione publish/subscribe da mantenere verde
