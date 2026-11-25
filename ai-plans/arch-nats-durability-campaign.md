@@ -305,3 +305,32 @@ NON ancora provato (richiede fire autenticato reale):
 - sweeper recovery dopo crash
 TRIGGER per la prova finale: reset password/invito dalla UI, oppure probe script in be con buildNatsAuthHeaders (prossimo turno)
 FIX MINOR notato: la log line "Subscribed to emailsender.send" in email-send.ts è fuorviante (sembra una seconda subscription core — è solo log legacy, la subscription reale è solo quella durable della factory)
+
+## CHECKPOINT 2026-11-25 (fine sessione — E2E PROVATO)
+
+### WP1 emailsender — POSITIVE PATH VERIFICATO LIVE (17:00 UTC)
+- probe6 (trigger author-lane admin reale): job_runs=succeeded, sender_log row
+  request_id=probe6-fixed-0001 status=failed (Brevo no-rete dev — atteso),
+  dedupe key natsjs:dedupe:EMAILSENDER:7 in Redis.
+- Catena provata end-to-end: arm, fire, forwarder, stream capture, durable consume,
+  shield/user/RBAC/contract pass, acceptSend INSERT taken-charge, ack, dispatch async,
+  outcome report.
+
+### FIX SISTEMICO TROVATO E COMMITTATO (ac6d434 us-v3)
+- BUG PREESISTENTE: 2050 run fallite dal 19 nov — AUTH_CLIENT_SHIELD_SECRET_INVALID.
+  Root cause: forwarder ripubblicava header arm-time verbatim; rotating secret
+  (orario, grace 5min) moriva prima del fire. Fix: re-stamp fire-time in due-forwarder.
+- system lane per design NON passa callable user-gated — serve author/originator lane.
+- DECISIONE APERTA PER MICHA: system lane verso callable user-gated — il BE usa
+  systemAuthUser sintetico; valutare se trigger system-lane debba stamparlo uguale.
+
+### Note dev-loop
+- dev-stack restart: bun --hot respawna child, pidfile diverge — kill per netstat pid+parent.
+- triggers.changed shielded: insert manuali richiedono restart JH.
+- probe cleanup fatto (probe6 deleted).
+
+### Prossimi step
+- WP2 due-forwarder durable migration (sbloccato — fix auth era prerequisito)
+- sequence_revive materialize failed: ext-json unclosed @0 — errore preesistente separato
+- WP3 entity-changed, WP4 TTL invalidations, WP5 catalog, WP6 docs
+- Ripulire log line legacy in email-send.ts (doppia riga subscribe)
