@@ -267,3 +267,13 @@ Ogni consumer durable deve rispondere a: "dov'è lo stato di questo lavoro dopo 
 - sdk 626/626 test verdi, tsc pulito — committed
 - VERIFICA RUNTIME MANCANTE: serve test E2E con nats+redis live (redelivery → no re-execute) — da fare prima della chiusura WP1
 - prossimi step: 1) emailsender ensureStream EMAILSENDER workqueue + migrazione consumer 2) sender_log patch request_id UNIQUE + state machine + sweeper 3) be publisher durable 4) response-flow decision
+
+### WP1 — DESIGN STRUTTURALE CRITICO: durable nella factory makeNatsRoutes
+Il consumer emailsender usa `makeNatsRoutes` (factory che registra endpoints.callables + shield verify + payload_schema validation). La migrazione durable NON può essere hand-rolled per servizio — perderebbe la registration. DESIGN:
+- makeNatsRoutes guadagna opzione per-route `durable: true` — la factory internamente usa jetstreamSubscribe invece di core subscribe, stesso verify/handler/validation wiring
+- stream per-service: `<SERVICECODE uppercase>` (es. EMAILSENDER), retention workqueue, subjects = tutti i subject durable del servizio (aggregati dalla factory in una sola ensureStream)
+- workqueue + consumer multipli OK perché filter_subject disgiunti per route (vincolo nats: overlapping filters vietati, disjoint OK)
+- durable name = `<servicecode>-<subject sanitized>`
+- chi crea lo stream: la factory stessa a boot (ensureStream idempotente) — publisher indipendente grazie a capture-per-subject
+RESPONSE PATH: `emailsender.response.<requestId>` resta core/effimero (è correlazione per caller live; il fire è durable ma la response no — chi ascolta è online per definizione o perde interesse)
+SENDER_LOG state machine: request_id UNIQUE colonna nuova; handler INSERT pending (presa in carico) → poi dispatch brevo async → update sending/sent/failed; sweeper on-boot + interval 60s riprende pending/sending incomplete
