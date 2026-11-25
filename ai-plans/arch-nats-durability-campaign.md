@@ -237,3 +237,27 @@ NATS non deve sapere nulla del side effect esterno. L'ack comunica una sola cosa
 Ogni consumer durable deve rispondere a: "dov'è lo stato di questo lavoro dopo che ho dato ack?" — se la risposta è "da nessuna parte", il design è sbagliato. L'ack sincrono sul side effect esterno (il mio approccio iniziale) è un anti-pattern: lega la finestra di redelivery alla latenza del sistema esterno e spinge la responsabilità di reliability sul broker invece che sul servizio.
 
 ### D4 ratificato: ENTITY_CHANGED retention limits 1h (non 24h — finestra blip operativo)
+
+---
+# TOC — execution log
+
+## Branch strategy: `arch/nats-durability` creata da `feature/ext-json-strict-codec` in sdk/be/us (dipendenza dal bigint cascade). Commit sequenziali sdk→be→us per D2.
+
+## Decisioni finali ratificate: chiave dedupe `stream:seq` transport-native; lease ackWait 30s / heartbeat 10s / DONE-TTL 6h; retention entity-changed 1h; stream per-servizio; dedupe sistemico in jetstreamSubscribe wrapper sdk (Redis WACK/DONE state machine, inProgress automatico, dev trasparente).
+
+## WP0 — enforcement-first (in corso)
+
+### WP0 — DONE (committed sdk/be/us su arch/nats-durability)
+- rename eseguito: `NatsClient.publish`→`publishEphemeralLossy` (lossy, deterrent), `jetstreamPublish`→`publish` (durable default)
+- lint `no-fnf-nats-publish` in tools/check-standards.ts (GATED) — verificata positiva+negativa empiricamente
+- config attivate: sdk (4 allowPaths interni), be (6), us job-handler (2) + emailsender (1)
+- sdk tests 626/626 verdi, build verde, tsc be verde; us: crm/webhook puliti, emailsender/job-handler errori SOLO bigint-I1 sospeso (preesistenti, non dal rename)
+- NOTA: commit us ha incluso docs/user-guide generated preesistenti untracked (crm/emailsender/job-handler) — artefatti di generazione doc benigni, non parte della modifica
+- i siti allowlistati destinati a migrare a durable (WP1/WP2): be modules/auth/services/email-sender.ts, us emailsender controllers/nats-sub/email-send.ts, us job-handler services/due-forwarder.ts — devono USCIRE dall'allowlist alla migrazione
+
+## WP1 — emailsender migration (IN CORSO) — step tecnici
+1. sdk: wrapper dedupe sistemico in jetstreamSubscribe — Redis state machine WACK/DONE, chiave stream:seq, inProgress automatico, lease 30s/heartbeat 10s/DONE-TTL 6h. Serve accesso Redis nell'sdk: verificare come sdk accede a Redis oggi (cache-port-holder nel be — sdk ha client redis proprio? VERIFICARE)
+2. emailsender: stream EMAILSENDER workqueue cattura `emailsender.send` (+ `emailsender.response.>` NO — responses vedere design), consumer migrato a jetstreamSubscribe con wrapper
+3. sender_log: aggiungere colonna request_id UNIQUE (patch db-meta) — presa in carico = INSERT pending poi ack; state machine pending→sending→sent/failed; sweeper on-boot + interval per pending/incomplete
+4. be: publisher auth email-sender.ts migrato a publish durable → esce da allowlist
+5. response path: `emailsender.response.<requestId>` resta effimero? — la response è per il caller sincrono; con il fire durable la response diventa asincrona — valutare: il be auth NON attende response oggi? VERIFICARE il flusso
