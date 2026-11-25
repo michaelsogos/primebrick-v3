@@ -656,3 +656,25 @@ resta all'edge HTTP dove il threat model e reale
 3. git status/audit su sdk prima di toccare codice
 4. riprendere da A3 — i test esistenti guidano: nats-client.test.ts ha la suite di
    regressione publish/subscribe da mantenere verde
+
+## SESSION RESUME 2026-11-25 — hygiene gate prima di A3
+
+- Workflow, sezioni DESIGN RATIFICATO/WP-A/TIC/handoff e doc SDK governanti
+  (`workflow.md`, `gitflow.md`, `commit-verification.md`, `nats-client.mdx`,
+  `client-shield-and-secrets.mdx`, `ext-json.mdx`, docs pipeline) riletti.
+- Gitflow audit iniziale ha trovato una violazione preesistente: le basi locali
+  `feature/ext-json-strict-codec` erano ahead di origin in sdk/be/us. Allineate
+  con push non distruttivi: sdk `5c3cb16`, be `95e9657`, us `bdd42ee`.
+- I branch di campagna BE/US non esistevano su origin; ora pubblicati:
+  be `a21bcab`, us `ac6d434`. SDK arch era già allineato a `c48e9d3`.
+- Dirty state SDK identificato: `docs/dev-guide/_extracted/api.json` +
+  `docs/dev-guide/api-reference.mdx` sono artefatti generati dell'estrazione
+  API e riflettono le superfici WP0/WP1 già committate (`ensureStream` retention,
+  `jetstreamSubscribe.isTerminal`, `NatsRoute.durable`). Vanno committati come
+  hygiene documentale prima di A3, non mescolati al codice A3.
+- Dirty state US identificato ma NON toccato: generated trigger docs dipendono
+  dal catalogo runtime (rimozione `job.partition_maintenance`/`job.sequence_revive`).
+  È fuori scope A3 e va risolto quando si toccherà us-v3; non va cancellato
+  silenziosamente perché potrebbe essere stato generato dall'utente o da una
+  sessione parallela.
+- TOC riparte da A3 nel solo SDK dopo l'hygiene commit documentale.
