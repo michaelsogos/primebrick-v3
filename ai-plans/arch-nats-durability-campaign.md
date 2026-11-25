@@ -769,3 +769,71 @@ A5 — decisioni da ratificare prima del TOC:
   PostgreSQL advisory transaction lock (raccomandazione emersa in review:
   PG-native, stessa durability domain, niente dipendenza extra, lock rilasciato
   automaticamente a commit/rollback).
+
+## A5 DESIGN RATIFICATO (2026-11-25 — Micha, definitivo per TOC)
+
+P1 — SecretVault come componente architetturale SDK, non entity di business:
+1. TUTTA la logica nel SDK (nuovo modulo interno), NON nel BE: il BE la
+   istanzia come writer oggi, ma se domani un modulo qualsiasi deve avere
+   il proprio vault il refactoring e' minimo — la capability e' gia' nel
+   shared infrastructure package. Writer ownership e' una decisione di
+   deploy (chi istanzia l'engine), non di dove vive il codice.
+2. Storage: tabella dedicata una-row-per-generation, NON config_entries
+   (audit trail copierebbe il materiale — forward secrecy morta):
+     system.secret_vault_generations(scope, name, generation, material,
+       rotated_at, crypto_scheme, PK(scope,name,generation))
+   current generation = max(generation) per (scope,name); niente pointer
+   duplicato che puo' divergere. material = base64url text random 32B.
+   crypto_scheme = 'raw-v1' oggi — encryption-at-rest NON simulata (chiave
+   in PG = security theater; chiave in SDK = non aggiunge oltre lo split-key
+   esistente; KMS esterno = endgame futuro, la colonna predispose la
+   migrazione senza cambiare contratto).
+3. MAI entity CRUD/OpenAPI/MCP/audit del materiale. Rotation policy in
+   codice nella registry del componente (rotation 1h, retention 7gg per
+   service_message_key_material) — non una manopola utente.
+4. Reader: direct-DAL SQL read-only tramite porta SDK; output shape
+   compatibile con MessageKeyMaterial del provider (generation + map) —
+   A6 wiring diventa una riga. Reader non conosce policy: la tabella si
+   auto-trima, le row presenti SONO la finestra.
+5. Hint post-rotation: solo metadati su subject esistente secret.rotated
+   (stesso shape del pattern corrente, materiale MAI nel payload).
+   Broadcast DOPO commit, mai dentro la transazione.
+6. Security logging: si usa il logger SDK+OTel esistente (sink OTLP logs,
+   trace-correlated) — sufficiente per detection/forense operativa; non
+   e' audit immutabile compliance-grade, ma quello e' compito del
+   collector/SIEM, non di un secondo logger applicativo.
+
+P2 — serializzazione rotation: PostgreSQL pg_advisory_xact_lock (due-int
+form: namespace costante documentata + hash stabile del ref), re-read dello
+stato DOPO acquisizione lock, critical section SQL-only (insert generation
++ trim retention), commit, poi hint. Advisory = cooperativo: e' efficace
+perche' il vault e' il solo writer path autorizzato. Non blocca query
+estranei — solo i contender sullo stesso lock key; transaction-scoped =
+rilascio automatico a commit/rollback/crash.
+
+Ledger — A4 review debt chiuso prima di A5 (sdk 5ae1ddc):
+- security event strutturato su integrity violation durable prima di term()
+  (span.recordException + logger.error tags[nats,security], meta snake_case,
+  mai payload/ciphertext); regression spec sul tamper test.
+- Msg view chiusa per costruzione: data/headers/json()/string() derivano
+  dal payload decrypted canonico, respond()/subject/reply delegano; spec
+  dedicata in message-codec.test.ts (allowPaths ext-json dichiarata nel
+  check-standards config — owner legittimo del contratto).
+- codec estratto in src/nats/message-codec.ts: client=trasporto,
+  routes=governance, codec=wire representation.
+- suite sdk 50/50 file, 654/654 test verdi; build+typedoc verdi.
+
+A5 TOC notes (trascritte dal design sopra):
+- SDK src/secrets/secret-vault.ts: SecretVault (writer engine) +
+  SecretVaultReader + SqlPoolPort strutturale (soddisfatto da pg.Pool).
+- schema name validato /^[a-z_][a-z0-9_]*$/ (identificatore non
+  parametrizzabile in SQL); table name fissa = contratto del componente.
+- insert ON CONFLICT DO NOTHING + rowcount check: difesa in profondita'
+  anche contro writer che bypassano l'advisory lock.
+- ON CONFLICT edge: se rowcount=0 qualcun altro ha scritto -> re-read.
+- A6 wiring NOTA: consumer refresh al boot + su hint secret.rotated;
+  valutare refresh periodico di sicurezza (hint loss e' self-healing per
+  la finestra 7gg, ma decrypt di nuove generazioni richiede refresh
+  tempestivo — il nak transitorio di A4 copre lo skew).
+- lint allowlist no-fnf-nats-publish: secrets/secret-vault.ts da aggiungere
+  (hint = eccezione effimera governata, consumers re-pull da PG).
