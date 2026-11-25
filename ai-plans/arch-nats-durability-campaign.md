@@ -261,3 +261,9 @@ Ogni consumer durable deve rispondere a: "dov'è lo stato di questo lavoro dopo 
 3. sender_log: aggiungere colonna request_id UNIQUE (patch db-meta) — presa in carico = INSERT pending poi ack; state machine pending→sending→sent/failed; sweeper on-boot + interval per pending/incomplete
 4. be: publisher auth email-sender.ts migrato a publish durable → esce da allowlist
 5. response path: `emailsender.response.<requestId>` resta effimero? — la response è per il caller sincrono; con il fire durable la response diventa asincrona — valutare: il be auth NON attende response oggi? VERIFICARE il flusso
+
+### WP1 progresso — sdk dedupe wrapper DONE (committed)
+- implementato in jetstreamSubscribe: gate Redis `natsjs:dedupe:<stream>:<seq>`, stati WACK(implicit timestamp)/DONE, heartbeat 10s con working()+lease refresh, DONE 6h prima di ack, del-key su failure, fail-closed su redis error, warn-and-process se redis assente
+- sdk 626/626 test verdi, tsc pulito — committed
+- VERIFICA RUNTIME MANCANTE: serve test E2E con nats+redis live (redelivery → no re-execute) — da fare prima della chiusura WP1
+- prossimi step: 1) emailsender ensureStream EMAILSENDER workqueue + migrazione consumer 2) sender_log patch request_id UNIQUE + state machine + sweeper 3) be publisher durable 4) response-flow decision
