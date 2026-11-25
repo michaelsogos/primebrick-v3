@@ -161,3 +161,50 @@ Design proposto:
 - heartbeat servizi (auto-superante), REQREP (timeout gestito)
 
 **Enforcement (FASE 2 preliminare)**: rename publish→publishEphemeralLossy, jetstreamPublish→publish, lint no-fnf-nats-publish + allowPaths — PRIMA delle migrazioni così nessun nuovo F&F entra mentre migriamo.
+
+---
+
+# FASE 2 — DESIGN DOCUMENT (per ratifica utente)
+
+## D2.1 — Meccanica di migrazione zero-loss (semantica NATS verificata)
+
+Proprietà chiave JetStream: **la cattura è per-subject, non per-API-publisher**. Un publish core su un subject catturato da uno stream VIENE memorizzato nello stream comunque; `js.publish` serve solo per il PubAck (seq/dedupe lato publisher). Conseguenza — la migrazione non richiede lockstep:
+1. `ensureStream` per primo → da quel momento OGNI publish (anche core legacy) viene catturato
+2. consumer migra a durable quando pronto — unico accorgimento: unsubscription core contestuale all'avvio del durable per evitare doppia consegna nella finestra di overlap
+3. publisher migra a `js.publish` per ultimo, indipendentemente
+**REGOLA DI TOPOLOGIA (dal commento JOBS_STREAM)**: i subject REQREP non devono MAI essere catturati da stream — il PubAck impersonerebbe la reply di correlazione. Wildcard narrow sempre.
+
+## D2.2 — CRITICAL FINDING: idempotenza consumer obbligatoria
+
+JetStream è **at-least-once**: redelivery dopo ack-timeout, restart mid-processing, nak. Il core F&F odierno è at-most-once — il problema duplicati NON ESISTE OGGI e nasce con la migrazione. Verificato: `email-send.ts` NON ha nessun guard su requestId — una redelivery manderebbe l'email due volte. **Ogni consumer migrato deve avere idempotency-by-requestId** (dedupe table o unique constraint naturale):
+- emailsender: dedupe su `requestId` — sender_log ha già request_id? DA VERIFICARE in FASE 3; se sì, unique constraint + INSERT ON CONFLICT DO NOTHING come guard di costruzione
+- due-forwarder targets generici: il contract callable ha già requestId nel payload schema — la dedupe è responsabilità del consumatore per-contratto, la piattaforma fornisce l'helper
+- entity-changed collab: i marker hanno version — dedupe naturale (versione già vista = skip)
+
+## D2.3 — Stream topology proposta
+
+| Stream | Subjects catturati | Razionale |
+|---|---|---|
+| `JOBS_STREAM` (esistente) | jobs.schedule.>, jobs.due.>, jobs.result.>, jobs.cancel.> | immutato |
+| `EMAILSENDER` (nuovo) | `emailsender.send` (ESATTO — non wildcard: `emailsender.response.>` è REQREP-corrispettivo e NON va catturato) | service-owned, come WEBHOOK_STREAM per webhook |
+| `ENTITY_CHANGED` (nuovo) | `entity.*.*.changed` | collab markers — retention limits-policy breve (sono superseding per version) |
+
+Domanda aperta Q-D1: `emailsender.send` catturato in stream service-owned `EMAILSENDER` vs stream condiviso `CALLABLES` per tutti i callable futuri? Io propendo service-owned (precedente webhook, isolamento failure-domain) — il pattern scala: ogni servizio con callable dichiara il suo stream come dichiara i callable stessi.
+
+## D2.4 — Ordine di lavoro proposto (work packages)
+
+- **WP0 enforcement-first**: rename `publish`→`publishEphemeralLossy` + `jetstreamPublish`→`publish` in sdk + lint `no-fnf-nats-publish` + allowPaths. Blast radius stimato ~15 file (censimento). CI protegge da nuovi F&F durante tutta la campagna
+- **WP1 fire path**: ensureStream EMAILSENDER (boot emailsender) → consumer emailsender migrate a jetstreamSubscribe (template webhook-subscriber) + idempotency guard requestId → publishers (be auth email-sender, due-forwarder) migrano a publish durable. **Verifica E2E: kill emailsender → fire → restart → email consegnata**
+- **WP2 due-forwarder generalizzato**: la consegna envelope.target diventa durable per OGNI callable — design: il catalog dei callable guida quali subject vengono catturati (stream config dinamica? ogni servizio dichiara il suo stream all'avvio — syncSubjects esiste già in JOBS_STREAM!)
+- **WP3 entity-changed collab**: stream ENTITY_CHANGED + consumer be durable + dedupe per version
+- **WP4 TTL+repull invalidations**: sdk shared-config.ts TTL 5min + shield-registry + secrets — i broadcast restano core come hint (dottrina ratificata)
+- **WP5 catalog lifecycle consumatori (I2)**: TTL 5min + negative-trigger in callable-catalog.ts + emitSubjects
+- **WP6 doctrine docs**: riscrittura nats-client.mdx con dottrina 4-classi + service-registration.mdx + enforcement rule doc
+
+## Domande per l'utente (bloccanti per TOC)
+
+- **Q-D1**: stream per-servizio vs condiviso CALLABLES? (io: per-servizio)
+- **Q-D2**: WP0 rename è breaking su ~15 file in 4 repo — tutto nella stessa PR/branch o commit sequenziali per repo? (io: un branch, commit per repo in ordine sdk→be→us)
+- **Q-D3**: idempotency emailsender — verifico se sender_log può ospitare la unique su request_id o serve dedupe table dedicata? (investigo in TOC, ma la strategia ON CONFLICT va ratificata)
+- **Q-D4**: retention degli stream — proposta: workqueue policy per callable (consumato = eliminato) vs limits con TTL? Io propendo **workqueue** per i fire (semantica esatta del work-item) e **limits 24h** per entity-changed (replay window per consumer restart)
+- **Q-D5**: le onde WP4/WP5/WP6 in questo piano o piano separato? Il piano è già grande — io terrei tutto qui come da tua decisione "cerniera e tutto"
