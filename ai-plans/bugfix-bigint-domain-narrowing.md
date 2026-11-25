@@ -163,3 +163,27 @@ Expect: same boundary pattern as be (zod validate + transform BigInt), plus serv
 - Test expectations alignments committed (pending/flush-translations CAS identity, buildAuditData shell) — stessa classe be/dal: attese che codificavano il vecchio contratto number
 - Docs committed in 4 repo (fe×2, core, dal, be) — dottrina version bigint-by-construction ora scritta nel contratto canonico
 - us-v3: mai toccato, turno separato in attesa di approvazione
+
+## SERVICES-SIDE TAIL — discovered 2026-11-25 (arch/nats-durability session)
+
+Empirical finding: the migration tail is not FE-only. us-v3 services carry
+the same vestiges on mainline (develop/main, commits 937201f/0c320dc):
+`version: number` signatures + `Number()` conversions, typecheck red in
+4/6 services (job-handler ~20+ sites, ai 4, emailsender 1). Root cause of
+invisibility verified: the predev gate (predev-standards-gate plan) covers
+`check:standards` lint only — services NEVER had a tsc gate (FE has
+`pnpm check` = svelte-check+tsc; services have nothing). Debt entered
+mainline silently because no gate watches types in services.
+
+Completed this session (commit us-v3): emailsender + ai — typecheck clean,
+vitest 20/20 ai, live restarts clean. Canonical conversions: BigInt() at
+query-string boundaries; NO conversion in ext-json bodies (already bigint).
+
+OPEN for next turns (step by step, user-directed):
+- job-handler ~20+ sites: due-forwarder, run-recorder, schedule-service,
+  actions-route, jobs.service — scheduling-critical, tests per file
+- MarkerAuditPort/AuditPort seam mismatch (changedAt Date vs Date|DalNow
+  symbol; action string vs AuditAction enum) — contract alignment needed
+- typecheck gate for services: extend the predev gate with tsc --noEmit —
+  the enforcement closure; without it this debt re-forms identically
+- e2e retest of modified write paths (open-plan mandate) batched at tail end
