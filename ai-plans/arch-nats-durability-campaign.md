@@ -732,3 +732,40 @@ resta all'edge HTTP dove il threat model e reale
   `pnpm build` verde con estrazione TypeDoc rigenerata.
 - ✅ A4 committato/pushato in sdk `89280b8` (`feat(nats): WP-A4 — decrypt
   receive paths and seal reqrep`).
+
+## REVIEW A3/A4 + A5 DESIGN OPEN POINTS (2026-11-25 — review Micha)
+
+Debiti minori A4 da chiudere prima o all'inizio di A5:
+1. Violazione GCM su JetStream: oggi term() impedisce delivery ma il path
+   esce prima del catch outer; se il messaggio non è job-correlated può mancare
+   un security log esplicito. Soluzione: log strutturato con subject/stream/
+   durable/seq/generation/error_code, mai payload né ciphertext.
+2. Msg-view decrypted: data/headers sono coherentemente decrypted, ma json()
+   e string() restano bound al Msg originale. Chiudere il cerchio nella view
+   oppure introdurre una fabric-message view esplicita; il ciphertext non deve
+   essere accessibile accidentalmente dal contract esposto al consumer.
+3. encodeOutboundMessage/decodeInboundMessage vivono in nats-client.ts per
+   riuso trasversale con nats-routes.ts. Funzionalmente corretto; cleanup
+   architetturale possibile in un modulo interno message-codec.ts.
+4. Plaintext fallback inbound/outbound è debito transitorio ratificato, non
+   workaround. Non verificarne la rimozione ora: riesaminare dopo A6/A7,
+   quando provider wiring e enforcement potranno chiuderlo per costruzione.
+
+A5 — scoperta architetturale critica: system.config_entries è un entity
+auditable con system.config_entries_audit. Scrivere parte_B lì dentro tramite
+il normale service auditato copierebbe il materiale segreto nella audit trail,
+vanificando trimming e forward secrecy. Anche bypassare audit manualmente è
+una violazione semantica di config_entries. Candidata architetturalmente
+preferita: tabella dedicata non-auditata per le generazioni di key material,
+con audit separato solo di metadati non segreti se necessario.
+
+A5 — decisioni da ratificare prima del TOC:
+- P1 storage definitivo parte_B: RESTARE sulla row JSON config_entries
+  con metadata per-generation, oppure correggere il piano verso tabella
+  dedicata system-owned una-row-per-generation (raccomandazione emersa in
+  review: tabella dedicata, trimming temporale nativo, niente audit del
+  materiale, constraint/monotonicità relazionali).
+- P2 single-writer rotation: Redis lock solo come coordinazione oppure
+  PostgreSQL advisory transaction lock (raccomandazione emersa in review:
+  PG-native, stessa durability domain, niente dipendenza extra, lock rilasciato
+  automaticamente a commit/rollback).
