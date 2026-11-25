@@ -400,3 +400,34 @@ implementa un pezzo di questo disegno, niente è standalone.
 - come funziona deriveClientKey/generation handshake oggi (estendere vs riscrivere)
 - dove vive/può vivere parte_B in PG config e chi la scrive (secret engine oggi scrive Redis!)
 - come config hot-reload propaga senza far transitare parte_B su NATS
+
+## WP-A SPEC IMPLEMENTATIVA — encryption foundation (scritta 2026-11-25 sera)
+
+### Modello chiavi (ratificato)
+
+Motivo chiave: il secret engine ESISTENTE oggi scrive Redis e distribuisce via secret.get
+(NATS — circolare!). Il fix non e nuovo engine: e cambio di canale — persistenza PG,
+distribuzione via DAL-read + config.changed come solo-hint (mai valori su NATS).
+
+### Envelope format
+
+
+### Key history e retention
+- consumer decifra con current+previous N generazioni (finestra = retention messaggi)
+- publisher cifra SOLO con current
+- secret-engine: rotation boot-BE + cadenzata; vecchie generazioni purgate con i messaggi
+
+### Incrementi di implementazione
+- A1 MessageKeyProvider sdk: lettura PG via dal, derivation, cache generazioni, hook config.changed
+- A2 envelope crypto primitives (seal/open) + unit test roundtrip/tamper/wrong-key
+- A3 publish path: encrypt-by-default in NatsClient.publish*; headers sensibili dentro busta
+- A4 subscribe path: decrypt in jetstreamSubscribe/subscribe/callNats prima di verify
+- A5 secret-engine re-channel: persistenza PG system schema, rotation, history pruning
+- A6 sweep boot servizi + rimozione static key da config_entries dev (dev=prod)
+- A7 rimozione rotating-secret-check dal user-layer NATS (resta edge HTTP)
+
+### Note implementative critiche
+- parte_B MAI in payload/header/broadcast NATS — enforced: il distribution path e solo DAL
+- config.changed resta hint senza valori — i servizi re-leggono PG
+- verify chain nella factory: decrypt envelope PRIMA di verifyNatsPublisher/RBAC
+- envelope plaintext-fallback solo nella finestra di transizione, poi lint/enforcement
