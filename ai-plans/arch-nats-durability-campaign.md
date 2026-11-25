@@ -334,3 +334,69 @@ FIX MINOR notato: la log line "Subscribed to emailsender.send" in email-send.ts 
 - sequence_revive materialize failed: ext-json unclosed @0 — errore preesistente separato
 - WP3 entity-changed, WP4 TTL invalidations, WP5 catalog, WP6 docs
 - Ripulire log line legacy in email-send.ts (doppia riga subscribe)
+
+## DESIGN RATIFICATO 2026-11-25/26 — architettura sicurezza+durability unificata
+
+D discussione completa con Micha. Questi sono i pilastri concordati — ogni WP sotto
+implementa un pezzo di questo disegno, niente è standalone.
+
+### Pilastro 1 — split-key AEAD encryption (IL KEYSTONE)
+- payload + user-header DENTRO busta cifrata AES-256-GCM; sul wire solo subject + blob opaco
+- chiave = derive(parte_A service-local injected MAI in repo/PG, parte_B in PG config table
+  letta SOLO via DAL diretto — MAI transitare su NATS/config.broadcast!, generation)
+- dual-control: serve compromissione DOPPIA indipendente (service+PG) per decifrare
+- AEAD dà autenticità gratis: niente più freshness-header rotating nel user-layer
+- KEY RETENTION = MESSAGE RETENTION + margine rotation (containment bidirezionale):
+  chiavi vecchie versionate in PG finché vivono i messaggi che cifrano; al purge dei
+  messaggi muore la generazione — forward secrecy a scaglioni
+- derivation per generazione (infrastruttura ESISTENTE inutilizzata: deriveClientKey,
+  key_mode derived, generation handshake nel registry) — estendere quella, non parallelare
+
+### Pilastro 2 — governance RBAC dichiarativa
+- _system_process sentinel (naming serie _public/_authenticated_user/_authenticated_admin)
+- RIMOZIONE bypass isSystem da checkRbac — RBAC sempre in gioco, system passa SOLO
+  dove la route dichiara il sentinel; endpoints non-dichiarati = user-ware only per costruzione
+- vincolo costruttivo trigger: creato da SYSTEM actor → run_as SOLO system;
+  author/originator richiedono creatore umano risolvibile
+- isSystem API-key eredita lo stesso perimetro (backdoor dormiente chiusa per costruzione)
+- nota dottrinale: isAdmin resta bypass ma è accettato — authority esterna, scadenza,
+  identità reale attribuita, audit trail. Il problema era solo il FORGERY non governabile
+
+### Pilastro 3 — durability contract onesto
+- retention bound ESPLICITO per stream (Micha: ~7 giorni — DA RATIFICARE il numero)
+- durable = contingenza/revive entro il bound, NON eternità
+- workqueue cancella su ack (niente pressure) — già implementato
+- nessuna freshness-proof sui messaggi: user-header sono DATI nella busta cifrata
+
+### Pilastro 4 — perimetro fabric
+- NATS SIMPLE auth: UNA credenziale condivisa di fabric injected at deploy, in nats-server.conf
+  — chiude il foreign-client VLAN puro (ack-theft, stream vandalism, purge)
+  — NO full per-service ACL (overhead ingiustificato)
+- MOTIVAZIONE registrata: crittografia copre lettura/forgery ma NON custody/distruzione
+  (ack-theft silenzioso = anti-durability perfetta, solo il fabric lo impedisce)
+
+### Pilastro 5 — endgame futuro (registrato, non in scope)
+- EXTERNAL AUTHORITY verification alla registration (SPIFFE/cloud-attestation pattern):
+  il root of trust vive FUORI dal sistema — chiude emulazione-via-SDK
+- residuo accettato nel frattempo: SDK emulation con compromissione multipla completa
+
+### Dev=prod
+- static key in dev config_entries (4ee3d069...) = CAZZATA DA RIMUOVERE (verdetto Micha)
+- derivation secret injected in entrambi gli ambienti — dev lavora come prod
+
+### Ordine di lavoro ratificato
+- WP-A encryption foundation sdk (keystone — tutto dipende dal wire format)
+- WP-B _system_process + rimozione bypass + sweep dichiarazioni
+- WP-C retention bounds + vincolo trigger
+- WP-D WP2 forwarder migration sopra le fondamenta corrette
+- WP-E SIMPLE NATS auth (infra)
+- WP-F..WP-Z: WP3-6 campagna originaria (entity-changed, TTL, catalog, docs)
+
+### Decisioni micro aperte (default proposti — correggere se sbagliati)
+- retention messaggi: 7 giorni
+- rotation parte_B: ad ogni boot BE + cadenzata (proposta: giornaliera)
+
+### Verifiche TOC necessarie prima di WP-A
+- come funziona deriveClientKey/generation handshake oggi (estendere vs riscrivere)
+- dove vive/può vivere parte_B in PG config e chi la scrive (secret engine oggi scrive Redis!)
+- come config hot-reload propaga senza far transitare parte_B su NATS
