@@ -686,7 +686,7 @@ resta all'edge HTTP dove il threat model e reale
   seal AES-256-GCM; provider assente/non-ready → plaintext legacy + warning
   process-wide una sola volta (`MESSAGE_KEY_UNAVAILABLE`).
 - Sensibili non sono solo il prefisso letterale `x-user-`: la classificazione
-  legge anche i nomi configurati in `getAuthConfig().gateway.headers`, perché
+  legge anche i nomi configurati in `getLoadedAuthConfig()?.gateway.headers`, perché
   gli header auth sono configurabili e `forwardAuthHeaders` può copiarli
   verbatim in un servizio che non li ha serializzati. Shield/identity/job/otel
   restano transport-visible come ratificato.
@@ -697,6 +697,8 @@ resta all'edge HTTP dove il threat model e reale
 - Verifiche eseguite prima del commit: `pnpm exec tsc --noEmit` verde,
   `pnpm check:standards` verde, `pnpm test` verde, `pnpm build` verde
   (estrazione TypeDoc rigenerata; warning `@param headers` eliminato).
+- ✅ A3 committato/pushato in sdk `1e7b80b` (`feat(nats): WP-A3 — encrypt
+  publish paths by default`), incluse rigenerazioni TypeDoc pertinenti.
 - Scoperta TOC da assorbire in A4: `callNats` pubblica la request con
   `nc.publish(... encode(data))` e `makeNatsRequestRoute` risponde con
   `msg.respond(encode(result))`, bypassando i due publish path coperti da A3.
