@@ -580,3 +580,24 @@ resta all'edge HTTP dove il threat model e reale
 - rotation cadence parte_B: boot-BE + 24h
 - MESSAGE_KEY_ROOT: nome env var definitivo
 - dev: file gitignored per la root key, letto da dev-stack scripts
+
+## DECISIONI RATIFICATE 2026-11-26 (Micha — definitivi per TOC)
+
+1. RETENTION: default 72h per work stream, override dichiarato per-stream nel factory
+   UNA volta (durable: { retention }); bounds enforced by construction: floor 1h, cap 7gg.
+   KEY HISTORY = sempre il cap 7gg, autowired — mai una seconda manopola, il dev non
+   sa nemmeno che esiste. Per-message TTL (Nats-TTL) = strumento di eccezione.
+2. ROTATION parte_B: ORARIA (sweet spot — 5min paga 12x audit-noise+history per
+   beneficio marginale piccolo; allineata al ritmo secret engine esistente).
+   Key-trimming automatico sulla finestra 7gg.
+3. PARTE_A: costante compile-time nell'sdk con COMMENTO PER I POSTERI obbligatorio:
+   "hardcoded finche non esiste module certification; oggi chiunque puo registrarsi;
+   il file firmato futuro per-modulo portera l'ATTESTAZIONE dell'identita — la chiave
+   del bus resta fleet-wide derivata post-attestation, non necessariamente questa
+   costante". Test di regression che impedisce rimozione accidentale.
+   REGISTRATO: parte_A NON puo essere config (circolare — entrambe le meta in PG =
+   dual-control morto) ne env (env-policy.md: a secret is config, not env — ma questo
+   non e config di deployment, e proprieta dell'artefatto come il vocabolario permessi).
+4. MACHINE RESET: zero cerimonie — parte_A nel repo, parte_B self-healing dal secret
+   engine al boot se manca (meccanismo regenerate-on-demand esistente). dev=prod.
+5. parte_B: system.config_entries row, generazioni in map JSON trimmata a 7gg.
