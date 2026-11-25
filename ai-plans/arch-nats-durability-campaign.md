@@ -706,3 +706,29 @@ resta all'edge HTTP dove il threat model e reale
   plaintext anche a provider ready. A4 deve coprire anche encrypt request /
   decrypt request prima di verify / encrypt response / decrypt response.
   Non è scope creep: è richiesto dal Pilastro 1 (sul wire solo blob opaco).
+
+## A4 TOC — implementazione pronta per commit (2026-11-25)
+
+- Decoder inbound unico in `nats-client.ts`: plaintext legacy passthrough con
+  warning una volta per processo; envelope aperto solo via provider; inner
+  sensitive headers fusi sopra la vista degli header di trasporto; errori di
+  integrità/key mai consegnati ai consumer.
+- `NatsClient.subscribe` usa ora una Msg-view decrypted (payload + headers),
+  preservando `respond()` e i metodi originali tramite proxy.
+- `jetstreamSubscribe` decifra prima di verify/RBAC/dedupe/handler. Violazione
+  GCM -> `term()` senza delivery; provider/key-generation non disponibile ->
+  errore transitorio nel normale `nak()` path, così il refresh del key window
+  può sanare l'avvio disallineato.
+- `makeNatsRoutes` e `makeNatsRequestRoute` decifrano prima di
+  shield/auth/RBAC/contratto. Il gap REQREP è chiuso: `callNats` sigilla la
+  request con lo stesso split header e apre la reply; le response/error reply
+  di `makeNatsRequestRoute` sono sigillate quando il provider è ready.
+- Test persistenti aggiunti: decrypt+merge su subscribe core, tampering mai
+  consegnato, decrypt+merge+ack su JetStream, tampering durable -> term,
+  reqrep decrypt-before-auth + response opaque, callNats request opaque +
+  routing headers fuori + reply aperta.
+- Verifiche eseguite prima del commit: `pnpm exec tsc --noEmit` verde,
+  `pnpm check:standards` verde, `pnpm test` verde (49/49 file, 650/650 test),
+  `pnpm build` verde con estrazione TypeDoc rigenerata.
+- ✅ A4 committato/pushato in sdk `89280b8` (`feat(nats): WP-A4 — decrypt
+  receive paths and seal reqrep`).
