@@ -431,3 +431,152 @@ distribuzione via DAL-read + config.changed come solo-hint (mai valori su NATS).
 - config.changed resta hint senza valori — i servizi re-leggono PG
 - verify chain nella factory: decrypt envelope PRIMA di verifyNatsPublisher/RBAC
 - envelope plaintext-fallback solo nella finestra di transizione, poi lint/enforcement
+
+## WP-A TIC COMPLETO (2026-11-26) — encryption foundation, pronto per TOC
+
+### Doc deep-dive eseguito (doc first, code second)
+- `sdk/docs/dev-guide/client-shield-and-secrets.mdx` — governing doc del dominio: documenta
+  rotating secret come anti-spoofing stamp, NESSUNA menzione di key-derivation/encryption.
+  WP-A lo supera: doc update obbligatorio alla chiusura (docs-sync-on-close).
+- `sdk/docs/dev-guide/nats-client.mdx` — wire contract: publish/subscribe usano ext-json
+  automatico, consumers passano plain objects. Encryption deve restare trasparente a questa
+  interfaccia — i consumer NON cambiano.
+
+### Censimento empirico touchpoint (file:linea, verificato)
+SDK plumbing — la cifratura vive in questi 6 punti, nessun altro:
+- `sdk/src/nats/nats-client.ts:240` publishEphemeralLossy (ephemeral path)
+- `sdk/src/nats/nats-client.ts:422` publish (durable JetStream path)
+- `sdk/src/nats/nats-client.ts:304` deserialize in subscribe
+- `sdk/src/nats/nats-client.ts:559` deserialize in subscribeRequest
+- `sdk/src/nats/nats-client.ts:626` deserialize in jetstreamSubscribe
+- `sdk/src/nats/nats-routes.ts:202` deserialize reply in callNats
+
+Auth chain da spostare dentro la busta:
+- `sdk/src/auth/auth-user-serializer.ts:38` serializeAuthUserToHeaders
+- `sdk/src/auth/auth-user-serializer.ts:85` deserializeAuthUserFromHeaders
+- verifyNatsPublisher consumers: session-context.ts, create-microservice.ts, job-schedule.ts, nats-routes.ts
+
+Consumer impact (trasparente — nessuna modifica richiesta):
+- 16 publish call sites (8 be-v3 + 8 us-v3), 9 file con callNats, 4 consumer jetstreamSubscribe,
+  1 factory makeNatsRoutes — tutti passano per il plumbing sdk.
+
+Storage parte_B — verificato empiricamente:
+- `system.config_entries` ESISTE (fleet-shared, stessa shape delle per-service)
+- `system.client_shield_registry` esiste accanto — precedente cross-schema system schema
+- per-service schemas: ai, boilerplate, crm, emailsender, job — ognuna la propria config_entries
+
+### Modello chiavi definitivo
+```
+parte_A = MESSAGE_KEY_ROOT — env-injected, fleet-common, MAI in repo/PG/config_entries
+parte_B = system.config_entries row, key = 'service_message_key_material'
+          value json: { generation, current, previous?, rotated_at }
+enc_key(gen) = HMAC-SHA256(parte_A).update(parte_B_gen + ":" + gen) → 32 byte raw
+```
+- writer di parte_B: RotatingSecretEngine sul BE (re-channeled da Redis a PG — vedi A5)
+- reader: ogni servizio via DAL diretto su system.config_entries — MAI via NATS
+- distribution hint: config.changed broadcast resta solo-hint (nessun valore su NATS)
+
+### Envelope wire format definitivo
+```
+inner frame (mai sul wire in chiaro): ext-json({ p: payload, h: { sensitiveHeaders } })
+wire payload: ext-json({ enc: 1, gen: N, iv: b64(12B random), data: b64(ciphertext||tag) })
+  cipher = AES-256-GCM(enc_key(gen), iv)
+detection: parsed object con enc === 1 → envelope; altrimenti legacy plaintext (transizione)
+header NATS esterni (restano in chiaro — routing/transport, non confidenziali):
+  otel traceparent, job correlation ids, shield stamps (fino ad A7)
+header SENSIBILI dentro la busta: x-user-id, x-user-roles, x-user-permissions,
+  x-user-session e ogni altro claim di auth-user-serializer
+```
+
+### Pseudo-codice per modulo (TOC = trascrizione)
+
+A2 — `sdk/src/nats/message-envelope.ts` (nuovo, puro):
+```
+sealEnvelope(key: Buffer, generation: number, payload: unknown, headers: Record<string,string>): string
+  iv = randomBytes(12); plaintext = extJsonStringify({ p: payload, h: headers })
+  cipher = createCipheriv('aes-256-gcm', key, iv)
+  data = concat([cipher.update(plaintext,'utf8'), cipher.final(), cipher.getAuthTag()])
+  return extJsonStringify({ enc: 1, gen: generation, iv: b64(iv), data: b64(data) })
+
+isEnvelope(parsed: unknown): boolean  — parsed.enc === 1 && typeof parsed.gen === 'number'
+
+openEnvelope(envelope, keyResolver: (gen) => Buffer|null): { payload, headers }
+  key = keyResolver(envelope.gen) — null → throw KEY_GENERATION_UNKNOWN
+  split data: ciphertext = data[:-16], tag = data[-16:]
+  decipher.setAuthTag(tag) — GCM verify failure = throw MESSAGE_INTEGRITY_VIOLATION
+  frame = extJsonParse(deciphered) → { payload: frame.p, headers: frame.h }
+```
+
+A1 — `sdk/src/nats/message-key-provider.ts` (nuovo):
+```
+class MessageKeyProvider:
+  configure({ dal, rootSecret }): void   — chiamato da createMicroservice al boot
+  refresh(): Promise<void>  — SELECT value FROM system.config_entries WHERE key=...
+    deriva key per generation corrente + previous; cache in memory Map<gen, Buffer>
+  currentKey(): { key, generation } | null
+  keyForGeneration(gen): Buffer | null
+  ready(): boolean — rootSecret presente AND almeno una generazione caricata
+hook: createMicroservice sottoscrive config.changed → refresh() (già esiste il punto)
+```
+
+A3 — publish path (nats-client.ts:240,422):
+```
+se keyProvider.ready():
+  split headers: sensitive = x-user-*, transport = resto
+  wire = sealEnvelope(key, gen, data, sensitive)
+  publish(subject, encode(wire), transportHeaders)
+altrimenti: legacy plaintext + warn-once 'MESSAGE_KEY_UNAVAILABLE plaintext fallback'
+```
+
+A4 — subscribe path (nats-client.ts:304,559,626 + nats-routes.ts:202):
+```
+parsed = extJsonParse(text)
+se isEnvelope(parsed):
+  { payload, headers } = openEnvelope(parsed, gen => keyProvider.keyForGeneration(gen))
+  merge inner headers nella view esposta a handler/factory — interfaccia identica a oggi
+  decrypt failure → term/nak + error log; MAI consegnare al handler
+se legacy plaintext: passthrough + deprecation warn-once
+```
+
+A5 — secret-engine re-channel (be-v3, rotating-secret.ts):
+```
+nuovo ref: { scope: 'global', name: 'service_message_key_material' }
+persist: UPSERT system.config_entries row (generation, current, previous, rotated_at)
+  — NON piu Redis slot per questo ref; NON servire via secret.get (chiusura circolarita)
+rotation: boot-BE + interval 24h (DA RATIFICARE — proposta)
+previous mantenuto per la finestra retention messaggi (7gg — DA RATIFICARE)
+```
+
+A6 — bootstrap/dev-prod parity:
+```
+MESSAGE_KEY_ROOT injected env in tutti gli ambienti; dev-stack legge file gitignored
+rimozione service_client_shield_key statico da config_entries dev (patch correttiva)
+fail-fast al boot se MESSAGE_KEY_ROOT assente (no fallback insicuro)
+```
+
+A7 — rimozione rotating-check dal user-layer NATS (dopo A3/A4 live):
+```
+validClientShieldSecrets smette di essere verificato sui messaggi NATS stream
+resta all'edge HTTP dove il threat model e reale
+```
+
+### Test deliverables (persistenti, canonici — sdk/src/nats/__tests__/)
+- message-envelope.test.ts: roundtrip, tamper detection (bit-flip → integrity violation),
+  wrong-key rejection, wrong-generation rejection, legacy plaintext detection, bigint preservation
+- message-key-provider.test.ts: derivation deterministica, generation cache, refresh mock-dal
+- integrazione publish→subscribe cifrato end-to-end in nats-client.test.ts esistente
+
+### Acceptance criteria
+1. payload + user-header illeggibili sul wire (verifica empirica: capture stream content = opaque)
+2. rogue subscriber con credenziali NATS ma senza chiavi: solo byte opachi
+3. messaggi consumabili per tutta la finestra retention (generazioni precedenti decifrabili)
+4. tampered ciphertext → rejection, mai delivery
+5. consumer call sites invariati (trasparenza)
+6. sdk 626/626+ test verdi, nuovi test deliverable inclusi
+7. doc update: client-shield-and-secrets.mdx + nats-client.mdx riscritti al nuovo modello
+
+### Decisioni da ratificare al PROCEED (default proposti)
+- retention messaggi/chiavi: 7 giorni
+- rotation cadence parte_B: boot-BE + 24h
+- MESSAGE_KEY_ROOT: nome env var definitivo
+- dev: file gitignored per la root key, letto da dev-stack scripts
