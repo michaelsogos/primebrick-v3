@@ -916,3 +916,11 @@ workspace 6d97efe.
 A7 rimane: chiusura plaintext fallback (encode path fail-closed) quando si
 conferma che tutti i consumer sono wired in produzione; verifica esplicita
 richiesta da Micha prima della rimozione.
+
+## BOOT ORDER FIX (2026-11-25 — be): provisioning vault pre-NATS
+
+ensureAll+cadence spostati prima del NATS connect (pure PG): su DB fresh
+il materiale esiste prima del primo refresh del provider — nessuna finestra
+plaintext di boot nemmeno al primissimo avvio. Prerequisito per A7
+(fail-closed): senza questo ordering il BE pubblicherebbe in chiaro nel
+window boot su DB nuovo. Verificato live: restart con zero warning.
