@@ -887,3 +887,32 @@ A6 — rimane da fare:
 Ledger hash WP-A completo: A3 sdk 1e7b80b — A4 sdk 89280b8 — A4-cleanup
 sdk 5ae1ddc — A5 sdk dd3634d + 825fbdf — A5 be c15cd18 — ratifica design
 workspace 6d97efe.
+
+## WP-A6 IMPLEMENTATO (2026-11-25 — sdk 216c198, us 9957d80, be ~index/secret-vault wiring)
+
+- createMicroservice wiring: opzione REQUIRED `dalPool` — chi dimentica il
+  wiring non compila (verificato empiricamente: stash della riga consumer =
+  typecheck fallisce con esattamente quell'errore). Enforcement over
+  verification, zero convenzione.
+- Boot wiring: SecretVaultReader direct-DAL + refresh tollerante + hint
+  subscription su secret_vault.rotated. Il BE (non passa per
+  createMicroservice) wiring identico manuale: provider PRIMA del NATS
+  connect in startServiceLifecycle, subscription post-NATS che refresha il
+  singleton — il BE reagisce al proprio broadcast come ogni servizio.
+- Reactive debounced self-heal dentro MessageKeyProvider: currentKey()/
+  keyForGeneration() su miss innescano re-read throttled (30s, sui TENTATIVI
+  non solo successi — vault non provisionato costa max 1 read PG/finestra).
+  Hint loss, boot ordering, arrivi mid-rotation irrilevanti per costruzione.
+  6/6 spec dedicati in message-key-provider.test.ts.
+- Suite SDK 52/52 file, 674/674 test verdi.
+- Wire probe live dev stack: publish governato produce
+  {"enc":1,"gen":1,"iv":...,"data":...} — zero plaintext sul wire.
+- Boot live verificati: be + servizi puliti, ZERO warning
+  MESSAGE_KEY_UNAVAILABLE dopo il fix di ordering (provider pre-NATS nel BE).
+- Debt pre-esistente branch us-v3 (NON A6, fuori scope): errori typecheck
+  bigint in config-entries.service.ts/actions-route.ts/jobs.service.ts —
+  segnalato, esisteva prima di questo lavoro.
+
+A7 rimane: chiusura plaintext fallback (encode path fail-closed) quando si
+conferma che tutti i consumer sono wired in produzione; verifica esplicita
+richiesta da Micha prima della rimozione.
