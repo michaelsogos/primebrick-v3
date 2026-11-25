@@ -601,3 +601,12 @@ resta all'edge HTTP dove il threat model e reale
 4. MACHINE RESET: zero cerimonie — parte_A nel repo, parte_B self-healing dal secret
    engine al boot se manca (meccanismo regenerate-on-demand esistente). dev=prod.
 5. parte_B: system.config_entries row, generazioni in map JSON trimmata a 7gg.
+
+## LEDGER 2026-11-26 sera — TOC iniziato
+- ✅ A1+A2: message-envelope.ts + message-key-provider.ts + 14 spec deliverable
+  (sdk commit su arch/nats-durability, pushato; suite sdk 49/49 file verdi)
+- scoperta TOC registrata: ext-json materializza TUTTI gli interi come bigint —
+  envelope normalizza enc/gen via Number() al boundary (commenti in codice)
+- ⏳ prossimi: A3 publish path integration → A4 subscribe path → A5 engine
+  re-channel a PG → A6 bootstrap wiring createMicroservice + rimozione static
+  key dev → A7 freshness removal. Poi WP-B (_system_process).
