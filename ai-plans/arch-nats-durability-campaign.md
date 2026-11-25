@@ -670,8 +670,8 @@ resta all'edge HTTP dove il threat model e reale
 - Dirty state SDK identificato: `docs/dev-guide/_extracted/api.json` +
   `docs/dev-guide/api-reference.mdx` sono artefatti generati dell'estrazione
   API e riflettono le superfici WP0/WP1 già committate (`ensureStream` retention,
-  `jetstreamSubscribe.isTerminal`, `NatsRoute.durable`). Vanno committati come
-  hygiene documentale prima di A3, non mescolati al codice A3.
+  `jetstreamSubscribe.isTerminal`, `NatsRoute.durable`). Committati come
+  hygiene documentale prima di A3 in sdk `f5d3b83`, non mescolati al codice A3.
 - Dirty state US identificato ma NON toccato: generated trigger docs dipendono
   dal catalogo runtime (rimozione `job.partition_maintenance`/`job.sequence_revive`).
   È fuori scope A3 e va risolto quando si toccherà us-v3; non va cancellato
