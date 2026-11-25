@@ -208,3 +208,32 @@ Domanda aperta Q-D1: `emailsender.send` catturato in stream service-owned `EMAIL
 - **Q-D3**: idempotency emailsender — verifico se sender_log può ospitare la unique su request_id o serve dedupe table dedicata? (investigo in TOC, ma la strategia ON CONFLICT va ratificata)
 - **Q-D4**: retention degli stream — proposta: workqueue policy per callable (consumato = eliminato) vs limits con TTL? Io propendo **workqueue** per i fire (semantica esatta del work-item) e **limits 24h** per entity-changed (replay window per consumer restart)
 - **Q-D5**: le onde WP4/WP5/WP6 in questo piano o piano separato? Il piano è già grande — io terrei tutto qui come da tua decisione "cerniera e tutto"
+
+## D2.5 — CORREZIONE ARCHITETTURALE UTENTE (ratificata — sostituisce D2.2/D3)
+
+### Il contratto ACK corretto: ACK = PRESO IN CARICO, non eseguito
+
+NATS non deve sapere nulla del side effect esterno. L'ack comunica una sola cosa: "il task è stato preso in carico in modo durevole". La semantica corretta del flusso callable:
+
+```
+1. consumer riceve il fire
+2. PERSISTE LO STATO DEL LAVORO nel proprio dominio (sender_log con stato iniziale "pending")
+   — l'insert stesso è il dedupe: UNIQUE(request_id), conflitto = redelivery → salta al passo 4
+3. ACK — solo ora, dopo il persist: "preso in carico"
+4. l'ESECUZIONE (chiamata Brevo) è asincrona e responsabilità del servizio:
+   state machine su sender_log (pending → sending → sent/failed)
+   + sweep-on-restart dei record pending/incomplete — il servizio rende reliable SE STESSO
+```
+
+**Perché questo chiude la finestra di redelivery molto meglio del mio approccio**: l'ack arriva dopo millisecondi (un insert locale), non dopo 3 secondi di chiamata SMTP. La redelivery resta possibile solo per crash-tra-ricezione-e-persist — finestra minuscola — e anche in quel caso il dedupe la copre: al re-deliver, l'insert va in conflitto → ack senza riprocessare. Crash-dopo-ack-prima-dell'esecuzione? Coperto dal sweeper, non da NATS: **la verità dello stato di esecuzione vive nel dominio, non nel broker**. NATS è solo il meccanismo di consegna della presa in carico.
+
+### Il dedupe a due layer — la distinzione che mi era sfuggita
+
+- **Domain-native (per servizio)**: sender_log fa dedupe come effetto naturale della presa in carico — È logica di dominio, vive nel dominio, corretto che stia lì. Non è "dedupe sistemico su PG": è il record di lavoro del servizio che per costruzione non può esistere due volte.
+- **Systemic (SE serve per consumatori generici senza record di dominio naturale)**: MAI su PG entity logic — le chiavi di dedupe sono metadata effimeri di trasporto, non stato di dominio. Sede corretta: **REDIS** con TTL calibrato sulla finestra di redelivery (ackWait × maxDeliver + margine — ore, non giorni), completamente avulso dalle logiche entity. Garanzia di sistema, non del dominio. Da valutare in WP2 (due-forwarder/callable generici) se serve davvero — per consumer che hanno un record di lavoro naturale non serve affatto.
+
+### Il principio generalizzato (da scrivere nella dottrina)
+
+Ogni consumer durable deve rispondere a: "dov'è lo stato di questo lavoro dopo che ho dato ack?" — se la risposta è "da nessuna parte", il design è sbagliato. L'ack sincrono sul side effect esterno (il mio approccio iniziale) è un anti-pattern: lega la finestra di redelivery alla latenza del sistema esterno e spinge la responsabilità di reliability sul broker invece che sul servizio.
+
+### D4 ratificato: ENTITY_CHANGED retention limits 1h (non 24h — finestra blip operativo)
