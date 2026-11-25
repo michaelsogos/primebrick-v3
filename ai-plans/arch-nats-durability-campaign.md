@@ -277,3 +277,10 @@ Il consumer emailsender usa `makeNatsRoutes` (factory che registra endpoints.cal
 - chi crea lo stream: la factory stessa a boot (ensureStream idempotente) — publisher indipendente grazie a capture-per-subject
 RESPONSE PATH: `emailsender.response.<requestId>` resta core/effimero (è correlazione per caller live; il fire è durable ma la response no — chi ascolta è online per definizione o perde interesse)
 SENDER_LOG state machine: request_id UNIQUE colonna nuova; handler INSERT pending (presa in carico) → poi dispatch brevo async → update sending/sent/failed; sweeper on-boot + interval 60s riprende pending/sending incomplete
+
+### WP1 progresso 2 — factory durable + isTerminal DONE (committed sdk)
+- NatsRoute.durable:true → subscribeDurableRoute: stream `<SERVICECODE uppercase sanitized>` workqueue, union-merge subjects, durable name `<svc>-<subject sanitized>`, verify adapter (AuthError/RbacDenied→null terminal), isTerminal ValidationError, handler adapter con runContract
+- jetstreamSubscribe.isTerminal hook: term() invece di nak-loop per poison messages, lease rilasciato senza DONE (terminal≠success)
+- ensureStream retention passthrough (limits/workqueue)
+- tsc+test+standards verdi
+- PROSSIMO TURN: emailsender migrazione vera — 1) email-send.ts: aggiungere `durable: true` alla route (una riga — la factory fa tutto) 2) sender_log patch request_id UNIQUE + state machine + sweeper 3) be email-sender.ts publisher→publish durable + uscita allowlist 4) runtime verification con dev servers (publish kill-consumer redelivery dedupe) 5) poi WP2 due-forwarder (stessa una-riga via durable:true ma serve census triggers fire chain check)
