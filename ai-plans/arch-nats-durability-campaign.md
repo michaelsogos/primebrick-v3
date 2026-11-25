@@ -292,3 +292,16 @@ SENDER_LOG state machine: request_id UNIQUE colonna nuova; handler INSERT pendin
 - sweeper boot+60s in index.ts; stale-sending 10min re-dispatch (duplicate-risk > loss per dottrina)
 - be publisher emailsender.send → durable publish, uscito da allowlist; es allowlist: email-service.ts (outcome response legit-ephemeral)
 - MANCANTE: runtime verification E2E (kill consumer → redelivery → no re-execute; crash post-accept → sweeper recovery) — PROSSIMO STEP
+
+### WP1 — RUNTIME VERIFICATION (parziale, live stack 2026-11-25)
+PROVATO LIVE:
+- EMAILSENDER stream creato dalla factory al boot: subjects ["emailsender.send"], retention workqueue ✅
+- capture→consume chain: publish probe → delivered:1 ack_floor:1, stream svuotato (workqueue semantics) ✅
+- denial TERMINAL: publisher non autenticato → UNIDENTIFIED_CLIENT → term, `redelivered: 0` — anti-loop verificato empiricamente ✅
+- be restartato con publisher durable (health 200), emailsender idem — stack vivo e detached
+NON ancora provato (richiede fire autenticato reale):
+- positive path: fire valido → acceptSend → pending row → dispatch async → sent/failed + outcome response
+- dedupe-on-redelivery a runtime (chiavi Redis natsjs:dedupe)
+- sweeper recovery dopo crash
+TRIGGER per la prova finale: reset password/invito dalla UI, oppure probe script in be con buildNatsAuthHeaders (prossimo turno)
+FIX MINOR notato: la log line "Subscribed to emailsender.send" in email-send.ts è fuorviante (sembra una seconda subscription core — è solo log legacy, la subscription reale è solo quella durable della factory)
