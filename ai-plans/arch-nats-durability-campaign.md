@@ -678,3 +678,29 @@ resta all'edge HTTP dove il threat model e reale
   silenziosamente perché potrebbe essere stato generato dall'utente o da una
   sessione parallela.
 - TOC riparte da A3 nel solo SDK dopo l'hygiene commit documentale.
+
+## A3 TOC — implementazione pronta per commit (2026-11-25)
+
+- `NatsClient.publish` e `NatsClient.publishEphemeralLossy` passano ora da un
+  encoder outbound condiviso: provider ready → payload + auth-user headers nel
+  seal AES-256-GCM; provider assente/non-ready → plaintext legacy + warning
+  process-wide una sola volta (`MESSAGE_KEY_UNAVAILABLE`).
+- Sensibili non sono solo il prefisso letterale `x-user-`: la classificazione
+  legge anche i nomi configurati in `getAuthConfig().gateway.headers`, perché
+  gli header auth sono configurabili e `forwardAuthHeaders` può copiarli
+  verbatim in un servizio che non li ha serializzati. Shield/identity/job/otel
+  restano transport-visible come ratificato.
+- Test persistenti aggiunti in `src/nats/__tests__/nats-client.test.ts`:
+  plaintext fallback + warn-once, opaque wire + roundtrip ephemeral, opaque
+  wire + sequence JetStream durable, configured auth header names dentro busta
+  con shield fuori. Totale suite sdk: 49/49 file, 644/644 test verdi.
+- Verifiche eseguite prima del commit: `pnpm exec tsc --noEmit` verde,
+  `pnpm check:standards` verde, `pnpm test` verde, `pnpm build` verde
+  (estrazione TypeDoc rigenerata; warning `@param headers` eliminato).
+- Scoperta TOC da assorbire in A4: `callNats` pubblica la request con
+  `nc.publish(... encode(data))` e `makeNatsRequestRoute` risponde con
+  `msg.respond(encode(result))`, bypassando i due publish path coperti da A3.
+  Quindi il piano originario sottostima i touchpoint: il REQREP resterebbe
+  plaintext anche a provider ready. A4 deve coprire anche encrypt request /
+  decrypt request prima di verify / encrypt response / decrypt response.
+  Non è scope creep: è richiesto dal Pilastro 1 (sul wire solo blob opaco).
