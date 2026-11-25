@@ -284,3 +284,11 @@ SENDER_LOG state machine: request_id UNIQUE colonna nuova; handler INSERT pendin
 - ensureStream retention passthrough (limits/workqueue)
 - tsc+test+standards verdi
 - PROSSIMO TURN: emailsender migrazione vera — 1) email-send.ts: aggiungere `durable: true` alla route (una riga — la factory fa tutto) 2) sender_log patch request_id UNIQUE + state machine + sweeper 3) be email-sender.ts publisher→publish durable + uscita allowlist 4) runtime verification con dev servers (publish kill-consumer redelivery dedupe) 5) poi WP2 due-forwarder (stessa una-riga via durable:true ma serve census triggers fire chain check)
+
+### WP1 progresso 3 — emailsender migration DONE (committed be+us)
+- email-send.ts durable:true; handler = acceptSend + detached dispatchRow; response publish spostato in dispatch completion
+- sender_log patch 20270102100000 (request_id UNIQUE + request_payload jsonb) firmata dev-micha-3
+- email-service.ts riscritto: acceptSend/dispatchRow/sweepPending state machine; sendEmail legacy compone i due per i test (34/34 verdi)
+- sweeper boot+60s in index.ts; stale-sending 10min re-dispatch (duplicate-risk > loss per dottrina)
+- be publisher emailsender.send → durable publish, uscito da allowlist; es allowlist: email-service.ts (outcome response legit-ephemeral)
+- MANCANTE: runtime verification E2E (kill consumer → redelivery → no re-execute; crash post-accept → sweeper recovery) — PROSSIMO STEP
