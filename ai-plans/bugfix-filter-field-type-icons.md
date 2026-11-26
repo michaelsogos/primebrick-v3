@@ -87,3 +87,31 @@ metaColumnIcon (declared → options_source → format/type). ColumnLike
 widened to the helper input shape; permanent E2E asserts every
 columns-toggle row carries one svg (green end-to-end, job_schedule).
 Commit: fe+1.
+
+## Addendum 8 — combobox popover open latency (same session, user-reported ×2)
+
+The user re-tested the loading UX on the REAL scenario (sequences →
+advanced → desc_key → Value) and the popover still appeared late, already
+full. Instrumented probe: ZERO network in the window — the delay was the
+synchronous DOM mount of thousands of rows, TWO compounding causes:
+
+1. ComboSelect had no render cap — every matching row mounted upfront
+   (1.8s measured on the broad `.entities.` vocabulary). Fix: render
+   window (initial 50, progressive +50 on scroll-to-bottom, truncation
+   hint `app.common.combo_more_items.one/.other` with the hidden count),
+   re-armed on search/reopen, never on options identity. onLoadMore fires
+   only once the local window is exhausted.
+2. FiltersPanel never received translation_key — the i18n_key filter
+   vocabulary fell back to the broad `.entities.` scope (foreign keys of
+   every module). Threaded end-to-end; vocabulary now scopes to
+   `.entities.<tk>.rows.`.
+
+Measured post-fix: shell visible in 124ms (was 1795ms). Permanent E2E ×2:
+the exact user scenario (shell < 1s) + the deterministic large-vocabulary
+IANA surface (cap ≤ 51, hint with count, scroll discloses more). OPEN
+FINDING: zero `.entities.*.rows.*` translations exist in the dev DB (e2e
+rows are API-created without translation writes), so the scoped vocabulary
+is honestly EMPTY — before the fix it showed irrelevant foreign noise.
+Design question parked for the user: should the FILTER vocabulary be
+keys-in-use (distinct column values, audit-actors style) instead of
+catalog keys? Commits: ui+1, fe+1, be+1 (patch 20270101190000).
