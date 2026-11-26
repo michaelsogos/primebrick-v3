@@ -29,3 +29,11 @@ Root cause: `getOperatorsForColumnType` is type-only; `tz` is text.
 Fix: core `getOperatorsForColumn(col)` collapses `options_source`/`ref` to
 equality; both fe consumers (panel + state sanitizer) wired. E2E asserts
 exactly 2 operator rows on a governed field — green. Commits: core+1, fe+1.
+
+## Addendum 2 — timezone type glyph (same session, user-reported)
+
+The tz column rendered the bare-text T in pickers though its combobox
+options carry the globe. Fix: `metaColumnIcon` precedence extended —
+declared icon → options_source semantic glyph (`iana.tzones`→globe) →
+type-derived. Verified live on the sequences advanced picker (globe on
+the Time zone row); 5 unit tests pin the precedence. Commit: ui+1.
