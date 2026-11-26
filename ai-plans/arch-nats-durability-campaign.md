@@ -924,3 +924,37 @@ il materiale esiste prima del primo refresh del provider — nessuna finestra
 plaintext di boot nemmeno al primissimo avvio. Prerequisito per A7
 (fail-closed): senza questo ordering il BE pubblicherebbe in chiaro nel
 window boot su DB nuovo. Verificato live: restart con zero warning.
+
+## WP-A7 CHIUSO (2026-11-26) — plaintext fallback sealed, rotating-check removed
+
+Tre chiusure in un turno, come ratificato da Micha (Q1c/Q2-hard/Q3-stesso-turno/Q4-non-prod):
+
+1. **Encode fail-closed** (sdk ca712c8): niente chiave → throw
+   MESSAGE_KEY_PROVIDER_UNAVAILABLE, mai plaintext sul wire. Boot-order A6
+   rende l'assenza un bug — e un bug esplode.
+2. **Decode hard-reject**: non-envelope inbound → throw
+   MESSAGE_PLAINTEXT_REJECTED. Plaintext = attacco o publisher non governato.
+3. **Rotating-check rimosso dal user-layer NATS** (sdk 2df76dd):
+   verifyNatsPublisher fuori dalla verify chain (nats-routes) e da
+   dueLaneVerify — la busta sigillata È la prova di provenienza (possesso
+   chiavi vault-derived > stamp cleartext replicabile). Shield resta
+   all'edge HTTP. RBAC e route.verify invariati.
+
+Verifica Q1(c) COMPLETA:
+- scansione statica: zero publish non governati in us-v3/be-v3 — solo
+  import type-level del transport, tutto passa per NatsClient;
+- live observation: stack riavviato, 6/6 servizi registrati al primo
+  tentativo — roundtrip cifrato end-to-end (register→ack) funziona,
+  zero warning plaintext nei boot;
+- CANARY: plaintext deliberato su jobs.ctl.triggers.materialize →
+  MESSAGE_PLAINTEXT_REJECTED nel log job-handler. Enforcement morde live.
+
+Suite: sdk 53/53 file, 683/683 test (+5 prova-del-9 codec: reject plaintext,
+reject legacy-shape, encode fail-closed, seal-senza-stamp consegna, tamper
+GCM mai delivery). Harness riscritti: i test che pinnavano la backdoor
+transizionale ora pinnano la dottrina chiusa.
+
+DEBITO DOC (docs-sync-on-close): client-shield-and-secrets.mdx dichiara
+"every internal call — HTTP or NATS — is stamped" — la clausola NATS è ora
+superata (il sigillo è la prova, lo stamp non è più verificato). Proposta
+di revisione da ratificare prima della scrittura.
