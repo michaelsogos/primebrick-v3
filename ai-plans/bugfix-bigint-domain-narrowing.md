@@ -187,3 +187,39 @@ OPEN for next turns (step by step, user-directed):
 - typecheck gate for services: extend the predev gate with tsc --noEmit —
   the enforcement closure; without it this debt re-forms identically
 - e2e retest of modified write paths (open-plan mandate) batched at tail end
+
+### SERVICES TAIL CLOSED (session 2026-11-25/26) — job-handler + seam
+
+- job-handler typecheck: **0 errors** (was ~20+). Committed `915fd96` —
+  signatures bigint end to end, BigInt() only at query-string boundary.
+- **Major discovery while closing the seam**: the MarkerAuditPort mismatch
+  was not a typing nuisance — it was a LIVE silent bug. The dal passes the
+  DAL_NOW symbol sentinel as changedAt on every write; the SDK marker
+  called `.getTime()` on it → TypeError → swallowed by the fire-and-forget
+  catch → entity-changed markers NEVER published for UPDATE/DELETE/RESTORE
+  in all us-v3 services. Audit rows themselves were healthy (written first).
+  The typechecker had been signalling it all along — invisible because
+  services had no tsc gate (the enforcement gap above).
+- Fix ratified by user (option B — never JS application dates for audit):
+  marker timestamp = entity's freshly stamped updated_at from the write's
+  own RETURNING record when available; else the audit row's changed_at
+  read back through RETURNING (HARD_DELETE path). Contract evolved:
+  AuditWriteResult {key, changed_at}; AuditParams.entity_updated_at.
+  Commits: dal `460d6be` (feature/ext-json-strict-codec), sdk marker fix,
+  be EntityAuditPort alignment — all on arch/nats-durability unless noted.
+- Verification: dal 896/896, sdk 678/678 (+4 new regression specs pinning
+  the fallback chain), job-handler 158/158, typecheck green in dal/sdk/be/jh.
+  LIVE end-to-end probe (real PG+NATS, production JobTriggersService):
+  UPDATE → marker received, changed_at millisecond-equal to the fresh
+  entity updated_at, audit_log_id present, zero [DAL Audit Error] in logs.
+- Test harness staleness discovered+fixed (pre-existing, not ours): the
+  shield re-stamp commit ac6d434 never updated the auth-config mock shape;
+  the A3/A4 codec merge made NatsClient.publish the durable jetstream path
+  while mocks captured retired jetstreamPublish — 14 failures. Harnesses
+  now mirror real shapes.
+
+STILL OPEN:
+- typecheck gate for services (extend predev with tsc --noEmit) — THE
+  enforcement closure; every debt in this plan entered through that gap
+- e2e retest of modified write paths (mandate) batched at tail end
+- fe resumable-fetch 2 failures (pre-existing, separate investigation)
