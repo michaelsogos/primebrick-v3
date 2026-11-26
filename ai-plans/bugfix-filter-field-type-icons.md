@@ -77,3 +77,13 @@ census, static IANA list, $dict) — no per-combobox fetch, nothing to
 wire. Verified live with a route-delayed probe on the sequences advanced
 filter ref combobox: strip visible + muted line rendered mid-fetch
 (screenshot evidence). Commits: ui+1, fe+1, be+1.
+
+## Addendum 7 — columns-panel type glyphs (same session, user-reported)
+
+The column-VISIBILITY picker (entity.columns sheet) rendered the declared
+icon alone — rows without one carried no glyph. Same doctrine as the
+filter field picker: it IS a picker surface, so rows resolve through
+metaColumnIcon (declared → options_source → format/type). ColumnLike
+widened to the helper input shape; permanent E2E asserts every
+columns-toggle row carries one svg (green end-to-end, job_schedule).
+Commit: fe+1.
