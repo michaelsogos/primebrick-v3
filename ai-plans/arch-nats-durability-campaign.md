@@ -958,3 +958,23 @@ DEBITO DOC (docs-sync-on-close): client-shield-and-secrets.mdx dichiara
 "every internal call — HTTP or NATS — is stamped" — la clausola NATS è ora
 superata (il sigillo è la prova, lo stamp non è più verificato). Proposta
 di revisione da ratificare prima della scrittura.
+
+## A7 post-close incident — poison redelivery loop FIXED (2026-11-26, sdk b2451b6)
+
+Incidente live: il rifiuto plaintext veniva rilanciato nel path d'errore
+generico → nak → redelivery infinita di messaggi pre-chiusura nei durevoli
+(1680 errori nel log job-handler). Un plaintext non può MAI diventare
+decifrabile — la redelivery è per costruzione un loop velenoso.
+
+Fix: MessagePlaintextRejectedError strutturale + semantica terminale (term,
+come integrity violation — entrambi fallimenti permanenti). Evidenza di
+sicurezza distinta per tipo di rejection. Riparato anche il tampering flaky
+del test: il flip dell'ultimo char base64 poteva cadere nei bit di padding
+senza corrompere NULLA — il test mentiva a intermittenza, non era il codice.
+
+Verifica live post-fix (dev-stack restart canonico): zero rejection dal
+riavvio, 49 linee di attività job normali, flood fermato. Suite nats 77/77.
+
+Lezione registrata: ogni rejection introdotta va classificata
+permanent/transient PRIMA del merge — la tassonomia d'errore decide
+term vs nak, e sbagliarla amplifica invece di contenere.
