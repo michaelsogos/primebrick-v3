@@ -408,3 +408,21 @@ as step/start). Hidden-toggleable: `sez`,`sez2`,`sez3` (key-class),
    claim `crm.customers.code` and win the resolution set — hijack by
    insert. Operator rows keep `NULL`, revive their own private chain
    via `revived_from`.
+
+---
+
+## HANDOFF — task 8 resume instructions (2026-11-26 session end)
+
+All code shipped + RELEASED: every repo is on develop/main with patch tags
+(decimal 3.1.4, core 3.4.8, dal 3.6.4, sdk 3.5.3, be 3.7.3, us 3.6.3, fe 3.6.3).
+i18n en-GB fallback keys committed in the release flow (fe 3.6.3).
+
+Task 8 remaining work:
+1. Open feature/sequence-revive-docs (or docs/* slug) per repo that needs it
+2. dal dev-guide: sequence.mdx — document revive lifecycle (revive_every/
+   revive_slot/revive_grace/default_from/expire_at/switch_at, derivePeriodLabel,
+   sequenceRevive phases A/B, UTC default tz, system trigger via JH)
+3. Run make-docs extraction regen per repo (skill exists in each repo)
+4. api-reference regen where the public surface changed
+5. Verify docs-site ordering per cross-repo-release-order.md (upstream main
+   first — already true since everything is released; docs repo release after)
