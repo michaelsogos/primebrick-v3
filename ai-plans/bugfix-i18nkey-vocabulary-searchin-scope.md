@@ -45,6 +45,9 @@ Every turn, in this order, NO EXCEPTIONS:
 | 7 | Doc reconciliation: i18n.mdx vocabulary-scope section vs user-ratified composition | ⏳ not done | — | propose text, write after approval (workspace rule) |
 | 8 | Commits per repo + plan ledger update | ⏳ not done | — | |
 | 9 | ELT search-bar applied-filter visibility: panel-applied filters surface as visible/editable criteria in the search-bar area; eraser clears them (user-ratified 2026-11-26, Part D) | ⏳ not done | — | verify what `hasAppliedFilters` renders today; design chips/inline affordance before implementing |
+| 10 | NEW DEFECT (2026-11-26, user screenshot): reviver widget value renders ENGLISH in an Italian UI — "2 years" visible in the Rinnovo Ogni quick filter while the hint below is correctly Italian. Investigate the revive-interval-input unit/value rendering localization path (the widget likely formats the canonical value with hardcoded English unit names instead of i18n keys) | ⏳ not done | — | primebrick-v3-ui revive-interval-input — check how units/labels render; compare with the Italian hint text that IS correct |
+| 11 | NEW DEFECT (2026-11-26, user): numeric inputs with uom must be RIGHT-ALIGNED — numbers align right by convention. Check numeric-input anatomy in ui and every consumer surface | ⏳ not done | — | primebrick-v3-ui numeric-input |
+| 12 | NEW QUESTION→investigate (2026-11-26, user): standard (quick) filters expose audit-BY columns (created_by/updated_by) but NOT audit-AT timestamps (created_at/updated_at) — is this a deliberate choice or an accidental gap? Find the quick-filter column selection derivation and document/close the gap | ⏳ not done | — | likely a filterable/derivable rule in core columns.ts or the FiltersPanel quick surface — audit timestamps are type datetime/timestamp |
 
 ---
 
