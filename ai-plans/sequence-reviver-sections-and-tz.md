@@ -4,7 +4,7 @@
 > identity TOC is shipped; this plan covers the TZ question and the missing
 > auto-revive mechanism (one-row-per-period lifecycle).
 
-## Status: ✅ ALL QUESTIONS RESOLVED — ready for TOC — Plan date: 2026-12-29
+## Status: ✅ ALL TASKS DONE — feature + follow-up documentation closed — Plan date: 2026-12-29
 
 | # | Task (detail level — one row per task, not per topic) | Status | When | Notes |
 |---|--------------------------------------------------------|--------|------|-------|
@@ -15,10 +15,10 @@
 | 5 | sdk: `mountSequenceReviveJob` + `createMicroservice` registration gating — callable `<svc>.sequence_revive` (queue per-replica, system lane), system trigger via `declareSystemJobs`, JH coordinates | ✅ | sdk `93897e2`; be `a40d16f`; us `93d5f67` (7 mount sites) | sdk 622/622; be+6us typecheck clean |
 | 6 | us-crm: schema patch (new cols; NO binding_key name-shape backfill — lazy detUuid adoption is the safe channel) + i18n patch (new field labels) + signed manifest | ✅ | us `7615fce` (patches applied live, snapshot-check clean); dal `fc40a1a` | live DB: 2 patches applied; `primebrick-db check` clean |
 | 7 | ui/fe: meta columns auto-render on the sheet (`immutable` flags on revive_every/slot — dal `ec15e46`); e2e `sequence-revive.spec.ts` — full lifecycle live via REAL JH chain (@at trigger→forwarder→callable→succeeded run) | ✅ | fe `faaa595`; sdk `9604eba`+`6f9ba05` (two real bugs surfaced by the e2e) | e2e 1/1 live: expire→#successor→grace→switch→pinned-honesty→virgin counter. ⚠️ post-review: form drift found (computed/system cols leaked into create sheet — `default_visible` never suppresses form fields) → fix tracked in `bugfix-sequence-create-form-contract.md` |
-| 8 | docs: sequence dev-guide + generated docs regen (UTC default documented), api-reference, commits per repo | ⏳ | — | |
-| 9 | dal+fe: sequence-analyze target resolution uses `binding_key` first (name fallback for legacy rows); SequenceSetDialog does not fire analyze on unbound operator rows — no expected 400, explicit unavailable copy | ⏳ | — | user addition 2026-11-26 |
-| 10 | dal+fe: sequence ELT taxonomy — `name` sticky; `sez`/`sez2`/`sez3` visible by default immediately after it; `step`…`revive_every` follow; later columns toggleable, not default-visible | ⏳ | — | user addition 2026-11-26 |
-| 11 | dal+us+fe: forced-revive chrome — `rotate-cw-square` icon (Lucide-verified) + missing `<ns>.actions.sequence_revive` translations / dialog unavailable copy | ⏳ | — | user addition 2026-11-26 |
+| 8 | docs: sequence dev-guide + generated docs regen (UTC default documented), api-reference, commits per repo | ✅ | 2026-11-26 | dal `8cbb7e1` (dev-guide + extraction/api-reference regen); us `51866a4` (sequence user-guide regen; trigger labels restored); be `d0ceedd` (backend user-guide regen); fe `cb5667d` (component extraction regen) |
+| 9 | dal+fe: sequence-analyze target resolution uses `binding_key` first (name fallback for legacy rows); SequenceSetDialog does not fire analyze on unbound operator rows — no expected 400, explicit unavailable copy | ✅ | 2026-11-26 | dal `8cbb7e1`; fe `cb5667d`; be `c8d60b6` — 36/36 write-path + 42/42 validator/service/revive tests; Playwright unbound dialog intercepts zero analyze calls |
+| 10 | dal+fe: sequence ELT taxonomy — `name` sticky; `sez`/`sez2`/`sez3` visible by default immediately after it; `step`…`revive_every` follow; later columns toggleable, not default-visible | ✅ | 2026-11-26 | dal `8cbb7e1`; fe `cb5667d`; us `51866a4` — meta order/visibility asserted in e2e; generated sequence docs match the served default view |
+| 11 | dal+us+fe: forced-revive chrome — `rotate-cw-square` icon (Lucide-verified) + missing `<ns>.actions.sequence_revive` translations / dialog unavailable copy | ✅ | 2026-11-26 | dal `8cbb7e1`; us `51866a4`; fe `9edde91` — icon exists in `@lucide/svelte`/iconify; action label+confirm seeded in ai/crm/emailsender/job/webhook; live menu e2e proves translated label + `svg.lucide-rotate-cw-square` |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 
@@ -414,18 +414,22 @@ as step/start). Hidden-toggleable: `sez`,`sez2`,`sez3` (key-class),
 
 ---
 
-## HANDOFF — task 8 resume instructions (2026-11-26 session end)
+## CLOSURE — documentation + follow-up wave (2026-11-26)
 
-All code shipped + RELEASED: every repo is on develop/main with patch tags
-(decimal 3.1.4, core 3.4.8, dal 3.6.4, sdk 3.5.3, be 3.7.3, us 3.6.3, fe 3.6.3).
-i18n en-GB fallback keys committed in the release flow (fe 3.6.3).
+The originally deferred task 8 is complete on `feature/sequence-revive-docs`:
+the dal dev-guide now documents the binding series, usage-analysis target
+resolution, list anatomy, revive lifecycle, UTC/calendar-boundary semantics,
+and observer phases A/B; dal TypeDoc extraction/api-reference, FE component
+extraction, US generated sequence pages, and BE generated user-guide surfaces
+were regenerated and committed.
 
-Task 8 remaining work:
-1. Open feature/sequence-revive-docs (or docs/* slug) per repo that needs it
-2. dal dev-guide: sequence.mdx — document revive lifecycle (revive_every/
-   revive_slot/revive_grace/default_from/expire_at/switch_at, derivePeriodLabel,
-   sequenceRevive phases A/B, UTC default tz, system trigger via JH)
-3. Run make-docs extraction regen per repo (skill exists in each repo)
-4. api-reference regen where the public surface changed
-5. Verify docs-site ordering per cross-repo-release-order.md (upstream main
-   first — already true since everything is released; docs repo release after)
+The user's three follow-up defects are closed in the same wave: analyze uses
+`binding_key` first and unbound operator rows render an explicit unavailable
+message without a 400 request; the sequence ELT anatomy matches the requested
+sticky/visibility/order contract; the forced-revive action carries the
+Lucide-verified `rotate-cw-square` glyph and translated labels/confirm copy in
+all module schemas.
+
+Open integration branches remain `feature/sequence-revive-docs` in dal/us/be/fe
+plus this workspace branch. They are implementation/doc branches, not patch
+releases; no Gitflow close or version bump has been requested in this wave.
