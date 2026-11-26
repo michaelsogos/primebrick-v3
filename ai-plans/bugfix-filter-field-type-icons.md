@@ -20,3 +20,12 @@ in-place labels keep the declared-only semantic (bulk-editor distinction).
 | 3 | fe: BulkEditorPanel refactored onto the helper | done |
 | 4 | verify: typechecks, ui tests+build, runtime probe screenshot | done — E2E icon test green, isolation green; serial-run failure environmental pre-existing |
 | 5 | commits ui+fe+workspace | done |
+
+## Addendum — operator clamping on governed vocabularies (same session, user-reported)
+
+The advanced operator dropdown offered contains/startsWith/endsWith on
+combobox-valued columns (tz/currencies/census/refs) — unfillable nonsense.
+Root cause: `getOperatorsForColumnType` is type-only; `tz` is text.
+Fix: core `getOperatorsForColumn(col)` collapses `options_source`/`ref` to
+equality; both fe consumers (panel + state sanitizer) wired. E2E asserts
+exactly 2 operator rows on a governed field — green. Commits: core+1, fe+1.
