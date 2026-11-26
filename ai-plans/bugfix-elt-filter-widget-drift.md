@@ -199,3 +199,15 @@ exactly like `useAuditActorOptions` already does.
 - entity_ref option LOADING inside the filter combo is covered structurally (service-threaded base, same endpoint family as the list) but not asserted end-to-end — accepted residual, first failure would surface in the widget spec.
 
 **Branch state**: core `feature/elt-visibility-prefs-v3` open (single work branch, publish/finish per gitflow when the user ratifies); dal/fe changes landed on the already-open `feature/sequence-revive-docs` branches. No release/bump performed — not requested.
+
+## ADDENDUM 2026-11-26 — columns sheet order reset (fe `c72ef3d`)
+
+Follow-up drift in the same family: the sheet reset erased visibility only.
+Root cause — wiring shadow: `useEntitySheetSync` re-assigns sheet props from
+the factory every tick, but the `entity.columns` factory closed over the raw
+visibility-only reset while the composed full reset lived only in the
+overwritten open-time payload. Fixed by composing `sortingHandlers` before
+`useSheetPanels` and threading `onResetColumnsAndSorting` explicitly.
+Regression spec live-green: dragged order renders → sheet reset → governed
+order restored + storage wiped. Verified: svelte-check 0/0, standards clean,
+eslint clean.
