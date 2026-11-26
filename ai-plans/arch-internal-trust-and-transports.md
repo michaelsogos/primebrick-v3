@@ -334,6 +334,140 @@ Prova-del-9 obbligatoria per ogni chiusura, nello stile A7:
 
 ---
 
+## 8bis. ESITI DELLA DECISION ROUND (2026-11-26)
+
+| # | esito | note |
+|---|-------|------|
+| D1 | **(b) entrambi i modi** | STANDALONE + GW-capable restano — nessuna chiusura di capability enterprise |
+| D2 | **(b) firma + sigillo AES-GCM headers sensibili** | autenticità E confidenzialità, stesso canale vault, pattern busta NATS riusato |
+| D3 | **analisi richiesta prima di decidere** — vedi §10 | impatti reali a regime di (a) vs (b) |
+| D4 | **(a) keep infra esistente + ban nuovi usi dev-facing** | dottrina §4 ratificata così com'è |
+| D5 | **(a) stesso canale vault, label separata** | niente provider duplicato |
+| D6 | **(b) timestamp + nonce-cache** | replay chiuso completamente — costo analizzato in §10.4 (rileva) |
+| D7 | **censimento richiesto prima di decidere** — vedi §11 | i due path in dettaglio |
+| D8 | **separato in piano dedicato, DEFERRED** | → arch-edge-gateway-trust.md — si affronta nella fase di cloud testing; vincolo dottrinale ratificato: in GATEWAY mode il BE DEVE verificare il frontline crittograficamente, static-secret come unica barriera NON accettabile |
+
+---
+
+## 10. D3 — analisi impatti reali: assorbimento totale (a) vs registry identity-layer (b)
+
+### 10.1 La macchina esistente — cosa c'è in campo oggi
+
+- **rotating-secret engine**: segreto in Redis+TTL, distribuito via secret.get,
+  broadcast secret.rotated, grace window — MUORE IN ENTRAMBE LE OPZIONI (è il
+  buco: il segreto non si trasmette più, punto).
+- **client-shield-registry**: tabella system.client_shield_registry, chiavi
+  statiche per-client (config service_client_shield_key), allowlist UA-prefix,
+  enrollment flow a service.register (con allowNewPrefix — finestra in cui un
+  nuovo servizio enrolla senza prova pregressa), cache verifier 60s, broadcast
+  client_registry.changed, rotta di distribuzione clientShieldRegistry.get.
+
+### 10.2 Opzione (a) — assorbimento totale: l'identità È la chiave
+
+Design: chiavi di firma PER-SERVICE derivate via vault —
+`signing_key = HMAC(vault_material, "http-sign:" + service_code + ":" + gen)`.
+Il caller dichiara il proprio service-code in header; il verifier deriva la
+chiave di QUEL servizio e verifica. Provenienza granulare per costruzione:
+sai CHI ha firmato, non solo CHE la firma è valida. Blast radius di una
+compromissione = una sola identità di servizio.
+
+Cosa muore: enrollment flow (e la sua finestra di vulnerabilità), registry
+machinery, allowlist UA (era self-declared comunque — difesa debole per
+costruzione), broadcast invalidation, la rotta di distribuzione, e soprattutto
+**le chiavi statiche in config_entries** — che sono esse stesse un segreto
+bootstrap da proteggere e seedare manualmente per ambiente.
+
+Boot semplificato: niente handshake di enrollment — il servizio deriva la
+chiave dal vault esattamente come fa per i message-key. Meno boot-ordering,
+meno race conditions.
+
+### 10.3 Opzione (b) — registry resta come identity-layer
+
+Analisi del valore marginale di sicurezza, onesta:
+
+1. Entrambi i livelli collassano sulla stessa root of trust: compromissione
+   vault → chiavi di firma compromesse comunque — il registry non aggiunge
+   nulla contro lo scenario primario.
+2. Se la chiave registry continua a transitare in cleartext → sniffabile →
+   valore zero. Se la proteggiamo dentro la firma → circolare: la protezione
+   è la firma stessa, il secondo segreto non verifica nulla di indipendente.
+3. L'UNICO scenario residuo coperto: leak isolato di una signing key (memory
+   disclosure) SENZA compromissione vault E senza leak della registry key —
+   slice estremamente stretta, e comunque limitata alla finestra di rotation.
+4. La UA-allowlist è self-declared per costruzione — chiunque setta un header.
+
+Costo a regime di (b): TUTTO il costo di (a) PIÙ enrollment handshake ad ogni
+boot, cache+invalidazione, gestione chiavi statiche in config_entries con
+seeding manuale per ambiente, e la doppia verifica per richiesta.
+
+### 10.4 Costi di throughput a regime — la misura onesta (comune a entrambe)
+
+Per richiesta, lato publisher: sha256(body) + HMAC-SHA256(canonical).
+Lato verifier: le stesse due operazioni. Con SHA-NI (hardware moderno):
+SHA-256 viaggia a svariati GB/s per core → 1-2KB di canonical ≈ 0.5-2µs;
+body 50KB ≈ 10-20µs worst case. Contro il floor HTTP misurato (90µs) è
+rumore: overhead ~2-5% worst case, tipicamente invisibile. Key derivation:
+una HMAC per servizio per rotation — ammortizzata a zero.
+
+**Costo che invece RILEVA — la nonce-cache (D6 ratificato)**: un roundtrip
+Redis per richiesta scrivente. Su loopback ~100-300µs, su VLAN ~0.5-1ms —
+contro un floor di 90µs questo può raddoppiare-decuplicare il costo del path
+diretto. Mitigazione proposta: nonce obbligatorio solo sui metodi scriventi
+(POST/PUT/PATCH/DELETE); GET esenti — il replay di una lettura è inerte per
+costruzione (idempotenza). Così il costo si paga solo dove il rischio esiste.
+In-memory va bene per istanza singola (dev/standalone); Redis solo per
+multi-replica — e in quel caso il costo è intrinseco alla replica stessa.
+
+### 10.5 Verdetto dell'analisi (Micha decide)
+
+(a) domina su sicurezza (chiude la finestra enrollment, elimina i segreti
+statici bootstrap), su complessità operativa (un sottosistema in meno), e a
+parità di throughput. Il valore marginale di (b) è circolare o nullo nei
+casi realistici. La decisione resta aperta — vedi §8bis D3.
+
+---
+
+## 11. D7 — censimento dei due path HTTP fuori perimetro BE→US
+
+### 11.1 Path A — docs-pack pull (ai-service → BE + altri US docs-capable)
+
+- COSA: replicazione bulk dei documentation pack — manifest JSON con contenuto
+  markdown embedded (dev-guide/user-guide). Potenzialmente GRANDE: centinaia
+  di KB fino a oltre 1MB per pack.
+- FREQUENZA: boot dell'ai-service + trigger di reindex (lifecycle events,
+  manuale) — RARO, mai hot path.
+- DISCOVERY: già NATS (service.registry.get capability=docs_pack); il data
+  fetch è HTTP GET su {base_url}/api/v1/system/docs/pack.
+- Fonte: ai/src/services/docs-pack-reindex.service.ts:120-150,
+  sdk/src/docs-pack/docs-pack-client.ts:9-25.
+- Migrazione a NATS: il payload può superare il max-payload 1MB → servirebbe
+  chunking → complessità nuova per un path raro. HTTP è il fit naturale per
+  bulk replication.
+
+### 11.2 Path B — map-key-schemas (job-handler → US proprietari dei vocabolari)
+
+- COSA: quando un job schedulato fa fire di un callable il cui payload schema
+  dichiara map-keys hints, job-handler legge righe entity-list dal servizio
+  proprietario per risolvere le dichiarazioni di schema.
+- FREQUENZA: per job firing con hints — moderato, event-driven a raffiche.
+- SIZE: list-response piccole-medie.
+- NOTA ARCHITETTURALE: riusa gli endpoint entity-list developer-facing — non
+  esiste una rotta NATS di entity-read; crearla violerebbe D4 ratificato
+  (ban nuove rotte correlation).
+- Fonte: job-handler/src/services/map-key-schemas.ts:1-46. Discovery già
+  via NATS; solo il data fetch è HTTP.
+
+### 11.3 Lettura per la decisione
+
+Entrambi i path passano già per internalFetch — il funnel esiste: firmare
+HMAC uniformemente costa quasi zero ed è coerente con "una sola scheme per
+tutto l'HTTP interno". Migrarli a NATS richiederebbe nuove rotte correlation
+(contro D4) e per il docs-pack anche chunking oltre 1MB. L'evidenza pende
+forte verso D7=(a) — la decisione resta a Micha.
+
+---
+
+
 ## 9. Cosa NON è in scope (esplicito)
 
 - NATS wire encryption — chiuso in A7, non si riapre.
