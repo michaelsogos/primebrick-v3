@@ -25,7 +25,10 @@ Every turn, in this order, NO EXCEPTIONS:
 | 2026-11-26 | WP-1 http-signing.ts | ✅ committed | sdk 7116eb5 — 12/12 proof tests | WP-2 |
 | 2026-11-26 | WP-2 nonce-cache.ts | ✅ committed | sdk da902b6 — 2/2 tests | WP-3 |
 | 2026-11-26 | WP-3 internalFetch signing | ✅ committed | sdk 11144f5 — funnel signs, x-user sealed, fail-closed | WP-4 |
-| 2026-11-26 | WP-4 core edge-verification.ts | ✅ committed | sdk 87874f7 — 2/2 tests, NOT yet wired into createHttpServer | WP-4 wiring (§13) |
+| 2026-11-26 | WP-4 core edge-verification.ts | ✅ committed | sdk 87874f7 — 2/2 tests | WP-4 wiring |
+| 2026-11-26 | WP-4 wiring server+microservice | ✅ committed LIVE | sdk b2b0b04+cca10be — enforce default US, verify-if-present BE edge; 5/5 wiring proofs | WP-3 BE half |
+| 2026-11-26 | WP-3 BE proxy converged on internalFetch | ✅ committed LIVE | be 5ecf255 — entrambe le call site (regular+SSE) firmate+sealed | live proof |
+| 2026-11-26 | LIVE PROOF dev-stack flag-day | ✅ GREEN | unsigned→401 AUTH_SIGNATURE_MISSING, injection x-user cleartext→401, health→200 pubblico, discovery openapi firmata passa il gate enforce su tutti e 5 i servizi (159 path crm), zero errori post-boot | WP-5 shield death |
 
 ## Status: 🟠 WIP — Plan date: 2026-11-26 / analysis & decision phase
 
@@ -656,28 +659,21 @@ zero regressioni sui flussi FE→BE→US.
 - WP-4 core  — bufferizza body una volta,
   verifica, merge degli header unsealed in req.headers. 2/2 test con server reale.
 
-### Da fare — ordine vincolante
+### Da fare — ordine vincolante (aggiornato post-live-proof)
 
-1. **WP-4 wiring in createHttpServer** (src/http/http-server.ts): escludere /health
-   (pubblico per design), per ogni altra rotta chiamare verifyEdgeRequest PRIMA
-   del routing; il body bufferizzato va passato ai router — VERIFICARE come
-   rpc-router/entity-router leggono il body oggi (probabilmente rileggono lo
-   stream — serve adattatore: downstream consuma verified.body, non req).
-   AuthError → 401 con internal_code nel body RFC7807.
-2. **Harness migration** — TUTTI i test endpoint esistenti (http-server, entity-router,
-   rpc-router, integration nei consumer) ora devono firmare le richieste:
-   valutare un helper di test condiviso  nel SDK. Stessa classe
-   del lavoro A7 ma più ampia — stimare prima di iniziare.
-3. **BE proxy-service** — firma le chiamate raw fetch (o converge su internalFetch);
-   serializeAuthUserToHeaders smette di emettere x-user-* in chiaro e alimenta
-   il blob (la classificazione esiste già in internalFetch, ma il proxy non
-   passa per internalFetch: unificare).
-4. **WP-5 shield death** — rotating-secret engine, client-shield-registry,
-   enrollment, UA allowlist: rimozione consumer per consumer (be + us×5).
-   La boot sequence createMicroservice va semplificata (niente enrollment).
-5. **WP-6/7** — live probe canary ostile su dev-stack + doc rewrite
-   (client-shield-and-secrets.mdx → internal-provenance; controller-boundary
-   con numeri benchmark reali).
+1. ~~WP-4 wiring~~ ✅ FATTO — enforce default in createMicroservice, BE edge non
+   usa createHttpServer (express custom — la sua hardening edge è D8 deferred).
+2. **Harness migration** — test endpoint nei consumer (be + us×5) che colpiscono
+   server enforce devono firmare: helper condiviso signTestRequest nel SDK.
+   I test SDK stessi passano già (mode off di default nella libreria).
+3. **WP-5 shield death** — rotating-secret engine, client-shield-registry,
+   enrollment, UA allowlist: rimozione consumer per consumer. NOTA: coesiste
+   ancora — il gate shield gira DOPO la verifica provenance e passa perché
+   internalFetch manda ancora UA+key via provider. La morte rimuove entrambi.
+4. **WP-6** — formalizza la live proof nel piano (già eseguita empiricamente,
+   vedi ledger) + test rotation-in-flight con keygen grace.
+5. **WP-7** — doc rewrite: client-shield-and-secrets.mdx → internal-provenance;
+   controller-boundary.md con numeri benchmark reali; dottrina D4.
 
 ### Trappole note
 
