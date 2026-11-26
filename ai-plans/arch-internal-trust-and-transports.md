@@ -30,6 +30,7 @@ Every turn, in this order, NO EXCEPTIONS:
 | 2026-11-26 | WP-3 BE proxy converged on internalFetch | ✅ committed LIVE | be 5ecf255 — entrambe le call site (regular+SSE) firmate+sealed | live proof |
 | 2026-11-26 | LIVE PROOF dev-stack flag-day | ✅ GREEN | unsigned→401 AUTH_SIGNATURE_MISSING, injection x-user cleartext→401, health→200 pubblico, discovery openapi firmata passa il gate enforce su tutti e 5 i servizi (159 path crm), zero errori post-boot | WP-5 shield death |
 | 2026-11-26 | WP-5 slice 1 — HTTP shield gate dead | ✅ committed LIVE | sdk: gate verifyClientIdentity rimosso da createHttpServer; restart crm: unsigned→401, rediscovery firmata 17 entity SENZA shield nel path — HTTP non dipende più dallo shield | WP-5 slice 2: NATS attribution |
+| 2026-11-26 | WP-6 rotation-continuity probe | ⚠️ OPEN DEFECT | sdk d05b3f2 — test skipped: firma gen N-1 NON verifica post-rotazione pur con materiale grace presente (AUTH_SIGNATURE_INVALID). Se genuino: ogni rotation vault uccide richieste in-flight. PRIMA cosa da investigare prossima sessione, poi WP-5 slice 2 |
 
 ## Status: 🟠 WIP — Plan date: 2026-11-26 / analysis & decision phase
 
