@@ -22,6 +22,10 @@ Every turn, in this order, NO EXCEPTIONS:
 |---|---|---|---|---|
 | 2026-11-26 | benchmark bench-nats-vs-http.mts | ✅ measured | numbers in §3 | doctrine rewrite |
 | 2026-11-26 | plan opened | ✅ | this file | decision round with Micha |
+| 2026-11-26 | WP-1 http-signing.ts | ✅ committed | sdk 7116eb5 — 12/12 proof tests | WP-2 |
+| 2026-11-26 | WP-2 nonce-cache.ts | ✅ committed | sdk da902b6 — 2/2 tests | WP-3 |
+| 2026-11-26 | WP-3 internalFetch signing | ✅ committed | sdk 11144f5 — funnel signs, x-user sealed, fail-closed | WP-4 |
+| 2026-11-26 | WP-4 core edge-verification.ts | ✅ committed | sdk 87874f7 — 2/2 tests, NOT yet wired into createHttpServer | WP-4 wiring (§13) |
 
 ## Status: 🟠 WIP — Plan date: 2026-11-26 / analysis & decision phase
 
@@ -33,7 +37,7 @@ Every turn, in this order, NO EXCEPTIONS:
 | 4 | Decision round with Micha on D1–D8 | ✅ done | 2026-11-26 | §8ter — all ratified; D8 spun off to arch-edge-gateway-trust.md |
 | 5 | Doctrine rewrite in controller-boundary.md + client-shield-and-secrets.mdx | ⏳ not done | — | after decisions — real numbers replace the ghost benchmark |
 | 6 | HMAC provenance design detail (post-decisions) | ✅ done | 2026-11-26 | §12 — full implementation spec |
-| 7 | Implementation WP-1..WP-7 (§12.8) | ⏳ not done | — | starts next turn, WP order binding |
+| 7 | Implementation WP-1..WP-7 (§12.8) | ⏳ partial | — | WP-1/2/3 done + WP-4 core — continuation state in §13 |
 
 ---
 
@@ -632,6 +636,56 @@ zero regressioni sui flussi FE→BE→US.
   completezza ma non in scope (possibile piano separato di semplificazione).
 - Il benchmark artifact — `primebrick-workspace/temp/bench-nats-vs-http.mts`
   resta in temp come prova riproducibile, non è codice di prodotto.
+
+---
+
+## 13. CONTINUATION STATE — dove riprende il prossimo turno
+
+### Fatto e committato (sdk, branch arch/nats-durability)
+
+- WP-1  — derivazione chiavi per-service da message-key
+  material (label separation), canonical, sign/verify, seal/open blob AES-GCM.
+  Errori con codice nel messaggio (grep-able). 12/12 proof test.
+- WP-2  — Redis SET NX PX quando client connesso,
+  in-memory sliding-window altrimenti, fail-closed su errore Redis. 2/2 test.
+- WP-3  (src/http/internal-client.ts) — firma automatica: classifica
+  sensibili (x-user-* + configured auth headers), sigilla, firma con
+  currentServiceCode(). Body supportati: string/Buffer/Uint8Array — altri tipi
+  throw (fail-closed). ATTENZIONE: Headers.entries() va copiato prima di delete
+  (mutation-during-iteration bug trovato e fixato).
+- WP-4 core  — bufferizza body una volta,
+  verifica, merge degli header unsealed in req.headers. 2/2 test con server reale.
+
+### Da fare — ordine vincolante
+
+1. **WP-4 wiring in createHttpServer** (src/http/http-server.ts): escludere /health
+   (pubblico per design), per ogni altra rotta chiamare verifyEdgeRequest PRIMA
+   del routing; il body bufferizzato va passato ai router — VERIFICARE come
+   rpc-router/entity-router leggono il body oggi (probabilmente rileggono lo
+   stream — serve adattatore: downstream consuma verified.body, non req).
+   AuthError → 401 con internal_code nel body RFC7807.
+2. **Harness migration** — TUTTI i test endpoint esistenti (http-server, entity-router,
+   rpc-router, integration nei consumer) ora devono firmare le richieste:
+   valutare un helper di test condiviso  nel SDK. Stessa classe
+   del lavoro A7 ma più ampia — stimare prima di iniziare.
+3. **BE proxy-service** — firma le chiamate raw fetch (o converge su internalFetch);
+   serializeAuthUserToHeaders smette di emettere x-user-* in chiaro e alimenta
+   il blob (la classificazione esiste già in internalFetch, ma il proxy non
+   passa per internalFetch: unificare).
+4. **WP-5 shield death** — rotating-secret engine, client-shield-registry,
+   enrollment, UA allowlist: rimozione consumer per consumer (be + us×5).
+   La boot sequence createMicroservice va semplificata (niente enrollment).
+5. **WP-6/7** — live probe canary ostile su dev-stack + doc rewrite
+   (client-shield-and-secrets.mdx → internal-provenance; controller-boundary
+   con numeri benchmark reali).
+
+### Trappole note
+
+- Il verifier ricompone path da url.pathname+url.search — il publisher usa lo
+  stesso formato in internalFetch. Se un path passa per proxy con rewrite,
+  la firma si rompe: il proxy BE deve firmare DOPO la riscrittura, col path finale.
+- I test vitest che non wirano il key provider falliranno la firma —
+  il pattern è in internal-client.test.ts (beforeEach con readyProvider).
 
 ---
 
