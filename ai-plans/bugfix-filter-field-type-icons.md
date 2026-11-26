@@ -60,3 +60,20 @@ resolved file-key — incoherent for the same semantic. Fix: audit.actors →
 user-cog (the ratified actor glyph) in OPTIONS_SOURCE_TYPE_ICONS — uniform
 across all writer stamps. Note: created_by changes file-key → user-cog as
 a consequence — the coherence the user asked for. 9/9 tests. Commit ui+1.
+
+## Addendum 6 — combobox async-loading UX (same session, user-ratified)
+
+API-backed combobox popovers opened empty during the fetch — the user
+ratified the anatomy: the popover opens IMMEDIATELY, a muted loading line
+(`app.common.loading_data`, new key × 7 languages, be patch
+20270101180000_i18n_combo_loading) replaces the false "no results", and a
+2px scan strip sits flush at the popover's top edge rendering the SAME
+animated primary-gradient as the ELT reload strip (dim underlay +
+ping-pong comet, self-contained scoped CSS in ComboSelect — no consumer
+stylesheet needed). Wiring census: entityRef and auditActors already fed
+`loading`; systemRoles.state.loading was NOT passed — fixed. Census /
+IANA tz / i18n_key vocabularies derive from already-loaded memory (shell
+census, static IANA list, $dict) — no per-combobox fetch, nothing to
+wire. Verified live with a route-delayed probe on the sequences advanced
+filter ref combobox: strip visible + muted line rendered mid-fetch
+(screenshot evidence). Commits: ui+1, fe+1, be+1.
