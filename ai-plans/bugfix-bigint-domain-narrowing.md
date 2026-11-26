@@ -247,3 +247,30 @@ bigint end-to-end and entity annotations declare bigint. Everything works
 (numeric compares hold), but the representation question is open: migrate
 version columns to int8, or ratify int4+number for versions as a bounded
 exception? Not ours to decide — flagged.
+
+### RATIFIED 2026-11-26 — version stays int4: the plan premise was wrong
+
+User decision (option a): `version` remains int4/number — the dal semantic
+pin `VERSION: "int4"` (entity-ts-to-pg.ts:61, deliberate, documented in
+audit-trail.mdx) STANDS. No int8 migration. The plan premise "version IS
+a domain integer — always bigint by construction" is CORRECTED: version is
+the documented bounded exception (optimistic-lock counter, never exceeds
+2^31). The plan itself carried the contradiction — the pin predates it.
+
+IMPLICATIONS TO IMPLEMENT (next turn, verify-before-edit):
+1. The mixed runtime representation is INHERENT and must be documented,
+   not eliminated: PG int4 hydrates to number inside services; ext-json
+   strict decode delivers ALL integers as bigint on the wire. The two
+   representations coexist — the conversion belongs at the boundary.
+2. Decide the correct fix POINT for the job-handler signatures migrated
+   to bigint this session: either the entity annotation `version!: bigint`
+   is the lie to correct (→ number, making original number signatures
+   coherent) or signatures stay bigint matching the wire. VERIFY FIRST:
+   what the entity annotation currently declares, what svc.find actually
+   hydrates, what the FE migration ratified in its 4-repo doctrine docs
+   (version bigint-by-construction was committed as canonical doctrine —
+   reconciliation needed: does that doctrine cover WIRE only?). Do NOT
+   bulk-revert without this verification — a hasty revert recreates the
+   same half-migrated debt this plan exists to close.
+3. Reconcile the canonical doctrine docs (fe×2, core, dal, be) with this
+   ratification — the int4 exception must be written where the pin lives.
