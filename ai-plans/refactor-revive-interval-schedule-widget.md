@@ -261,10 +261,89 @@ Await user ratification. If ratified, open/convert this plan to TOC for **option
 
 | # | Task | Status |
 |---|------|--------|
-| T1 | Re-read widget sources + verify ui→fe consumption path (workspace vs npm pinned) | ⏳ |
-| T2 | Rebuild `ReviveIntervalInput` in primebrick-v3-ui: canonical text input + assist CTA + popover (2-card Choicebox) + interpreter strip; NumericInput/UoM + DateWheelPicker inside popover; round-trip prefill | ⏳ |
-| T3 | ui unit tests (round-trip, emission, invalid) + `pnpm check` + `pnpm build` + `pnpm test` | ⏳ |
-| T4 | BE translation patch: new keys `app.widgets.revive_interval.assist*`, card titles/desc, strip prose templates (7 languages); reuse existing unit/mode keys; sign manifest per db-patches rule | ⏳ |
-| T5 | FE E2E: rewrite filter-parity interaction (popover compose → canonical ILIKE wire), free-text ILIKE test, form-contract anatomy assertions | ⏳ |
-| T6 | Docs: `entity-metadata.mdx` anatomy update (leading mode toggle description is now stale) | ⏳ |
-| T7 | Commits per repo with model trailer; report push status (push only on explicit request) | ⏳ |
+| T1 | Re-read widget sources + verify ui→fe consumption path (workspace vs npm pinned) | ✅ — ui consumed via workspace dist rebuild |
+| T2 | Rebuild `ReviveIntervalInput` in primebrick-v3-ui: canonical text input + assist CTA + popover (2-card Choicebox) + interpreter strip; NumericInput/UoM + DateWheelPicker inside popover; round-trip prefill | ✅ — ui commit c45cf11 |
+| T3 | ui unit tests (round-trip, emission, invalid) + `pnpm check` + `pnpm build` + `pnpm test` | ✅ — 109/109 green, check + build clean |
+| T4 | BE translation patch: new keys `app.widgets.revive_interval.assist*`, card titles/desc, strip prose templates (7 languages); reuse existing unit/mode keys; sign manifest per db-patches rule | ✅ — be commit 11d48f0, applied, 22 keys × 7 langs verified in dev DB |
+| T5 | FE E2E: rewrite filter-parity interaction, free-text ILIKE test, form-contract anatomy assertions | ✅ — form-contract 3/3 green, filter-parity green (2026-11-26) |
+| T6 | Docs: `entity-metadata.mdx` anatomy update (leading mode toggle description is now stale) | ✅ — fe commit e832272 |
+| T7 | Commits per repo with model trailer; report push status (push only on explicit request) | ✅ — ui c45cf11+2f14e25+a788f4b, be 11d48f0, dal 91d2103, fe a1b0dcc+e832272 — none pushed |
+
+## Implementation-session findings (2026-11-26, TOC execution)
+
+### Pre-existing structural bug EXPOSED by the taller form — FIXED
+
+`EntityFormSurface` root carried `h-full` since its birth commit (`1518c78`).
+Inside the record-sheet scroll container (`h-full overflow-auto`) the percentage
+height resolves against the SCROLLPORT height, collapsing the surface box to
+~566px while its content is ~1201px (overflow: visible, so fields paint beyond
+the box). The audit accordion — the next in-flow sibling — was therefore
+positioned right after the collapsed box, i.e. **in the middle of the visually
+overflowing form fields**. Any positioned input (`relative z-1`) overlapping the
+trigger won the hit test: the accordion was invisible/unclickable for real users
+on long update forms. Diagnosed with a geometry probe (bounding boxes +
+elementFromPoint + scroll metrics, probe spec since deleted). The taller anatomy
+(interpreter strips) merely shifted which field overlapped.
+
+Fix: `h-full` → `min-h-full` in `EntityFormSurface.svelte` — a floor, never a
+ceiling. Verified: surface box now equals content height (1201=1201), accordion
+lands after the last field, hit test passes, form-contract 3/3 green.
+Blast radius assessed: surface has no internal footer/sticky element depending
+on `h-full`; in indefinite-height parents both forms resolve to auto (no-op).
+
+### Pre-existing failure NOT caused by this work — documented, not fixed
+
+`entity-form-submit-gating.spec.ts` fails on the baseline too (stash-verified):
+the routed form page (`entity-form-page` testid) never mounts in the popup.
+Out of scope here — needs its own investigation.
+
+### i18n assertion is language-agnostic by design
+
+The shared E2E browser profile locale is not pinned by the form-contract spec;
+the interpreter-strip assertion covers the singular "year" shape in all 7
+seeded languages — what is enforced is the interpolation chain (BE key → n/unit
+params → singular/plural unit prose), not a specific language.
+
+## TOC completion ledger (2026-11-26, second half)
+
+### DAL — pre-existing presence-vs-edit routing bug FIXED
+
+`sequence-decl.update` routed on `"revive_every" in body` — but the form write
+contract ships the full editable surface every save, so the in-tempo guard
+(`sequenceReviveAxesUpdate`) fired on EVERY update of a non-reviving row:
+expire_at NULL → never "in tempo" → 400. Any non-reviving sequence was
+effectively read-only through the UI. Surfaced by `sequences.spec` side-paths
+("the edit is out of tempo" toast captured in the failure screenshot).
+Fix: an axis comparing equal to the stored value is not an edit — presence AND
+difference now arm the guarded write (dal commit `91d2103`, 903/903 unit tests,
+E2E side-paths green). Editing the NAME of an expired sequence is legitimate —
+only genuine axis moves are tempo-guarded.
+
+### NumericInput — uom CTA translation/plural gap FIXED
+
+The CTA rendered `symbol ?? code` — hosts passing only `options` got the raw
+machine code (`year`, lowercase English in every locale — user-reported in the
+filter popover). Two additive library behaviors now cover it:
+
+1. no explicit symbol + static dropdown → the CTA mirrors the selected
+   option's `label_key` translation (same rendering as the dropdown items);
+2. `label_key`-prose dropdowns never show the mono machine-code badge, even
+   when the host resolves its own display symbol.
+
+The revive composer passes a plural-aware standalone-capitalized label of the
+typed count — live agreement verified in it-IT: `1 Anno`, `3 Anni`,
+`3 Giorni` (ui commits `2f14e25` + `a788f4b`).
+
+### Verification ledger
+
+- `sequence-form-contract.spec.ts` 3/3 green (create popover round-trip,
+  in-tempo edit, literal `at` pin);
+- `sequences.spec.ts` — full suite green across two runs: tests 1-16 in the
+  serial run, tests 17-23 in the follow-up (test 15 = serial-timing flaky,
+  green in isolation AND in the full run; test 17 failed once ONLY because
+  the crm service was mid-restart from the dal dist rebuild — 502 infra,
+  green on stable services);
+- ui 109/109 unit tests + svelte-check clean ×3 builds;
+- dal 903/903 unit tests;
+- i18n: 22 keys × 7 languages verified live in the dev DB; uom CTA probe
+  evidence `Anno`/`Anni`/`Giorni` capitalized.
