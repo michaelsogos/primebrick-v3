@@ -45,3 +45,10 @@ share ONE icon — clipboard-clock (user's pick over calendar-clock) — as
 both the type icon (schedule_spec/revive_interval/revive_offset formats
 now reach the schema leaf in core) and the widgets' assist CTAs. Verified
 live: Renew Every row carries it. Commits: core+1, ui+1.
+
+## Addendum 4 — i18n_key languages glyph (same session, user-reported)
+
+Translation-key columns rendered the bare-text T while their combobox
+options carry languages icons. Same fix family: format reaches the leaf
+(core), glyph mapped in FORMAT_TYPE_ICONS (ui). 8/8 unit tests green.
+Commits: core+1, ui+1.
