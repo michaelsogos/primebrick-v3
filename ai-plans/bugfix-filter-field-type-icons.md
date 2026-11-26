@@ -52,3 +52,11 @@ Translation-key columns rendered the bare-text T while their combobox
 options carry languages icons. Same fix family: format reaches the leaf
 (core), glyph mapped in FORMAT_TYPE_ICONS (ui). 8/8 unit tests green.
 Commits: core+1, ui+1.
+
+## Addendum 5 — actor-stamp glyph (same session, user-reported)
+
+revived_by (authored text + audit.actors) rendered the T while created_by
+resolved file-key — incoherent for the same semantic. Fix: audit.actors →
+user-cog (the ratified actor glyph) in OPTIONS_SOURCE_TYPE_ICONS — uniform
+across all writer stamps. Note: created_by changes file-key → user-cog as
+a consequence — the coherence the user asked for. 9/9 tests. Commit ui+1.
