@@ -347,3 +347,7 @@ typed count — live agreement verified in it-IT: `1 Anno`, `3 Anni`,
 - dal 903/903 unit tests;
 - i18n: 22 keys × 7 languages verified live in the dev DB; uom CTA probe
   evidence `Anno`/`Anni`/`Giorni` capitalized.
+## Post-TOC addendum — @-sigil instant literals (user-ratified 2026-11-26)
+
+Bare English `at`/`until` keywords in the canonical-visible input read as untranslated prose. Ratified direction: machine sigils `@at`/`@until` (same family as schedule `@every`/`@at`). Core regexes accept BOTH forms read-compatible (zero migration — dev DB rows authored pre-sigil parse unchanged); emission writes the sigil form everywhere (widget applyAssist, docs, dal validation guidance). Verified: core 246/246, ui 109/109, dal 903/903, E2E literal-at green on the full chain (popover → canonical → wire → expire_at verbatim). Commits: core 4432c0e, ui +1, dal +1, fe +2.
+
