@@ -230,3 +230,41 @@ They share a visual pattern (quantity+unit vs absolute instant), not a semantics
 ## Next step
 
 Await user ratification. If ratified, open/convert this plan to TOC for **option C only**, starting with the mandatory anatomy inventory/reference lock against `ScheduleSpecInput`, `NumericInput`, `Choicebox`, and `DateWheelPicker`. No source files were modified by this TIC.
+
+---
+
+# TOC — execution phase (ratified 2026-11-26)
+
+## Ratified design decisions (user, 2026-11-26)
+
+| decision | ratified choice |
+|---|---|
+| option | **C** — keep varchar wire, rebuild `ReviveIntervalInput` anatomy on standard primitives |
+| primary face | **canonical editable text + assist popover** — anatomy identical to `ScheduleSpecInput` |
+| filter typing | **standard free-text ILIKE** — typing `1` matches substring; popover still composes exact canonical; the old autocomplete-canonical behavior is dropped (E2E rewrite ratified) |
+| interpreter strip | **everywhere** — form AND filter surfaces |
+| interval units | unchanged closed vocabulary `day/week/month/quarter/year` |
+| modes | exactly 2 cards in the choicebox — interval / fixed date — NO cron |
+| NULL semantics | unchanged — empty value = revive off |
+
+## Invariants (must not regress)
+
+- wire varchar unchanged: `'N unit'` (singular/plural), `'at <ISO>'` / `'until <ISO>'`; zero DB migration/backfill;
+- `parseReviveSpec`/`parseGraceSpec` from `@primebrick/core` = the live validation predicate in the widget (same as DAL wire validation);
+- `literal="at"`/`literal="until"` prop contract unchanged; mounts unchanged in `FormFieldDispatcher`;
+- filter parity: same composite on form and filter surfaces;
+- timezone binding on the pin DateWheelPicker unchanged;
+- `data-testid` contract: `revive-interval-input-field` must stay resolvable (E2E depends on it);
+- `tz`/`revive_every` `default_visible:false` untouched.
+
+## TOC tasks
+
+| # | Task | Status |
+|---|------|--------|
+| T1 | Re-read widget sources + verify ui→fe consumption path (workspace vs npm pinned) | ⏳ |
+| T2 | Rebuild `ReviveIntervalInput` in primebrick-v3-ui: canonical text input + assist CTA + popover (2-card Choicebox) + interpreter strip; NumericInput/UoM + DateWheelPicker inside popover; round-trip prefill | ⏳ |
+| T3 | ui unit tests (round-trip, emission, invalid) + `pnpm check` + `pnpm build` + `pnpm test` | ⏳ |
+| T4 | BE translation patch: new keys `app.widgets.revive_interval.assist*`, card titles/desc, strip prose templates (7 languages); reuse existing unit/mode keys; sign manifest per db-patches rule | ⏳ |
+| T5 | FE E2E: rewrite filter-parity interaction (popover compose → canonical ILIKE wire), free-text ILIKE test, form-contract anatomy assertions | ⏳ |
+| T6 | Docs: `entity-metadata.mdx` anatomy update (leading mode toggle description is now stale) | ⏳ |
+| T7 | Commits per repo with model trailer; report push status (push only on explicit request) | ⏳ |
