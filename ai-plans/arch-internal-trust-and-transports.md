@@ -29,6 +29,7 @@ Every turn, in this order, NO EXCEPTIONS:
 | 2026-11-26 | WP-4 wiring server+microservice | ✅ committed LIVE | sdk b2b0b04+cca10be — enforce default US, verify-if-present BE edge; 5/5 wiring proofs | WP-3 BE half |
 | 2026-11-26 | WP-3 BE proxy converged on internalFetch | ✅ committed LIVE | be 5ecf255 — entrambe le call site (regular+SSE) firmate+sealed | live proof |
 | 2026-11-26 | LIVE PROOF dev-stack flag-day | ✅ GREEN | unsigned→401 AUTH_SIGNATURE_MISSING, injection x-user cleartext→401, health→200 pubblico, discovery openapi firmata passa il gate enforce su tutti e 5 i servizi (159 path crm), zero errori post-boot | WP-5 shield death |
+| 2026-11-26 | WP-5 slice 1 — HTTP shield gate dead | ✅ committed LIVE | sdk: gate verifyClientIdentity rimosso da createHttpServer; restart crm: unsigned→401, rediscovery firmata 17 entity SENZA shield nel path — HTTP non dipende più dallo shield | WP-5 slice 2: NATS attribution |
 
 ## Status: 🟠 WIP — Plan date: 2026-11-26 / analysis & decision phase
 
@@ -666,10 +667,15 @@ zero regressioni sui flussi FE→BE→US.
 2. **Harness migration** — test endpoint nei consumer (be + us×5) che colpiscono
    server enforce devono firmare: helper condiviso signTestRequest nel SDK.
    I test SDK stessi passano già (mode off di default nella libreria).
-3. **WP-5 shield death** — rotating-secret engine, client-shield-registry,
-   enrollment, UA allowlist: rimozione consumer per consumer. NOTA: coesiste
-   ancora — il gate shield gira DOPO la verifica provenance e passa perché
-   internalFetch manda ancora UA+key via provider. La morte rimuove entrambi.
+3. **WP-5 slice 2+ — NATS publisher attribution redesign** (design reale richiesto):
+   il ClientShieldRegistry alimenta ANCORA (a) verifyNatsPublisher — attribuzione
+   identità per-service su rotte NATS governate, ortogonale alla busta cifrata
+   che prova solo la possessione dei message-key fleet-wide; (b) generationFor/
+   deriveClientKey nella key rotation outbound. La morte del registry richiede
+   prima una sostituzione dell'attribuzione NATS (candidata: chiavi per-service
+   vault-derived come HTTP signing, estese al publisher NATS) — analisi dedicata.
+   Poi: morte enrollment/UA-allowlist/key-transmission in configureInternalClient,
+   morte rotating-secret engine (secret.get/rotated/Redis TTL), cleanup consumer.
 4. **WP-6** — formalizza la live proof nel piano (già eseguita empiricamente,
    vedi ledger) + test rotation-in-flight con keygen grace.
 5. **WP-7** — doc rewrite: client-shield-and-secrets.mdx → internal-provenance;
