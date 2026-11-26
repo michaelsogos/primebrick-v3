@@ -235,3 +235,15 @@ had one; all earlier session commits are now genuinely on the remote).
 
 STILL OPEN: e2e retest of modified write paths; fe resumable-fetch 2
 failures (pre-existing, separate investigation).
+
+### E2E WRITE-PATH RETEST DONE — full lifecycle green + one open anomaly
+
+Live probe through production JobTriggersService (real PG+NATS): create →
+update → stale-version rejection → soft-delete → restore → purge — ALL
+green, optimistic locking verified working with the migrated signatures.
+ANOMALY for user decision: `job_triggers.version` is integer(int4) in PG,
+hydrating to JS number — while the doctrine says domain versions are
+bigint end-to-end and entity annotations declare bigint. Everything works
+(numeric compares hold), but the representation question is open: migrate
+version columns to int8, or ratify int4+number for versions as a bounded
+exception? Not ours to decide — flagged.
