@@ -30,10 +30,10 @@ Every turn, in this order, NO EXCEPTIONS:
 | 1 | Benchmark HTTP vs NATS correlation (real measurement) | ✅ done | 2026-11-26 | §3 — numbers kill the "1.5×" ghost and the migration case |
 | 2 | Detail threat model + current HTTP defense holes | ✅ done | 2026-11-26 | §2 — verified at file:line in census |
 | 3 | Edge topology analysis — STANDALONE vs GATEWAY-authoritative | ✅ done | 2026-11-26 | §5 — Micha's GW insight integrated |
-| 4 | Decision round with Micha on D1–D8 | ⏳ not done | — | §8 — the open decisions, nothing closed yet |
+| 4 | Decision round with Micha on D1–D8 | ✅ done | 2026-11-26 | §8ter — all ratified; D8 spun off to arch-edge-gateway-trust.md |
 | 5 | Doctrine rewrite in controller-boundary.md + client-shield-and-secrets.mdx | ⏳ not done | — | after decisions — real numbers replace the ghost benchmark |
-| 6 | HMAC provenance design detail (post-decisions) | ⏳ not done | — | §6 is direction, not spec — spec follows D1/D2/D5/D6 |
-| 7 | Implementation | ⏳ not done | — | scoped after decision round |
+| 6 | HMAC provenance design detail (post-decisions) | ✅ done | 2026-11-26 | §12 — full implementation spec |
+| 7 | Implementation WP-1..WP-7 (§12.8) | ⏳ not done | — | starts next turn, WP order binding |
 
 ---
 
@@ -467,6 +467,160 @@ forte verso D7=(a) — la decisione resta a Micha.
 
 ---
 
+
+## 8ter. TUTTE LE DECISIONI RATIFICATE (2026-11-26)
+
+| # | esito finale |
+|---|--------------|
+| D1 | **(b)** — BE opera sia STANDALONE che GW-capable |
+| D2 | **(b)** — firma HMAC + sigillo AES-GCM degli header sensibili via vault |
+| D3 | **(a)** — assorbimento totale: registry/enrollment/shield-key muoiono; l'identità È la chiave per-service |
+| D4 | **(a)** — keep infra NATS esistente + ban nuovi usi correlation dev-facing |
+| D5 | **(a)** — stesso canale vault dei message-key, label di derivazione separata |
+| D6 | **(b)** — timestamp + nonce-cache; nonce SOLO su metodi scriventi (GET esenti — replay di lettura inerte) |
+| D7 | **(a)** — una sola scheme HMAC per tutto l'HTTP interno (docs-pack e map-key-schemas inclusi via internalFetch) |
+| D8 | deferred → `arch-edge-gateway-trust.md` nella fase cloud testing |
+
+---
+
+## 12. SPEC IMPLEMENTATIVA — il contratto da cui si implementa
+
+### 12.1 Wire format — cosa viaggia sulle richieste HTTP interne
+
+Headers emessi dal publisher interno:
+
+```
+x-pb-service:   <service_code>          — dichiara l'identità (quale chiave derivare)
+x-pb-keygen:    <generation>            — generazione della chiave (pattern envelope NATS: grace multi-generazione)
+x-pb-timestamp: <epoch ms>
+x-pb-nonce:     <uuid>                  — presente su TUTTI i metodi; verificato anti-replay solo su scriventi
+x-pb-signature: <hex HMAC-SHA256>
+x-pb-sealed:    <base64 AES-GCM blob>   — gli header sensibili cifrati (x-user-* + auth headers configurati)
+```
+
+Gli `x-user-*` NON viaggiano più come header plaintext — esistono solo
+dentro il blob sigillato. `x-client-shield-secret` e
+`x-primebrick-client-shield-key` muoiono. UA-allowlist muore.
+
+### 12.2 Canonical string e firma
+
+```
+canonical = method + "\n" + path + "\n" + timestamp + "\n" + nonce
+          + "\n" + sha256hex(body) + "\n" + sha256hex(x-pb-sealed value)
+signature = HMAC-SHA256(signing_key, canonical) — hex, verify in constant-time
+```
+
+Note di layering: il blob sigillato ha già integrità GCM propria; includerlo
+nel canonical costa zero e lega firma e contenuto in un unico gesto.
+
+### 12.3 Derivazione chiavi (D5 — stesso canale vault, label separata)
+
+```
+signing_key(service, gen) = HMAC-SHA256(message_key_material(gen), "http-sign:" + service + ":" + gen)
+sealing_key(gen)          = HMAC-SHA256(message_key_material(gen), "http-seal:" + gen)
+```
+
+- Derivazione dal message-key material per-generazione: rotation oraria,
+  trimming 7 giorni, reactive-refresh — TUTTO ereditato gratis dal provider
+  esistente. La famiglia è crittograficamente separata per label (domain
+  separation standard).
+- `signing_key` per-service: provenienza granulare (sai CHI ha firmato) e
+  anti-misuse. NOTA ONESTA documentata: NON fornisce isolamento contro un
+  servizio compromesso — chiunque legga il vault deriva tutto (stesso modello
+  dei message-key NATS). Il threat model ratificato (python nella VLAN, non
+  servizio compromesso) è coperto pienamente.
+- `sealing_key` condivisa (non per-service): il sigillo è confidenzialità
+  verso QUALUNQUE servizio interno legittimo — chiunque nel perimetro apre,
+  chiunque fuori non legge.
+
+### 12.4 Verify chain (lato US, nel punto di verifyClientShieldSecret attuale)
+
+Ordine obbligatorio — ogni passo fallito = 401 con codice distinto:
+
+1. presenza dei 5 header + blob — mancante → `AUTH_SIGNATURE_MISSING`;
+2. timestamp entro ±30s skew → `AUTH_SIGNATURE_STALE`;
+3. metodo scrivente → nonce in cache? replay → `AUTH_REPLAY_DETECTED`;
+   assente → registrato con TTL = finestra skew;
+4. derivazione chiave per (service, keygen) — generazione ignota → reactive
+   refresh throttled UNA volta, poi fallimento → `AUTH_KEY_GENERATION_UNKNOWN`;
+5. canonical recomputato sulla richiesta ricevuta, compare constant-time →
+   `AUTH_SIGNATURE_INVALID`;
+6. apertura blob AES-GCM → identità deserializzata dal blob (non più dagli
+   header) → la catena AuthUser/RBAC esistente prosegue invariata.
+
+Fail-closed boot (dottrina A7 estesa): niente key material → il publisher
+LANCIA prima di emettere — mai una richiesta unsigned sul wire.
+
+### 12.5 Publisher funnel — punti unici di firma
+
+- `internalFetch` (sdk/src/http/internal-client.ts) — firma automatica su
+  OGNI chiamata: copre MCP loopback, openapi discovery, docs-pack,
+  map-key-schemas. Zero call-site da toccare.
+- `backendIdentityHeaders` (BE) — sostituito dalla firma; il proxy-service
+  smette di comporre segreti e passa per il signer condiviso (o converge su
+  internalFetch — decisione implementativa minore, il funnel deve essere UNO).
+- `x-user-*` sealing al momento della firma: serializeAuthUserToHeaders
+  smette di emettere header e alimenta il blob — la classificazione sensibile
+  riusa ESATTAMENTE la logica del codec NATS (x-user-* + auth headers
+  configurati).
+
+### 12.6 Cosa muore (D3-a)
+
+- rotating-secret engine: secret.get/secret.rotated/Redis TTL slot, grace
+  window — il segreto non esiste più, non serve ruotarlo;
+- client-shield-registry: enrollment flow (e la finestra allowNewPrefix),
+  clientShieldRegistry.get, broadcast client_registry.changed, UA allowlist,
+  cache verifier;
+- `service_client_shield_key` in config_entries — niente più segreto statico
+  bootstrap seedato a mano;
+- la tabella resta fisicamente ma diventa inerte (drop rimandato a patch
+  successiva — non urgente, non in scope del primo giro).
+
+Il verify-chain NATS esistente (publisher verification su envelope) resta
+invariato — è governato dalla possessione dei message-key, orthogonal.
+
+### 12.7 Path speciali
+
+- `/health` — pubblico, unsigned, senza identità: INVARIATO per design;
+- `/api/v1/system/db-migration*` (migration-failed exemption) — firmato come
+  tutto il resto: il proxy firma ogni outbound, nessuna eccezione nuova;
+- SSE chat — la firma avviene sulla richiesta; lo stream di risposta non è
+  impattato;
+- module-assets — GET signed, nonce esente (GET);
+- mixed-version windows — in dev flag-day accettabile (tutto riparte insieme
+  via dev-stack); per deployment futuri serve strategia di rolling —
+  annotato come debito conosciuto, non in scope del primo giro.
+
+### 12.8 Implementazione — ordine dei lavori (WPs)
+
+```
+WP-1  sdk/src/auth/http-signing.ts — derivation, canonicalize, sign, verify,
+      seal/open blob; key provider hook nel ciclo vault esistente
+WP-2  nonce-cache — Redis SET NX PX quando redis_url presente, in-memory
+      sliding-window altrimenti; solo metodi scriventi
+WP-3  publisher funnel — internalFetch + BE proxy; serializeAuthUserToHeaders
+      alimenta il blob invece degli header
+WP-4  verify chain US — il middleware al posto di verifyClientShieldSecret;
+      error codes nuovi; reactive refresh
+WP-5  morte dello shield — rimozione rotating-secret engine, registry,
+      enrollment, UA allowlist; consumer cleanup (be + us×5)
+WP-6  test prova-del-9 (§7 del piano: replay sniffato fallisce, forgiatura
+      admin fallisce, legittima passa, skew oltre finestra fallisce, rotation
+      in-flight salvata da keygen grace, boot senza chiave esplode)
+WP-7  doc rewrite — client-shield-and-secrets.mdx diventa la doc di
+      provenance interna; controller-boundary.md aggiornato coi numeri reali
+      del benchmark (sepoltura del "1.5×" fantasma); dottrina D4 scritta
+```
+
+### 12.9 Verifica finale di campagna
+
+Oltre ai test: live probe sulla composizione reale (stile A7) — riavvio
+dev-stack, flussi principali esercitati, canary ostile: replay di una
+richiesta catturata dal log → DEVE fallire con AUTH_REPLAY_DETECTED o
+AUTH_SIGNATURE_INVALID; forgiatura manuale con header admin → DEVE fallire;
+zero regressioni sui flussi FE→BE→US.
+
+---
 
 ## 9. Cosa NON è in scope (esplicito)
 
