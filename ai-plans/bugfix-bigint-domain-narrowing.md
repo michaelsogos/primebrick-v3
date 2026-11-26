@@ -309,3 +309,33 @@ IMPLEMENTATION MAP for next turn:
 6. verify no consumer does JS arithmetic on version (verified clean:
    increments are SQL-side everywhere) — then live probe: read + update
    must BOTH return typeof version === "bigint".
+
+### bigint hydration — COMPLETED 2026-11-26 (implementation map above executed)
+
+Full hydration-by-construction implemented, verified live, pushed:
+
+- **dal** commit (arch/nats-durability line, pushed): `hydrateEntityRow`/
+  `hydrateEntityRows` canonical funnel (column-pg-io) — tolerant resolution
+  (alias map → sqlName → propertyKey), per-entity cache, @Calculated via
+  declared pgType, unknown keys passthrough. `finalizeReturningRow` write
+  funnel: all 6 write paths hydrate at materialization so audit and caller
+  share ONE representation. All read paths + streaming hydrate through the
+  same funnel. bigint conversion trigger: `jsType === "bigint"` OR
+  `auditableType === "VERSION"` — lossless, idempotent, null-safe.
+- **Doctrine enforcement discovery**: the type-matrix test entity violated
+  the column-types doctrine (`number` + `pgType: "numeric"` is REJECTED —
+  numeric hydrates as Decimal). It passed before ONLY because hydration was
+  broken. Annotations corrected to Decimal; expectations now pin Decimal
+  hydration. Zero numeric columns exist in the real DB census, so this was
+  theoretical — but the contract is now enforced by construction.
+- **Suite**: 45/45 files, 902/902 tests green (+6 new hydration-contract
+  tests pinning version bigint on write RETURNING / reads / delete-restore /
+  streaming).
+- **Consumers**: typecheck clean everywhere — sdk, be, us×5. Two pre-existing
+  emailsender errors surfaced (silenced audit ports not aligned to
+  AuditWriteResult — the seam evolution was never typechecked there; exactly
+  the debt class the service typecheck gate now intercepts) — fixed, pushed.
+- **LIVE PROBE GREEN** (production dal composition, real PG): read/write-
+  RETURNING/reread all deliver `version` as native bigint.
+- ext-json Decimal/Vector auto-wiring remains a documented capability gap
+  (theoretical — zero such columns exist); close if the first one appears.
