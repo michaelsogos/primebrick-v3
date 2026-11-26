@@ -37,3 +37,11 @@ options carry the globe. Fix: `metaColumnIcon` precedence extended —
 declared icon → options_source semantic glyph (`iana.tzones`→globe) →
 type-derived. Verified live on the sequences advanced picker (globe on
 the Time zone row); 5 unit tests pin the precedence. Commit: ui+1.
+
+## Addendum 3 — cadence glyph convention (same session, user-ratified)
+
+revive_every rendered the bare-text T. Ratified: scheduler and reviver
+share ONE icon — clipboard-clock (user's pick over calendar-clock) — as
+both the type icon (schedule_spec/revive_interval/revive_offset formats
+now reach the schema leaf in core) and the widgets' assist CTAs. Verified
+live: Renew Every row carries it. Commits: core+1, ui+1.
