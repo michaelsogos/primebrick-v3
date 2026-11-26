@@ -16,6 +16,9 @@
 | 6 | us-crm: schema patch (new cols; NO binding_key name-shape backfill — lazy detUuid adoption is the safe channel) + i18n patch (new field labels) + signed manifest | ✅ | us `7615fce` (patches applied live, snapshot-check clean); dal `fc40a1a` | live DB: 2 patches applied; `primebrick-db check` clean |
 | 7 | ui/fe: meta columns auto-render on the sheet (`immutable` flags on revive_every/slot — dal `ec15e46`); e2e `sequence-revive.spec.ts` — full lifecycle live via REAL JH chain (@at trigger→forwarder→callable→succeeded run) | ✅ | fe `faaa595`; sdk `9604eba`+`6f9ba05` (two real bugs surfaced by the e2e) | e2e 1/1 live: expire→#successor→grace→switch→pinned-honesty→virgin counter. ⚠️ post-review: form drift found (computed/system cols leaked into create sheet — `default_visible` never suppresses form fields) → fix tracked in `bugfix-sequence-create-form-contract.md` |
 | 8 | docs: sequence dev-guide + generated docs regen (UTC default documented), api-reference, commits per repo | ⏳ | — | |
+| 9 | dal+fe: sequence-analyze target resolution uses `binding_key` first (name fallback for legacy rows); SequenceSetDialog does not fire analyze on unbound operator rows — no expected 400, explicit unavailable copy | ⏳ | — | user addition 2026-11-26 |
+| 10 | dal+fe: sequence ELT taxonomy — `name` sticky; `sez`/`sez2`/`sez3` visible by default immediately after it; `step`…`revive_every` follow; later columns toggleable, not default-visible | ⏳ | — | user addition 2026-11-26 |
+| 11 | dal+us+fe: forced-revive chrome — `rotate-cw-square` icon (Lucide-verified) + missing `<ns>.actions.sequence_revive` translations / dialog unavailable copy | ⏳ | — | user addition 2026-11-26 |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped. -->
 
