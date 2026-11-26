@@ -31,6 +31,7 @@ Every turn, in this order, NO EXCEPTIONS:
 | 2026-11-26 | LIVE PROOF dev-stack flag-day | ✅ GREEN | unsigned→401 AUTH_SIGNATURE_MISSING, injection x-user cleartext→401, health→200 pubblico, discovery openapi firmata passa il gate enforce su tutti e 5 i servizi (159 path crm), zero errori post-boot | WP-5 shield death |
 | 2026-11-26 | WP-5 slice 1 — HTTP shield gate dead | ✅ committed LIVE | sdk: gate verifyClientIdentity rimosso da createHttpServer; restart crm: unsigned→401, rediscovery firmata 17 entity SENZA shield nel path — HTTP non dipende più dallo shield | WP-5 slice 2: NATS attribution |
 | 2026-11-26 | WP-6 rotation continuity | ✅ GREEN | sdk: difetto era artefatto del test (path override inconsistente) — meccanismo corretto, provato 2× empiricamente: chiavi per-generazione bit-identiche across rotation, in-flight sopravvive grace, muore dopo trim. 13/13 | sdk d05b3f2 — test skipped: firma gen N-1 NON verifica post-rotazione pur con materiale grace presente (AUTH_SIGNATURE_INVALID). Se genuino: ogni rotation vault uccide richieste in-flight. PRIMA cosa da investigare prossima sessione, poi WP-5 slice 2 |
+| 2026-11-26 | WP-5 COMPLETE — shield demolished everywhere | ✅ LIVE VERIFIED | L'analisi slice-2 ha ribaltato l'approccio: niente redesign — la busta A7 È l'attribuzione (il registry non ha mai dato isolamento reale: chiavi derivate da segreto fleet-shared, qualunque servizio impersonava qualunque altro). Demolizione pura. SDK: registrar strip enrollment/generation/rotation-handshake, service-identity ridotto a package identity + UA observability, payload register senza key fields, 660/660. BE: secret-engine/client-registry/publisher-identity/registry-service+entity morti, serviceShieldHandler→requireInternalProvenance (HMAC verify su docs-pack, brand PERMISSION_DECLARED), backend-identity UA-only, 422/422. US: due-forwarder re-stamp morto, 158/158 job-handler. Bug critico trovato live: default chain esige user-context → AUTH_USER_CONTEXT_MISSING su ogni rotta service-to-service → nasce serviceLaneVerify (busta A7 è la prova, nessun user da risolvere) + default in subscribeSharedConfig. LIVE: register riusciti, discovery 159 path crm, ingest docs-pack firmati passano il middleware, unsigned→401 ovunque, health→200 | sdk 5b6a765+lanes, be 35c431a, us c4d0cdd — resta: harness migration, WP-7 docs |
 
 ## Status: 🟠 WIP — Plan date: 2026-11-26 / analysis & decision phase
 
@@ -611,8 +612,10 @@ WP-3  publisher funnel — internalFetch + BE proxy; serializeAuthUserToHeaders
       alimenta il blob invece degli header
 WP-4  verify chain US — il middleware al posto di verifyClientShieldSecret;
       error codes nuovi; reactive refresh
-WP-5  morte dello shield — rimozione rotating-secret engine, registry,
-      enrollment, UA allowlist; consumer cleanup (be + us×5)
+WP-5  morte dello shield — ✅ COMPLETATA 2026-11-26 (vedi ledger riga WP-5)
+      rotating-secret engine, registry, enrollment, UA allowlist rimossi;
+      consumer cleanup (be + us×5) fatto; serviceLaneVerify nato per le
+      rotte service-to-service
 WP-6  test prova-del-9 (§7 del piano: replay sniffato fallisce, forgiatura
       admin fallisce, legittima passa, skew oltre finestra fallisce, rotation
       in-flight salvata da keygen grace, boot senza chiave esplode)
