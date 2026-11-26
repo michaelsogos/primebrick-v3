@@ -223,3 +223,15 @@ STILL OPEN:
   enforcement closure; every debt in this plan entered through that gap
 - e2e retest of modified write paths (mandate) batched at tail end
 - fe resumable-fetch 2 failures (pre-existing, separate investigation)
+
+### TYPECHECK GATE CLOSED (same session) — the enforcement closure
+
+`check:types: tsc --noEmit` added to all six services and wired into the
+predev gate (`check:standards && check:types`). Verified both directions:
+clean tree exit 0, deliberate type error caught. This closes the root
+enforcement gap through which every debt in this plan entered mainline.
+Commit us-v3 `1b32013` (pushed with upstream fix — the branch had never
+had one; all earlier session commits are now genuinely on the remote).
+
+STILL OPEN: e2e retest of modified write paths; fe resumable-fetch 2
+failures (pre-existing, separate investigation).
