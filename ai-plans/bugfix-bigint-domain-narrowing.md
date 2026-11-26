@@ -274,3 +274,38 @@ IMPLICATIONS TO IMPLEMENT (next turn, verify-before-edit):
    same half-migrated debt this plan exists to close.
 3. Reconcile the canonical doctrine docs (fe×2, core, dal, be) with this
    ratification — the int4 exception must be written where the pin lives.
+
+### bigint hydration — implementation map (reconnaissance done 2026-11-26, implement next turn)
+
+User ratified the design: PG int4 storage for version stays (pin stands,
+weight optimization); TS representation is bigint end-to-end; hydration
+must convert `BigInt(number)` BY CONSTRUCTION so the annotation never lies.
+
+ARCHITECTURAL FINDING that shapes the implementation: read/write direct
+paths in repository.ts do NO per-column hydration — rows pass straight
+from the pg driver (~20+ cast sites: lines 588/618/647/716/769/788/820/
+919/968…). Today only driver type-parsers (INT8→bigint, NUMERIC, timestamps)
+type the values; the column-aware `pgValueToJsValue` conversion runs ONLY
+in the deferred-transaction jsonb rehydration path. That is why a first
+implementation limited to pgValueToJsValue made the deferred test pass
+(1n green) while direct dal.add still returned number — inconsistent, so
+the partial work was REVERTED (tree clean) rather than committed half-way.
+
+IMPLEMENTATION MAP for next turn:
+1. write ONE helper `hydrateEntityRow(meta, row)` applying pgValueToJsValue
+   per column (hints already available via columnHintsFromMetaColumn);
+2. apply it at the ~20 row-materialization sites in repository.ts — reads,
+   write RETURNING paths, bulk paths — performance cost is trivial type
+   checks per populated column;
+3. the bigint conversion trigger in pgValueToJsValue: `jsType === "bigint"`
+   OR `auditableType === "VERSION"` (the pin case — int4 storage, bigint
+   annotation), lossless+idempotent, null passthrough;
+4. RESOLVE the ERR01 semantics question first: deferred version-mismatch
+   detection may compare JS-side — bigint/number strict equality must not
+   weaken or strengthen mismatch detection (test "version mismatch on a
+   deferred update aborts with ERR01" is the pin);
+5. update stale assertions encoding the old number contract (dal.test:195,
+   deferred-transaction:45,109) and rerun full suite;
+6. verify no consumer does JS arithmetic on version (verified clean:
+   increments are SQL-side everywhere) — then live probe: read + update
+   must BOTH return typeof version === "bigint".
