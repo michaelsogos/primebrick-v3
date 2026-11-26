@@ -115,3 +115,15 @@ is honestly EMPTY — before the fix it showed irrelevant foreign noise.
 Design question parked for the user: should the FILTER vocabulary be
 keys-in-use (distinct column values, audit-actors style) instead of
 catalog keys? Commits: ui+1, fe+1, be+1 (patch 20270101190000).
+
+## Addendum 9 — picker census CLOSED: search-in + sort dropdown (user-reported)
+
+The user caught the same declared-only erasure in the search-in selector —
+the lesson: fix the whole CLASS, not one surface per complaint. Full census
+of column-picker surfaces: (1) advanced-filter field picker, (2) bulk
+editor add-field, (3) columns-visibility panel, (4) search-in panel,
+(5) sort dropdown — all five now consume metaColumnIcon. (4) had the same
+ColumnLike type erasure; (5) rendered no glyph at all. Permanent E2E x2
+lock rows-carry-svg on both. In-place decorations (table headers, form
+labels) keep declared-only BY DESIGN — boundary documented in the helper.
+Commit: fe+1.
