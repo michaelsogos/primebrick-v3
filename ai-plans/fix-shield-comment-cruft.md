@@ -1,5 +1,7 @@
 # Fix shield comment cruft — the contract must not describe dead mechanisms
 
+## Status: 🟢 DONE — sdk edc7052 + be + us ceeae99; dead vocab ZERO all repos; edge GATEWAY vocab kept intentionally (D8)
+
 # ⚠️ TURN PROTOCOL — READ THIS BLOCK EVERY TURN.
 1. Read plan. 2. State = LEDGER. 3. Execute declared scope only. 4. Verdict+ledger before closing.
 
