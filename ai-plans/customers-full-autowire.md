@@ -72,3 +72,21 @@ derivati. Lo stub remote CustomerCreatePage muore con la sua rotta authored.
   icon/label_key/order/default; struttura (id/href/sidebar:false) resta della derivazione, mai overridable
 - crm nav-declaration: leaf authored `customers-create` = solo override cosmetico icon user-round
 - GREEN 3/3 in 26.7s — payload assertion + popover pairing + form standard tutti verdi
+
+## DECISIONE UTENTE (2026-11-27): route standard ovunque, labels/icone authored
+"ok, allora voglio le route standard, tutto standard, ma le authored labels e icons"
+- JH migra ai path canonici table-snake: /system/job/job_triggers, job_schedules, job_runs
+  (niente più triggers/runs/job-schedules corti — la divergenza nominale muore)
+- leaves JH restano authored SOLO come cosmetici: label_key job.jobs.nav_* custom + icone
+  list-checks/list-clock/play — merge cosmetico già implementato nel SDK
+- evidenza screenshot utente: duplicati REALI funzionanti — leaf authored tradotte +
+  leaf ombra raw-key (job.job_triggers.nav non seedata) entrambe visibili in sidebar,
+  entrambe funzionanti (stessa lista da due URL). Radice: correlazione per href esatto
+  non cattura divergenza nominale; i seed translation mancano delle chiavi canoniche
+- DA DEFINIRE (domanda all'utente): destino TRIGGER_FORM — layout col/row payload_map,
+  default values, validators job_trigger_shape/payload_map_conformance. La form derivata
+  standard emette solo {key} nudi. Opzioni: (a) form declaration sul decl entity come
+  canale standard della derivazione [lavoro SDK]; (b) eccezione authored controllata;
+  (c) si perde — form minimale derivata
+- emailsender: stessa migrazione da applicare dopo JH (providers/templates custom paths)
+- impatto tests: jobs-pages.spec naviga i vecchi path ovunque — codemod necessario
