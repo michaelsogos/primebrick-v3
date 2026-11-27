@@ -67,3 +67,52 @@ qualification. Sequences surface via builtinNavContributions (dal-pg) —
 verify separately. TASK 2 REDEFINED: nav completion IS the migration
 gap — every served entity needs its dictDecl leaf + label keys +
 E2E verification of user-visible reachability.
+
+---
+
+## 2026-11-27 TIC — NAV AUTO-WIRE investigation (user question: why hand-authored at all?)
+
+### Evidence gathered (file:line)
+
+1. **The auto-wire machinery EXISTS and runs in production for builtins**:
+   `primebrick-v3-sdk/src/microservice/create-microservice.ts:651` —
+   `const nav = mergeBuiltinNav(options.nav, schemas)` at boot merges
+   builtin-contributed leaves into the module nav automatically. Sequences
+   appear in CRM nav with ZERO hand-written leaves — proof the pattern works.
+2. **Module entities have no equivalent path** — their leaves are hand-written
+   in `nav-declaration.ts`, a SECOND declaration parallel to `entities-route.ts`.
+3. **Validation is one-directional**: `validateNavDeclaration` checks nav→route
+   (every nav link resolves to a declared route) but NEVER route/entity→nav
+   (every served entity must surface). Drift was structurally guaranteed.
+4. **dictDecl is already a pure function of (table, entity)** — zero extra
+   information needed; and entity decls already carry everything:
+   `entityName` (wire), `spec.tag` (plural table), meta, permissions.
+5. **Translation gap compounds**: only 2 `crm.settings.nav.<table>` keys are
+   seeded (db-meta patches) — auto-wire must seed labels too.
+6. JH comparison: its nav is also hand-authored — no service has the
+   derivation yet; only builtins do.
+
+### Design options (presented to user, awaiting ratification)
+
+- **A — service-level derivation**: nav-declaration imports crmEntityDecls
+  and derives settings leaves programmatically. Kills duplication in crm only.
+- **B — universal SDK auto-wire (user vision: "la classe in pasto al facade")**:
+  entity decls carry optional nav metadata; createMicroservice derives leaves
+  for every entity BY DEFAULT (opt-out, never opt-in) — same merge seam as
+  builtins extended to module entities. Every service present/future free.
+- **Recommended path**: implement the derivation as an SDK helper
+  (`deriveEntityNav(decls, opts)`) — one shared implementation, adopted by crm
+  first, promotable to default-on inside createMicroservice later without
+  breaking shape.
+
+### Open design sub-questions for ratification
+
+1. Surface class per entity: vocabularies → settings `dict` archetype;
+   operational composites (customer_account/contact/link/consent,
+   local_address) — standalone `list` leaves too, or customer-detail-only
+   (detail pages don't exist yet)? Proposal: EVERYTHING visible by default,
+   refine later — visibility first.
+2. Opt-out semantics: entities that must never surface standalone declare it
+   explicitly on the decl (`nav: false` + reason) — enforcement by construction.
+3. Label keys: seed `crm.settings.nav.<table>` translations for all tables
+   (patch) — keys already conventional.
