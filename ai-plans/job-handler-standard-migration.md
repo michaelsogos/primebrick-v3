@@ -229,3 +229,12 @@ VERDI confermati in run seriali questa sessione:
      job.runDetail con context row uuid) — il test è già la spec RED perfetta
   2. la superficie canonica entity.record ha sostituito runDetail per design → riscrivere il
      test sul contratto reale (row click / ref drill) o ritirarlo
+
+## CHIUSURA SLICE — REGRESSIONE COMPLETA VERDE ✅ (2026-11-27)
+- jobs-pages.spec.ts serial workers=1: **26 passed + 1 skipped** in 4.6m — zero failure
+  - lo skip è `:568` error_code badge drill — feature mancante documentata nel piano dedicato
+    `ai-plans/job-rundetail-badge-drill.md` (cosa funziona, il gap, la spec RED di riferimento)
+- typecheck puliti: fe-v3 svelte-check 0 errori + stringify clean; job-handler tsc --noEmit clean
+- migrazione JH COMPLETA: path canonici, leaf uniche con cosmetici authored, ordine workflow
+  pinnato, create leaf popover seedata ×7, rot-repair 4/4, ogni prova end-user sullo stack reale
+- resta in coda: emailsender slice (stessa ricetta), cleanup fe/ crm (decisione utente registrata)
