@@ -207,3 +207,32 @@ The pattern recognizes them; no ad-hoc decision needed.
    decls — same input feeds routes AND nav; one declaration point)
 4. Seed `crm.settings.nav.<table>` labels (only 2/10 exist today)
 5. E2E: every entity visible+reachable in real browser, correct archetype
+
+---
+
+## 2026-06-09 — NAV AUTO-DERIVATION WIRE: design investigato e ratificato (fase TOC)
+
+### Evidenza architetturale raccolta (tutta verificata file:line)
+
+- Riconoscimento classi: `@Dict()`/`@Relation()` decoratori su entity class, ereditati via prototype chain — `getDictFacet`/`getRelationFacet` (dal `src/meta/entity-decorators.ts`). `DictEntityBase` porta `@Dict()` (dal `src/entities/dict-entity-base.ts:46`) — i sottotipi ereditano. Oggi solo customer_type + customer_link_type coperti (2/10).
+- Il service espone i facet: `DomainService.dictFacet`/`relationFacet` getter (dal `src/entity/domain-service.ts:100/105`); l'SDK li legge in `assembleMeta` (`entity-router.ts:585-586`) — `EntityServiceLike` dittipl/relationFacet già tipizzati (entity-router.ts:92-95). **L'SDK non importa dal: recognition strutturale via service, non instanceof.**
+- Facet `dict`/`relation` su EntityMeta (core entity-meta.ts:~1170).
+- `mergeBuiltinNav` (sdk `src/http/builtin-entities.ts`) — il precedente: builtin nav merge in `createMicroservice` (`src/microservice/create-microservice.ts:651`), collisione module-authored = boot error, sibling find-or-create.
+- `EntityRouteDecl` = EntityRouterConfig + spec: entityName, service, permissions (presenza chiave = rotta registrata), meta. `createMicroservice` legge `branded.entityDecls` dal route handler (create-microservice.ts:670) — **la seam: stesso input di rotte e nav**.
+- Nav shape CRM (us-v3 `crm/src/nav-declaration.ts`): nav leaves {id,label_key,href,icon,default}, routes {route,kind,entity,label_key,component_url?}, siblings settings con dict leaves. kind list/dict senza component_url = host archetypes `entity_list`/`entity_dict`; form archetype richiede `page_props.form.fields` non vuoto (FE `page-resolver.ts:124`, core `page-route.ts:155-165` — fields è la lista ORDINATA, solo le chiavi dichiarate renderizzano).
+- TableMeta (entity-meta.ts:988) è solo view config — NON porta il nome tabella. **Il plurale/path source manca dal contratto**: lo espone il service.
+
+### Design ratificato + decisioni di dettaglio (questo turno)
+
+1. **dal-v3**: `DomainService` guadagna `tableName` getter — stessa fonte di `getEntityPersistenceMeta(entity)` (derivato, mai ridichiarato).
+2. **v3-sdk**: `EntityServiceLike.tableName?: string` (strutturale opzionale); nuovo `src/http/derive-entity-nav.ts` — funzione pura `deriveEntityNav(decls, nav, opts)`:
+   - `decl.nav === false` → skip (opt-out esplicito sul decl — campo nuovo `nav?: false` su EntityRouteDecl)
+   - `service.relationFacet` presente → MAI leaf (bridge: API resta, zero superficie UI)
+   - `service.dictFacet` presente → dict leaf in sibling settings: id/label/href da tableName, kind "dict", label_key `<mod>.settings.nav.<table>`
+   - altrimenti standard → list leaf in nav root (`<mod>.<table>.nav`, `/prefix/<table>`, kind "list") + create route (`/prefix/<table>/create`, kind "create", page_props.form.fields GENERATI da meta.columns: colonne editabili in create — non uid/managed/audited/hidden — ordinate per `order`) solo se `permissions.create` presente e non false (customer_consent → list-only automatico)
+   - suppression: qualsiasi route module-authored che nomina l'entity (root o sibling) sopprime la derivazione PER QUELLA entity — l'autore la possiede (customers/pipeline restano scritte a mano)
+   - collisione leaf id residua = boot error (stesso contratto dei builtin)
+3. **Wire**: createMicroservice — nav = mergeBuiltinNav(deriveEntityNav(entityDecls, options.nav), schemas).
+4. **CRM**: rimosse le 2 dict scritte a mano (niente di speciale — la derivazione le possiede); restano customers (default+icon+create remota) e pipeline.
+5. Seed label `crm.settings.nav.<table>` mancanti + `crm.<table>.nav` — task separato nel piano.
+6. E2E browser: visibilità/raggiungibilità/archetipo per ogni entità.
