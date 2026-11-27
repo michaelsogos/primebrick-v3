@@ -170,8 +170,9 @@ async function startOne(svc, procs) {
   // Stream recipe (all empirically verified):
   // - Everything downstream of powershell stays in cmd at BYTE level:
   //   `2>&1` merge inside cmd (PS's own merge wraps stderr lines in
-  //   NativeCommandError dumps), `tee.exe` (Git usr/bin, on PATH) writes
-  //   raw UTF-8+ANSI to the log AND passes it to the console untouched —
+  //   NativeCommandError dumps), `tee.exe` (resolution: see ensureTee —
+  //   NOT on machine PATH) writes raw UTF-8+ANSI to the log AND passes
+  //   it to the console untouched —
   //   Tee-Object writes UTF-16 and pipes kill TTY-color detection.
   // - `chcp 65001` + [Console]::OutputEncoding: the spawned console's
   //   codepage is 850/1252 → UTF-8 output mojibakes (ÔÇö for —).
@@ -314,6 +315,31 @@ async function cmdReap(dry) {
   }
 }
 
+// tee.exe is NOT on the machine PATH — it exists only in Git usr/bin.
+// It resolves when the launch chain descends from Git Bash, which injects
+// usr/bin into every Windows child's PATH. A launch from pure PowerShell/
+// cmd dooms every service window to instant death ("tee.exe non
+// riconosciuto") + a Read-Host hang that looks like a slow boot
+// (diagnosed 2026-11-27). Probe BEFORE spawning: if tee is missing from
+// PATH but Git's well-known install exists, prepend it to our own PATH —
+// every spawned window inherits it. If neither resolves, fail fast before
+// opening doomed windows (docs/ai/dev-server.md — "Launch context").
+function ensureTee() {
+  if (!isWin) return;
+  try {
+    execFileSync('where.exe', ['tee.exe'], { stdio: 'pipe' });
+    return; // on PATH — nothing to do
+  } catch { /* not on PATH — try the fallback */ }
+  const gitBin = 'C:\\Program Files\\Git\\usr\\bin';
+  if (existsSync(gitBin + '\\tee.exe')) {
+    const key = Object.keys(process.env).find((k) => k.toUpperCase() === 'PATH') || 'PATH';
+    process.env[key] = gitBin + ';' + (process.env[key] || '');
+    return;
+  }
+  console.error(`FATAL: tee.exe not found on PATH nor at ${gitBin} — service windows pipe through tee.exe. Install Git for Windows or launch from a Git Bash chain (docs/ai/dev-server.md — "Launch context"). Nothing was started.`);
+  process.exit(1);
+}
+
 const [cmd = 'status', ...rawArgs] = process.argv.slice(2);
 const flags = new Set(rawArgs.filter((a) => a.startsWith('--')));
 const args = rawArgs.filter((a) => !a.startsWith('--'));
@@ -327,6 +353,7 @@ if (args.length && names.length !== args.length) {
 if (cmd === 'status') { await cmdStatus(); process.exit(0); }
 if (cmd === 'reap') { await cmdReap(flags.has('--dry')); process.exit(0); }
 if (cmd === 'stop' || cmd === 'start' || cmd === 'restart') {
+  if (cmd !== 'stop') ensureTee();
   await withLock(async () => {
     const procs = processTable();
     if (cmd !== 'start') for (const s of names) console.log(await stopOne(s));
