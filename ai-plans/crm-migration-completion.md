@@ -410,3 +410,28 @@ Confermato fake. Utente: GO eliminazione.
   l archetype dict inline — gap del docs-generator, task separato
 - Q1/Q2/Q3/Q4 del TIC restano da ratificare (icon channel per-entity, semantic paths,
   pipeline placement, ordering)
+
+## TIC — create leaf auto-wire (2026-11-27 sera, direttiva utente testuale)
+
+### Direttiva ratificata (verbatim, nessuna interpretazione)
+- "PRETENDO DI VEDERE LE CREATE NELLA NAV AUTOWIRED"
+- "SE LA ROUTE NON VIENE CREATA NON SI CREA LA LEAF" — la leaf segue il
+  destino della route: no route → no leaf; route diventa RPC → leaf sulla RPC
+- opt-out SOLO sulla leaf (`nav:false` sulla foglia) — non impatta la route;
+  ciò che impatta la route impatta anche la leaf
+- chiusa la tensione piano :131 vs :232 — la create È leaf visibile
+
+### DOC RECEIPTS
+| doc:line | what it says | how it applies |
+|---|---|---|
+| piano :131 | UPDATE/DELETE mai leaf; CREATE and LIST are nav leaves | contratto ratificato |
+| piano :192-193 | standard → list leaf + create leaf da permission surface | consent list-only meccanico |
+| sdk derive-entity-nav.ts:128-140 | oggi: list leaf push + create route push, ZERO create leaf | il gap da chiudere |
+| fe AppSidebar.svelte:195 | children renderizzati come sub-leaf nel sidebar | la forma: child della list leaf |
+| be module-discovery.service.ts:149-176 | materializeNavIcons: leaf icon = icona della route puntata | icona create automatica da kind |
+| payload empirico 2026-11-27 | create route con form fields generati (12/9/6) | la route c'è già — manca solo la leaf |
+
+### VERIFICATION LEDGER
+| ts | command | verdict | evidence | next step |
+|---|---|---|---|---|
+| 2026-11-27 | playwright create-leaf + payload query | GREEN 2/2 stack reale | create child leaf visibile auto-wired; consents senza (no route→no leaf); customers soppressa (authored); payload live con children; sdk 668/668 regression | CHIUSO: sdk 2bd2343, fe-v3 69e07d8 |
