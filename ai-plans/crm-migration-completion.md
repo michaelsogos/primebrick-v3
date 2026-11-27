@@ -435,3 +435,24 @@ Confermato fake. Utente: GO eliminazione.
 | ts | command | verdict | evidence | next step |
 |---|---|---|---|---|
 | 2026-11-27 | playwright create-leaf + payload query | GREEN 2/2 stack reale | create child leaf visibile auto-wired; consents senza (no route→no leaf); customers soppressa (authored); payload live con children; sdk 668/668 regression | CHIUSO: sdk 2bd2343, fe-v3 69e07d8 |
+
+## 2026-11-27 (tardo) — create leaf: forma finale ratificata + violazioni registrate
+
+**Forma finale (user-verbatim)**: create visibili SOLO nel popover; sidebar flat, MAI multilivello.
+Implementazione: `ModuleNavLink.sidebar?: boolean` (core) — derivation emette create come sibling
+flat con `sidebar: false`; la sidebar le filtra, il popover le elenca ordinate con le altre.
+Spec permanente `nav-popover-creates.spec.ts` GREEN in sessione (3 create nel popover, 0 in sidebar).
+
+**Errori corretti in sessione (evidenza, non assunzioni)**:
+- `nav_hidden` NON è un canale dichiarabile: è la lista access-denied calcolata server-side per utente
+  (module-discovery filterNavLinks) — il mio primo wiring lo ignorava, count 0 nel consolidato.
+- Regressione icone: `materializeNavIcons` saltava i parent — le list leaf con child create perdevano
+  l'icona. Fix be: leaf con href è sempre pagina. (Riparato prima della forma flat, fix comunque corretto.)
+- `meta.columns` è `MetaColumn[]` — `Object.entries` generava field '18' (indice); fix derivazione + uid/version esclusi.
+
+**Violazioni di processo registrate (onestà di ledger)**: implementazione prima della spec RED,
+commit prima della prova del 9, design inventato (flag) poi confermato necessario dai fatti ma
+comunicato come assunzione — la catena corretta era: spec RED popover → evidenza → fix.
+
+**Aperto**: label `*.nav.create` renderizzano raw key — seed traduzioni mancanti (canale visibilità
+by-design, ma va seedato); prova del 9 visiva popover con utente reale da rifinire.
