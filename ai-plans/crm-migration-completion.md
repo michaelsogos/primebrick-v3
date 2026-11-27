@@ -456,3 +456,5 @@ comunicato come assunzione — la catena corretta era: spec RED popover → evid
 
 **Aperto**: label `*.nav.create` renderizzano raw key — seed traduzioni mancanti (canale visibilità
 by-design, ma va seedato); prova del 9 visiva popover con utente reale da rifinire.
+
+- create route default icon = file-plus (user-ratified); spec assertion GREEN 3/3 in sessione.
