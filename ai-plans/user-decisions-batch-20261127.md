@@ -35,3 +35,23 @@ una parola: `list` → `table-dictionary` nel mapping dict (il resto della riga 
 remote-vendor-drift — spec di sessioni precedenti, NON toccate qui. La mia spec
 crm-i18n-parity non è flaggata. Effetto: il gate i18n-docs in fe è shadowato dal rosso
 pre-esistente. Decisione utente richiesta: fix budget nelle spec vs allowlist long-poll.
+
+## Slice anomaly — wait-budget fix (opzione 1 ratificata)
+- receipts: `fe-v3/docs/ai/e2e-browser-session.md:79-82` — "5 seconds is the expectation budget…
+  nothing in the app legitimately takes longer than 5s per step"
+- RED: `check:standards` 35 violazioni (dimostrato questa sessione); inventory: 10s×9 + 15s×6 nei
+  4 spec pre-esistenti + 10s×7 in crm-i18n-parity (inclusa nel fix — nessuna eccezione)
+
+### Slice anomaly GREEN + anomalia residua riportata (2026-11-27)
+- fix wait-budget: 10s/15s → 5s in 5 spec (inclusa crm-i18n-parity — nessuna eccezione)
+- fix ext-json: `.json()`/JSON.stringify → codec canonico; boundary browser corretto per doc
+  (`.text()` dentro page.evaluate, `extJsonParse` in node — doc ext-json.mdx:135 "Node contexts")
+- check:standards GREEN end-to-end — incl. gate i18n-docs (35+13 violazioni → 0)
+- serial run 1 worker: **17 passed** — vendor-drift 3/3 (il fallimento parallelo era interferenza
+  worker sul CDP Edge condiviso, non lentezza: nessuna eccezione necessaria, dottrina confermata),
+  crm-i18n-parity 3/3, nav-derive-crm 13/14
+- ⚠️ ANOMALIA pre-esistente (NON di questo slice, report per decisione utente):
+  `nav-derive-crm.spec.ts:258` (commit 69e07d8) si aspetta la create leaf IN SIDEBAR —
+  contraddice il design ratificato "create visibili SOLO nel popover" e la spec gemella
+  nav-popover-creates:19 (verde: sidebar does NOT). Le due spec canoniche si contraddicono —
+  una delle due mente. Evidenza forte: design ratificato = solo popover → :258 è stale.
