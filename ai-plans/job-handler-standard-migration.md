@@ -1,0 +1,131 @@
+# JH standard migration — route canoniche, cosmetici authored
+
+**Status**: 🟠 WIP — decisione utente 2026-11-27: "voglio le route standard, tutto standard,
+ma le authored labels e icons" + precisazione scope: SOLO labels/icons nelle leaf nav.
+Esecuzione a turni: l'utente verifica visivamente dopo il GREEN E2E, prima del commit.
+
+## End-state ratificato
+1. path canonici table-snake: `/system/job/job_triggers`, `/system/job/job_schedules`, `/system/job/job_runs` — i nomi corti (triggers/runs/job-schedules) muoiono
+2. UN set di leaf: merge cosmetico per href — label_key `job.jobs.nav*` custom (già tradotte ×7) + icone list-checks/list-clock/play + default su triggers
+3. zero duplicati, zero raw keys in sidebar/popover
+4. TRIGGER_FORM intatta: la rotta create/detail authored vince il suo href esatto (merge rotte già nel SDK) — nessuna eccezione nuova
+5. create leaf derivata nel popover con chiave canonica `job.job_triggers.nav.create` seedata ×7
+
+## Doc receipts
+- `be-v3/docs/dev-guide/module-navigation.mdx:36-52` — route-shape enforcement: plural leaf, `/create` suffix, `[param]` detail; entityPaths unico costruttore
+- `module-navigation.mdx` access axis — gerarchico: `access.system.job` copre TUTTO il sottoalbero a prescindere dal nome segmento → migrazione access-safe; `is_admin` implica `access.system` (test actor coperto)
+- `module-navigation.mdx` — seeds in `*.translations` schema del servizio: job.translations (colonna `language`, non `lang` — schema diverso da crm!)
+- `sdk/src/service/nav-declaration.ts:56` — entityPaths(prefix, listLeaf) literal segment constructor
+- `sdk/src/http/derive-entity-nav.ts` — merge cosmetico create leaf implementato (CRM slice); list leaf authored-wins per href; route dedupe exact-path authored wins
+- `job-handler/src/nav-declaration.ts:25-27` — i 3 pathset custom correnti
+- vocabolario DB job.translations: trigger = de "Trigger", en "Trigger", es "Triggers", fr "Déclencheurs", it "Attivatori", pt "Triggers"
+
+## Composizioni create leaf ×7 (stile CRM per lingua)
+de "Neuer Trigger" · en-GB/US "New Trigger" · es "Nuevo trigger" · fr "Nouveau déclencheur" · it "Nuovo Attivatore" · pt "Novo trigger"
+
+## Superficie codemod path (censita)
+- fe-v3 jobs-pages.spec.ts: ~50 refs · access-filtering 7 · elt-columns-filter-ux 8 · entity-list-table-interactions 8 · elt-filters-parity 4 · bulk-editor/collaboration-form/elt-json-cell/elt-numeric-cell-ux/entity-form-submit-gating 2 cad · elt-list-wire-attack/entity-events-choreography/entity-op-confirm-gate 1 cad (+ altre sotto la soglia)
+- fe-v3 lib: AppSidebar.svelte:65-67 + EntityTablePage.svelte:172 — solo commenti esemplificativi (aggiornare per accuratezza)
+- fe-v3 unit tests: access-guard/entity-links/modules-shell (3 file)
+- us-v3 job-handler/src: zero riferimenti interni fuori da nav-declaration ✓
+
+## Rischi chiusi
+- access: gerarchico, chiuso da doc — nessuna migrazione grant necessaria
+- shadow create CTA: morte dei path corti = morte delle ombre — la CTA torna unica
+
+## Turni
+1. ✅ receipts + censimento + vocabolario
+2. spec RED end-user dimostrata
+3. implementazione: nav-declaration + seed patch ×7 firmata + codemod test
+4. GREEN in sessione + prova del 9 → PAUSA verifica utente
+5. ledger + commit + push solo dopo il via dell'utente
+
+## GREEN — turno 4 completato in sessione (2026-11-27)
+- RED dimostrato: payload senza leaf set canonico (test 1 fallito esatto pre-implementazione)
+- implementazione: nav-declaration path migrati ai canonici table-snake; seed patch
+  `20270101190000_job_trigger_create_leaf_x7.sql` (7 INSERT) firmata devin-agent, applicata
+  (1 applied, 0 failed), redis flush ×7; codemod 39 file plain + escaped regex forms
+  (nota tecnica: il canale shell collassa i backslash — String.raw obbligatorio negli script)
+- drift riparato in corso d'opera: testid `entity-form-page` fantasma (pinnato da 9 spec, mai
+  emesso da alcun componente) → allineato al reale `entity-form-surface`; keys.json job-handler
+  esteso con devin-agent (stesso pattern crm già accettato)
+- GREEN `job-nav-standard.spec.ts` 4/4 in 35-38s: payload contract, sidebar trio tradotto,
+  popover rows reali it-IT, create form con layout TRIGGER_FORM (payload_map col 2, default @every 5m)
+- unit test FE sui file codemodded: 32/32 verdi
+- ORDINE workflow ratificato dall'utente dopo verifica visiva: triggers → schedules → runs
+  (non alfabetico — alfabetico rimescolerebbe per lingua). RED dimostrato, pin order 1/2/3
+  come cosmetici authored, GREEN 4/4 — popover: Nuovo Attivatore/Attivatori/Pianificazioni/Esecuzioni
+- utente ha verificato visivamente: "è perfetto" + correzione ordine (poi applicata)
+
+## ANOMALIA regressione — interferenza run paralleli (colpa mia)
+- primo run jobs-pages: 9 passed incluse TUTTE le prove migration-critical (create CTA :320,
+  list tables, meta), poi 18 failure a cascata per TIMEOUT DI LOGIN — i miei run job-nav-standard
+  in parallelo hanno clobberato l'attore effimero condiviso (teardown incrociato). Canon violato:
+  mai run playwright concorrenti. Rilancio pulito senza parallelismo.
+
+## Regressione jobs-pages pulita (seriale, zero parallelismo) — 22/27 VERDI
+- test 1-9 TUTTI verdi incluse le prove migration-critical: create CTA → EntityFormPage,
+  list tables, meta column order/visibility, outcome preset wire request
+- 5 failure classificati con evidenza DB — ROT pre-esistente da crescita dataset, NON regressione:
+  1. `:945` cerca riga `e2e-callable-dispatch` — esiste nel DB (31 ott) ma è alla posizione 38
+     in ordine created_at desc → fuori pagina 1, il test non pagina né cerca
+  2. `:1048` cerca `api-partition-maintenance` — posizione 28 → stessa classe
+  3. `:1140` cerca schedule del trigger orfano `e2e-gate-1793665359607` — esiste nel DB (1 riga),
+     53 schedule totali, fixture del 3 nov sepolto → stessa classe
+  4. `:564` error_code badge — click su cella della prima riga failed, dataset-order-dipendente
+  5. `:608` visibleKeys v2 — logica FE/sessionStorage: il runtime FE è INTATTO in questo slice
+     (zero modifiche ai componenti) → non può essere causato dalla migrazione per costruzione
+- meccanismo rot: fixture hardcoded scritti quando erano righe fresche (top pagina); il dataset
+  è cresciuto (bulkedit 21 nov in cima) e i fixture sono scivolati oltre pagina 1. I test non
+  paginano né usano search — time-bomb scritta nel test, indipendente dai path nav
+- decisione utente richiesta: committare la migrazione + slice separato per il rot dei test,
+  oppure fixare il rot prima del commit
+
+## Slice rot-repair (decisione utente: opzione 2 — fix prima del commit)
+Doc receipts:
+- `fe-v3/docs/ai/e2e-browser-session.md` — assertions of completeness: expected set dalla source
+  of truth dell'app stessa; determinismo evidence-not-sleeps; 5s expectation budget
+- `jobs-pages.spec.ts:1096-1106` — search primitive canonica: testid `entity-search` input +
+  waitForResponse `search=` server-side narrowing (prova esistente nel file)
+- RED già dimostrato: i 5 failure del run pulito 22/27 (evidenza DB: righe esistono ma oltre pagina 1)
+Riparazioni (robustezza dataset-independent, comportamento end-user reale):
+1. `:945` lazy ref — generalizzato: prima riga visibile trigger-owned (ogni schedule lo è),
+   asserzioni comportamentali identiche, zero fixture hardcoded
+2. `:1048` system:api — search end-user "api-partition-maintenance" (server-side) poi assert
+3. `:1140` orphan — seek paginando (next-page bounded) fino alla riga fixture
+4. `:564` error_code — primo button nella colonna error su TUTTE le righe, non solo la prima
+5. `:608` visibleKeys — diagnosi empirica nel run filtrato prima di toccare
+
+## Rot-repair — diagnosi finale (evidenze empiriche)
+- `:1048` system:api → VERDE con search end-user server-side (18.2s) — riparazione confermata
+- `:945` lazyref: il drill FUNZIONA — il fallimento era assertion errata: il nome trigger
+  renderizza in un input (mai in textContent); ora pinna "Job Trigger ID" (uuid line)
+- `:1140` orphan: menu page-size di schedules NON ha opzione 100 → crawl paginazione bounded ×8
+- `:564` error_code: badge sparsi su più pagine → stesso crawl bounded
+- `:611` visibleKeys: assertion v:2 letterale — l'app scrive shape intent evoluta (v2→v3 migration
+  documentata in useEntityList.svelte.ts:280-289, bootstrap-polluted hidden droppato). Riparata
+  su CONTRATTO (non bare array, shown/hidden array, hidden non-empty) + auto-diagnosi raw nel
+  messaggio. NOTA: $effect auto-persiste dopo metaLoaded (useEntityList:388-404)
+- run filtrato --workers=1 in corso per i 4 restanti
+
+## STOP-ANOMALIA rot-repair (fine sessione per budget contesto) — il rot è più profondo della paginazione
+Run filtrato 4 test --workers=1: TUTTI e 4 ancora rossi, ma con diagnosi precise:
+- `:1140` orphan crawl ×8 pagine: riga MAI visibile — ipotesi forte: filtro deletion/active di
+  default NASCONDE la schedule orfana (o il nome trigger non è nel text della riga ref-cell).
+  NON è paginazione: investigare deletion-filter e rendering ref-cell nel prossimo slice
+- `:611` visibleKeys auto-diagnosi riuscita: "still a bare v1 array" dopo 10s — la riscrittura
+  non avviene MAI nonostante la $effect auto-persist (useEntityList:388). Restore funziona
+  (gli header rispettano il seed) ma persist non riscrive. Contraddizione da investigare:
+  possibile bug reale app (v2→v3 refactor) oppure storage key mismatch nel write path
+- `:564` error_code: NESSUN button in td colonna error su nessuna pagina — il contratto
+  badge-as-button potrebbe essere morto nel refactor ELT, oppure errIdx disallineato
+  (expander td senza th), oppure nessuna riga failed con error_code nel range crawlato
+- `:958` lazyref: il drill APRE il record sheet corretto (verificato: uuid + contenuto trigger
+  reale nel log!) — ma `visualOrder.indexOf("name")` = -1: il campo name NON ha id
+  `record-sheet-field-name` — drift meccanica collapse-contract assertion
+STATO FISICO NON COMMITTATO: tutto il lavoro è nell'albero (sdk e956dd0..6dd82f5 già pushati
+per CRM; JH slice: us-v3 nav-declaration+keys+patch, fe-v3 codemod+specs+rot-fix parziali,
+workspace piano). MIGRAZIONE JH PROVATA VERDE sulla sua superficie (job-nav-standard 4/4,
+browser utente, regression migration-critical 1-9 verdi). Il rot restante è debito pre-esistente
+che richiede slice dedicato con investigazione app-level, NON meccanica di test.
+DECISIONE UTENTE RICHIESTA: committare migrazione + registrare rot-debt, oppure tutto in sospeso.
