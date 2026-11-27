@@ -562,3 +562,87 @@ the RAW KEY `crm.<table>.nav.create` because the translation rows don't exist ye
   New Contact→Contacts, New Customer Account→Customer Accounts` — posizioni [1,4,6], file-plus 3/3.
 - Compose fallback: de/fr/es/pt portano composizione inglese finché i singulari non sono tradotti
   (debito registrato — vedi Q-debt). Slice CHIUSO. Restano le open questions del handoff.
+
+---
+
+## 2026-11-27 (nuovo slice) — create-label translations completion: mai più lingue lasciate indietro
+
+### Direttiva utente (verbatim)
+«Hai detto che hai lasciato indietro le traduzioni, non ti permettere mai più —
+rileggi workflow da zero integralmente e la doc translations integralmente!!!»
+
+### DOC RECEIPTS (compilati prima di agire — lettura integrale eseguita in sessione)
+| doc:line | what it says | how it applies this turn |
+|---|---|---|
+| us-v3 docs/ai/i18n-namespace-segregation.md:70-73 («Adding a key») | seed patch nel db-meta del servizio, chiavi `{schema}.*`, **all seven supported languages** | LA REGOLA VIOLATA: le composizioni de/fr/es/pt in inglese erano un debito mai ratificato — il seed deve coprire tutte e 7 le lingue con traduzioni reali |
+| be-v3 docs/dev-guide/translations.mdx:117 | missing keys surface as the raw key — «visible gaps instead of silently mixed languages» | la composizione inglese in una riga de-DE È il «silently mixed languages» proibito — peggio del raw key perché invisibile |
+| fe-v3 docs/ai/i18n.md:98-108 (UiLang ↔ dictionary parity MANDATORY) | «Adding a UiLang without seeding its dictionaries is a bug, not a partial feature» | il fallback inglese seedato era una violazione mascherata da feature: questo slice è bugfix, non enhancement |
+| fe-v3 docs/ai/i18n.md:110-127 (direct DB edits) | patch SQL su `*translations` → invalidazione Redis `translations:i18n:{schema}:{lang}` OBBLIGATORIA | dopo l'apply: flush `translations:i18n:crm:*` via docker exec primebrick-redis |
+| dal-v3 docs/dev-guide/migrations.mdx:24-28 | mai editare una patch shipped — ship a new one | la patch `20261127200000_nav_create_labels.sql` è applicata: si corregge con NUOVA patch (UPDATE righe esistenti + INSERT singulari mancanti) |
+| dal-v3 docs/dev-guide/migrations.mdx:44-53 | seed INSERT → audit rows obbligatorie SE esiste il twin `<table>_audit` | verificare nel census se `crm.translations` ha twin audit (handoff dice di no — da riverificare, mai fidarsi della memoria) |
+| fe-v3 docs/ai/e2e-browser-session.md:69-74 | locale pin: `sessionStorage["pb.lang"]` + reload; una UiLang senza dict è un bug | la spec RED pilota la lingua via sessionStorage come un utente reale che cambia lingua |
+| fe-v3 docs/ai/e2e-browser-session.md:25-37 | final specs only — mai probe temporanei | la spec nasce definitiva in `src/e2e/` nella sua locazione canonica |
+| fe-v3 docs/ai/e2e-browser-session.md:139-144 | assertions of completeness BOTH directions | la spec asserisce sia presenza tradotta sia ASSENZA di composizioni inglesi nelle lingue non-en |
+| be-v3 docs/ai/i18n-namespace-segregation.md (i18n-sql-ns) | check-standards scansiona le patch SQL: seed solo nel namespace `{app, own}` | la nuova patch semina solo chiavi `crm.*` in `crm.translations` — conforme per costruzione |
+
+### Scope dichiarato (unico scope eseguibile questo turno)
+1. Census reale: righe `crm.translations` esistenti per `crm.entities.<entity>.singular` e
+   `crm.<table>.nav.create` × 7 lingue — quale debito esiste esattamente.
+2. Spec RED definitiva end-user: popover CRM con UI in de-DE/fr-FR/es-ES/pt-PT mostra le
+   create compose nella lingua dell'utente — mai inglese — e i singulari esistono ×7.
+3. NUOVA patch firmata: INSERT singulari mancanti + UPDATE composizioni create-label
+   de/fr/es/pt con traduzioni reali (accordo di genere corretto per costruzione —
+   il seed porta la stringa esatta, niente auto-compose).
+4. Apply + flush Redis + spec GREEN in sessione + prova del 9 browser.
+5. Ledger + commit + push.
+
+### Fuori scope (dichiarato)
+- Singolari/traduzioni di ALTRE entità oltre le 3 con create leaf (debito separato se esiste — lo census lo dirà)
+- Q1 canale icone per-entità, Q2 prefissi path, anomalia 404, doc divergenze — restano open questions
+
+### SCOPE RATIFICATO DALL'UTENTE (2026-11-27, ask_user_question — mai indovinare)
+**Parità completa ×7 lingue**: tutte le ~580 righe mancanti — singulari, plurali, nav keys,
+titoli (`*.title`, `*.new.title`), field labels — tradotte realmente in de-DE/fr-FR/es-ES/pt-PT.
+Il census live ha mostrato che il debito è sistemico (145 chiavi/lingua mancanti vs en-GB),
+non solo le create-label: la risposta inglese seedata era la punta di un bug di parità intero.
+Aggiunto allo scope: anche il check drift pt-PT (-9 chiavi vs de/fr/es) e it-IT (-1 vs en-GB).
+
+### VERIFICATION LEDGER — census eseguito (2026-11-27)
+| ts | command | verdict | evidence | next step |
+|---|---|---|---|---|
+| 2026-11-27 | pg keyset diff vs en-GB | 145 chiavi mancanti × de/fr/es (insiemi IDENTICI), 154 pt (+9 sequence), 1 it (sequence version_history.record_deleted) | query live crm.translations: segmenti coinvolti = 15 entities + customer fields | spec RED |
+| 2026-11-27 | residui inglesi in chiavi esistenti | CONFERMATO: sequence_revive_confirm + callable desc intere frasi en ×4 lingue; cognati legittimi (Code/Status/Version) NON sono debito | query rows=en.value con it≠en | bonifica ratificata |
+| 2026-11-27 | audit twin crm.translations | NON ESISTE (information_schema) — seed-audit-trail non applicabile | count=0 | niente audit rows nel seed |
+| 2026-11-27 | max(id) crm.translations | 5821 | query | insert da 6000 |
+| 2026-11-27 | registro linguistico reference | customer ×7: de "Neuer Kunde", fr "Nouveau client", es "Nuevo cliente", pt "Novo cliente" — composizioni con genere già nello storico | query reference keys | la matrice segue questo registro |
+| 2026-11-27 | stack dev | UP: be:3001 fe:5173 crm:3007 tutti TRACKED | dev-stack.ps1 status | spec eseguibile |
+
+### SCOPE ESTESO RATIFICATO (2026-11-27, seconda ask_user_question)
+«Sì, stessa classe — bonifica tutto»: UPDATE anche dei residui inglesi genuini nelle chiavi
+esistenti. Criterio da traduttore: correggo solo ciò che NON è parola corretta nella lingua
+target; cognati legittimi (Code/Status/Version/Name/Start in de/fr) RESTANO. Lo slice chiude
+tutto il mixed-languages visibile del modulo CRM: 590 INSERT + 12 UPDATE create + residue UPDATEs.
+
+### SPEC RED DIMOSTRATO (2026-11-27, pre-implementazione — mai il contrario)
+- test 1 keyset HTTP: de-DE 211 chiavi, **145 mancanti vs en-GB** — fallimento esatto sul census
+- test 2 naming HTTP: **79 mismatch de-DE** — undefined ovunque + residuo confermato:
+  `crm.customer_accounts.nav.create → got "New Customer Account", expected "Neues Kundenkonto"`,
+  `revive_slot → got "Revive slot", expected "Erneuerungs-Slot"`
+- test 3 browser: **la sidebar in de-DE renderizza la RAW KEY `crm.customer_accounts.nav`** —
+  la pistola fumante end-user: oggi l'utente tedesco vede chiavi raw in sidebar
+- spec: `primebrick-fe-v3/src/e2e/crm-i18n-parity.spec.ts` — oracolo completo naming matrix ×4 lingue
+
+### SLICE i18n-parity ×7 — GREEN (2026-11-27)
+- implementazione: patch `20270101170000_i18n_parity_x7.sql` (590 INSERT + 28 UPDATE),
+  firmata devin-agent, applicata `1 applied, 46 skipped, 0 failed`; Redis invalidata (4 chiavi)
+- DB live post-apply: **356 chiavi × 7 lingue — parità esatta**
+- spec `crm-i18n-parity.spec.ts` GREEN in sessione: **3/3 in 34s**
+  1. keyset: 0 mancanti in de/fr/es/pt/it/en-US
+  2. naming: 0 mismatch ×4 lingue (incluse composizioni create e residue sequence)
+  3. browser popover rows reali: "Neues Kundenkonto", "Nouveau compte client",
+     "Nueva cuenta de cliente", "Nova conta de cliente" — pairing create-before-list preservato
+- prova del 9 end-user: il test 3 è la camminata popover nel browser Edge reale (headed) —
+  le stringhe esatte attese per lingua sono verificate nel DOM, raw keys assenti
+- Q-debt CHIUSO. Restano aperte: Q-gender è risolto by construction (il seed porta la stringa
+  esatta — nessuna composizione runtime), Q1 icone, Q2 prefisso customer_, doc-divergence,
+  docs-generator dict, 404 rotte sconosciute, prova visiva utente su /crm/settings
