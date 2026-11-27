@@ -62,3 +62,23 @@ pre-esistente. Decisione utente richiesta: fix budget nelle spec vs allowlist lo
   DOM truth sidebar count === 0; la fonte `derive-entity-nav.ts:156-162` documenta il design
 - GREEN in sessione: nav-derive-crm **13/13 in 1.9m** — entrambe le spec canoniche ora
   pinnano la stessa verità ratificata
+
+## Slice 6 — convenzione label nav/titoli ratificata (2026-11-27)
+- CREATE = {NEW}+{singolare} (già esistente) · LIST = {LIST}+{plurale} — nuovo
+- titolo pagina list IDENTICO alla leaf; titolo pagina create IDENTICO alla leaf create
+- customers: icona authored ok, label NON authored — stessa chiave e composizione di tutti
+- receipts: derive-entity-nav.ts:130-175 (list leaf/route condividono label_key — titolo già
+  identico by construction; create route label_key "app.common.new" da correggere),
+  nav-declaration.ts:41,48-58 (customers authored, create label_key app.common.new)
+
+### Slice 6 GREEN (2026-11-27)
+- RED: 30 mismatch/lingua esatti (title+nav bare plural vs composed) — dimostrato pre-implementazione
+- patch `20270101180000_nav_list_composition_x7.sql` (224 UPDATE + 7 INSERT customers.nav.create),
+  firmata devin-agent, applicata, redis flush
+- wiring: derive-entity-nav.ts:172 + nav-declaration.ts:54 — create route label_key → `.nav.create`
+  (create title ≡ create leaf by construction, come list); sdk rebuild tsc clean
+- GREEN 3/3 in 31.7s — popover rows reali: de "Liste Kunden"/"Neue Adresse"+"Liste Adressen"
+  pairing intatto; keyset 357×7 completo
+- nota onesta: il payload nav si ri-emette alla registrazione del servizio — il wiring create-title
+  è effettivo al prossimo restart dei servizi (le create page sono ancora stub, impatto forward-looking);
+  il cambio valori nav/title è live SUBITO perché risolto a read-time dal dict
