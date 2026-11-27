@@ -17,7 +17,10 @@ Every turn, in this order, NO EXCEPTIONS:
 |---|---|---|
 | primebrick-workspace/ai-plans/_template.md:1-17 | turn protocol — plan-first, ledger is truth, file:line citations | this plan exists because the CRM audit was started WITHOUT a plan (user correction 2026-11-27 — workflow violation, not to be repeated) |
 
-## VERIFICATION LEDGER (source of truth for state)
+## VERIFICATION LEDGER (continua) — 
+| 2026-11-27 | playwright nav-derive-crm icon defaults | 2/2 verdi — base default sana: dict→table-dictionary, list→table-2, authored vincono, DOM glyph custom reale | nav-derive-crm.spec.ts | migrazione 8 vocabolari cura placement+icone insieme |
+
+## LEDGER ORIGINALE (source of truth for state)
 | ts | command | verdict | evidence | next step |
 |---|---|---|---|---|
 | 2026-11-27 | inventory crm schema vs entities-route | data plane COMPLETE | 19 tables in `primebrick-us-v3/crm/db-meta/snapshot-database.json` — every one served: 16 explicit decls in `primebrick-us-v3/crm/src/controllers/http/entities-route.ts` (grep `entityName:`) + `sequence` builtin via dal-pg registry + `sequence_counters` internal + `config_entries` config-standard + translations gateway-owned; `customer_consent` read/audit-only BY DESIGN (entities-route.ts comment) | verify FE plane |
