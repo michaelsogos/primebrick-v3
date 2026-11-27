@@ -129,3 +129,23 @@ workspace piano). MIGRAZIONE JH PROVATA VERDE sulla sua superficie (job-nav-stan
 browser utente, regression migration-critical 1-9 verdi). Il rot restante è debito pre-esistente
 che richiede slice dedicato con investigazione app-level, NON meccanica di test.
 DECISIONE UTENTE RICHIESTA: committare migrazione + registrare rot-debt, oppure tutto in sospeso.
+
+## HANDOFF prossima sessione — sonde decisive già eseguite, piste precise
+Utente ha scelto opzione 2: NIENTE COMMIT finché il rot non è risolto. Lavoro nell'albero, mai committare parziale.
+- `:1140` SMOKING GUN TROVATO: la schedule orfana è status=disarmed (solo 3 disarmed + 6 fired vs
+  44 armed in job_schedules). La tabella schedules applica presumibilmente un preset/filtro status
+  di default che esclude disarmed — per questo il crawl non la trova MAI. NON è paginazione.
+  PROSSIMO PASSO: leggere la meta servita di job_schedule (table.presets/default) e disattivare
+  il preset via UI end-user (click preset "tutti") prima di cercare la riga, oppure verificare se
+  il default è una regressione app — doc: jobs-pages.spec.ts:85 (schedule_kind preset meta-declared)
+- `:611` visibleKeys: restore ok, rewrite mai. Pista: leggere TUTTO il guard della $effect persist
+  (useEntityList.svelte.ts:380-405) — commento a riga 388 "writes can't clobber stored prefs before
+  they are applied" suggerisce un guard che sopprime il primo write. Verificare se intenzionale
+  (allora il test deve interagire: toggle colonna per innescare persist) o bug del refactor v3.
+- `:564` error_code: verificare nel DOM reale se i badge error_code renderizzano button o testo
+  (contratto badge-as-button forse morto nel refactor ELT) — sonda: snapshot page yaml completo
+  del test-results + grep button in cella. Se contratto morto: regressione app vera, non test.
+- `:958` lazyref: gli id record-sheet-field-* NON compaiono nello yaml snapshot (sono attributi,
+  non testo) — riprodurre con evaluate nel test o leggere EntityRecordSheet.svelte per l'id pattern
+  reale del campo name (forse wrapping copy-field cambia struttura)
+REGOLA OBTORTO COLLO: mai run playwright in parallelo; letture output ≤30s; niente sleep nei test.
