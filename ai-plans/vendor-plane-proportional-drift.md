@@ -47,7 +47,7 @@ Every turn, in this order, NO EXCEPTIONS:
 | 6 | Wiring lint nei 4 servizi con fe chunk (ai, crm, emailsender, job-handler) | ✅ done | 2026-11-27 | predev/prebuild/test accanto a check:standards |
 | 7 | Spec GREEN eseguita in sessione | ✅ done | 2026-11-27 | 3/3 sullo stack reale |
 | 8 | Prova del 9: drift REALI del workspace rilevati e rimediati via lint loop | ✅ done | 2026-11-27 | emailsender minor (error) + ai/job-handler patch (warning) → rebuild → clean 4/4 — il caso utente originale chiuso dal meccanismo stesso |
-| 9 | Ledger + commit + push tutti i repo toccati | ⏳ in corso | — | core, fe-v3, sdk, us-v3, workspace |
+| 9 | Ledger + commit + push tutti i repo toccati | ✅ done | 2026-11-27 | core 647b072 · sdk 3c77921 · fe-v3 a75d2e5 · us-v3 cf5ecf6 · workspace 66867df |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
      Update this table every session that touches the plan. -->
