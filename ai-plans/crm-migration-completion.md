@@ -458,3 +458,5 @@ comunicato come assunzione — la catena corretta era: spec RED popover → evid
 by-design, ma va seedato); prova del 9 visiva popover con utente reale da rifinire.
 
 - create route default icon = file-plus (user-ratified); spec assertion GREEN 3/3 in sessione.
+
+- create leaf label = app.common.new (stessa chiave del page title — niente seed necessari); pairing create-immediatamente-prima-della-list nel popover, strutturale per href mai per label; spec GREEN con posizioni+icone.
