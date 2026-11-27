@@ -30,7 +30,7 @@ Every turn, in this order, NO EXCEPTIONS:
 | # | Task | Status | When | Notes |
 |---|------|--------|------|-------|
 | 1 | TIC: doc hooks + evidenza discovery + piano | ✅ done | 2026-11-27 | questo file |
-| 2 | Ratifica design utente (domande sotto) | ⏳ not done | — | |
+| 2 | Ratifica design utente | ✅ done | 2026-11-27 | Q1 DURO, Q2 duro, Q3 sì |
 | 3 | `hooks/protocol-inject.mjs` + config `.devin/hooks.v1.json` | ⏳ not done | — | config richiede approvazione esplicita (workspace governance) |
 | 4 | `hooks/session-ledger.mjs` — osservatore PostToolUse | ⏳ not done | — | |
 | 5 | `hooks/stop-gate.mjs` — gate di fine turno | ⏳ not done | — | |
