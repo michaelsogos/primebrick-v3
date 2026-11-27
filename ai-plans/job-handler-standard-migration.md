@@ -149,3 +149,20 @@ Utente ha scelto opzione 2: NIENTE COMMIT finché il rot non è risolto. Lavoro 
   non testo) — riprodurre con evaluate nel test o leggere EntityRecordSheet.svelte per l'id pattern
   reale del campo name (forse wrapping copy-field cambia struttura)
 REGOLA OBTORTO COLLO: mai run playwright in parallelo; letture output ≤30s; niente sleep nei test.
+
+## UPDATE — investigazione continuata (utente: "no finisci")
+- `:1140` ESCLUSIONE RAFFINATA: la schedule orfana È schedule_type=recurring — il preset default
+  schedule_type NON la esclude. Restano due ipotesi: (a) filtro status aggiuntivo di default
+  (disarmed escluso — verificare filters[1+] sulla wire reale, il test :85 asserisce solo filters[0]);
+  (b) il join di proiezione trigger ESCLUDE i trigger soft-deleted lato SQL → la riga esce del tutto
+  dalla list → REGRESSIONE APP reale (il test fu scritto proprio per pinnare che il join sopravvive).
+  PROSSIMO PASSO DECISIVO: leggere la list API servita — query entities/job_schedule/list con
+  filtri disattivati e cercare la riga orfana (uuid trigger 347a736e-48ea-4ad0-9c5a-720d025be861
+  dal schedule_subject jobs.schedule.job.347a736e-...). Se assente → bug app nel join/proiezione.
+  Il serving è generico (entities route SDK/dal), non in job-handler/src.
+- `:958` i record-sheet-field-* id esistono SOLO in FieldEcho.svelte (__tests__) — MAI in produzione:
+  l'assertion visual-order è drift completo da refactor. Riparare leggendo la struttura reale di
+  EntityRecordSheet (pannelli in entity-list/sheets/panels/) e pinna su hook reali.
+- `:611` fix deciso: toggle colonna end-user (columns-toggle) per innescare il persist — onesto
+  a prescindere dal guard: "first persist rewrites" richiede un persist, che è azione utente.
+- `:564` sonda pendente: grep button nel yaml snapshot completo della pagina.
