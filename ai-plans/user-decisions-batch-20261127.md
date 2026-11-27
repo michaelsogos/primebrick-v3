@@ -55,3 +55,10 @@ pre-esistente. Decisione utente richiesta: fix budget nelle spec vs allowlist lo
   contraddice il design ratificato "create visibili SOLO nel popover" e la spec gemella
   nav-popover-creates:19 (verde: sidebar does NOT). Le due spec canoniche si contraddicono —
   una delle due mente. Evidenza forte: design ratificato = solo popover → :258 è stale.
+
+### Contraddizione :258 RISOLTA (2026-11-27) — decisione utente: popover-only confermato
+- utente ratifica: creates `sidebar:false` autowired, popover con RBAC + toggle disabled
+- :258 riscritto come pin del contratto: payload `sidebar === false` sulla create leaf +
+  DOM truth sidebar count === 0; la fonte `derive-entity-nav.ts:156-162` documenta il design
+- GREEN in sessione: nav-derive-crm **13/13 in 1.9m** — entrambe le spec canoniche ora
+  pinnano la stessa verità ratificata
