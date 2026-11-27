@@ -178,3 +178,13 @@ silenzioso. PROSSIMO PASSO: leggere la derivazione di skVisibleKeys e storageSet
 useEntityList.svelte.ts (righe 190-200 e 372-376) e confrontarle con la chiave del test —
 poi leggere deriveVisibleKeyPrefs in @primebrick/ui. Se mismatch confermato → FIX APP, non test.
 Il test con l'interazione inserita è già la spec finale corretta: non toccarlo più, riparare l'app.
+
+## `:611` — MISTERO RISOLTO (useEntityList.svelte.ts:212-232)
+storageSet scrive SOLO su persistMedium; storageGet legge persistMedium poi legacyMedium in
+fallback. Il test seeda/legge sessionStorage ma la migrazione medium è: legacy sessionStorage →
+persist localStorage (o viceversa — verificare la derivazione di persistMedium/legacyMedium nel
+file, righe ~150-180). Il contratto NON è "riscrivi la legacy key in-place" ma "leggi legacy una
+volta, persisti sul nuovo medium". FIX TEST (già corretto il resto): asserire la shape intent sul
+PERSIST MEDIUM (localStorage?) non su sessionStorage. Il seed resta su sessionStorage per provare
+il percorso di migrazione legacy→nuovo. Tutto il resto del test è già a posto (interazione
+columns-toggle inserita). NESSUN BUG APP — il comportamento è by-design: medium migration.
