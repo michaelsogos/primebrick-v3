@@ -299,3 +299,19 @@ Q1 icon channel: add `icon` to EntityRouteDecl (authored in the service entities
 Q2 paths: keep table-derived + authored override per decl (`nav_path`?), or semantic derivation from entityName? Table-derived is honest; override is the escape.
 Q3 pipeline: move to /crm/pipeline (operational, root-scoped with the rest) or leave under /system/crm?
 Q4 ordering: declaration order (status quo) or designed ordering (operational before vocabulary is automatic post-migration — root keeps only operational)?
+
+## RICETTA MIGRAZIONE 8 vocabolari → DictEntityBase (evidenza pronta, da eseguire)
+
+Anatomia DictEntityBase (dal-v3 src/entities/dict-entity-base.ts:49):
+- porta uuid(Key) + code(Unique varchar50) + sort(int4) + @AuditTrail + @Dict + Deletable/Auditable
+- label_key NON sulla base: dichiarare per-entity quando rows i18n-keyed; legal_forms usa name_local
+
+Per ogni entità (qualification, company_dimension, legal_form, marketing_qualification,
+contact_type, account_kind, consent_type, local_address_type):
+1. extends DictEntityBase, rimuovere uuid/code/sort duplicati e @AuditTrail esplicito (già sulla base)
+2. mantenere @Cached e colonne extra (label_key o name_local)
+3. verificare compatibilità schema colonne esistenti DB — stesso layout, zero migration dati attesa
+4. restart crm → leaf flippano a /crm/settings/<table> kind dict icon table-dictionary
+5. la spec nav-derive-crm.spec.ts certifica il flip — aggiornare le 2 asserzioni pinning corrente
+   (customer_accounts table-2 resta; aggiungere flip assertions per gli 8)
+6. attenzione ripple: seed, test unitari crm, customer_link_type fatto = reference
