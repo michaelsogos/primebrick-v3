@@ -552,3 +552,13 @@ the RAW KEY `crm.<table>.nav.create` because the translation rows don't exist ye
   instead of verifying; scope drifted to wrong surface (sidebar vs popover).
 - Correct chain demonstrated working at the end: evidence first, spec in canonical
   location, user ratifies BEFORE implementation.
+
+## 2026-11-27 (chiusura) — seed create labels APPLIED, slice chiuso
+
+- Nuova dev key `devin-agent` (keygen documentato in migrations.mdx; pubkey in keys.json committata,
+  private key in workspace `temp/` — gitignored, mai committata). Patch firmata e applicata:
+  `1 applied, 45 skipped, 0 failed`.
+- Spec GREEN in sessione: popover rows `Customers, New Address→Addresses, Consents,
+  New Contact→Contacts, New Customer Account→Customer Accounts` — posizioni [1,4,6], file-plus 3/3.
+- Compose fallback: de/fr/es/pt portano composizione inglese finché i singulari non sono tradotti
+  (debito registrato — vedi Q-debt). Slice CHIUSO. Restano le open questions del handoff.
