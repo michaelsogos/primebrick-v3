@@ -163,3 +163,47 @@ sequence (builtin, auto-wired via mergeBuiltinNav), sequence_counters
 Q1 dependent-operational class: leaf-or-not + is it the "tabella estesa"
 exclusion class? Q2 consent list-only leaf (no create exists)? Q3 bridge
 route scope: API-only consultable vs restricted?
+
+---
+
+## 2026-11-27 TIC-3 — RE-VERIFICATION of the 2026-11-25 dict/auto-nav decision
+
+### What survived implementation vs what is paper (file-verified today)
+
+| Piece of the old decision | State 2026-11-27 |
+|---|---|
+| `DictEntityBase` in dal-v3 | ✅ EXISTS (`primebrick-dal-v3/src/entities/dict-entity-base.ts`) |
+| 10 vocabulary entities extend it | ❌ **2/10 only** — customer_type + customer_link_type; the other 8 still `extends Deletable(Auditable(...))` hand-repeating the shape (grep-verified per file) |
+| `kind:"dict"` in `PageRouteKind` | ✅ core `page-route.ts:16` |
+| FE page-resolver `entity_dict` archetype | ✅ `page-resolver.ts:102` |
+| `DictFacet` meta contract | ✅ core `entity-meta.ts:1114` — runtime-injected when class carries the marker |
+| **nav derivation from class identity** | ❌ **NEVER IMPLEMENTED** — zero trace in sdk/core; the 2 hand-written dictDecl leaves (the SAME 2 entities that extend the base) are the surviving stopgap |
+
+### The recognition pattern — revised, complete, mechanical
+
+1. `instanceof DictEntityBase` → dict leaf in the settings sibling
+   (inline-editing archetype: the leaf IS list+create in one surface)
+2. `@Relation` marker → bridge — NO leaf, never standalone-consultable
+   (customer_link already carries it — verified in its entity class);
+   API routes stay for machine consumers
+3. everything else = standard entity → list leaf + create leaf, derived
+   from the DECLARED PERMISSION SURFACE (no create permission → no create
+   leaf: customer_consent mechanically becomes list-only — zero special-casing)
+4. opt-out: explicit `nav:false` on the decl, reason required
+5. internal tables never enter the pipeline (sequence_counters is not an
+   entity decl at all)
+
+CONSEQUENCE FOR CLASS C: under this pattern customer_account/contact/
+consent/local_address are STANDARD entities → leaf by default — matching
+the user's own fallback ("if we can't find the pattern, they show").
+The pattern recognizes them; no ad-hoc decision needed.
+
+### TOC sketch (pending user ratification)
+
+1. Complete DictEntityBase migration for the 8 vocabularies (mechanical)
+2. Verify dict-facet injection path end-to-end (served meta)
+3. THE FACADE WIRE: nav derivation inside the route-facade seam
+   (makeServiceRoutes/createMicroservice already receives the entity
+   decls — same input feeds routes AND nav; one declaration point)
+4. Seed `crm.settings.nav.<table>` labels (only 2/10 exist today)
+5. E2E: every entity visible+reachable in real browser, correct archetype
