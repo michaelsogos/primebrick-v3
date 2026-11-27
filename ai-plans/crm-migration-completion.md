@@ -327,6 +327,45 @@ Entrambi attraverso il wire: la migrazione DictEntityBase e il canale icone/path
 nella derivazione sono un unico workstream. La spec nav-derive-crm.spec.ts
 certifica ogni flip. Stop.
 
+## TIC — eliminazione pipeline fake (2026-11-27 sera, direttiva utente)
+
+Direttiva: la pagina pipeline è FAKE (prima pagina mai creata, mai trasformata
+in pagina vera) — **va eliminata per sempre**, non spostata. Verifica empirica:
+PipelinePage.svelte = 31 righe statiche, chiavi i18n `crm.pipeline.fake1/2/3`.
+Confermato fake. Utente: GO eliminazione.
+
+### DOC RECEIPTS
+| doc:line | what it says | how it applies |
+|---|---|---|
+| us-v3 docs/dev-guide/adding-a-service.mdx:107-110 | nav/sidebar dichiarate dal servizio in endpoints.nav, validate at enrollment | la rimozione avviene nella nav-declaration del servizio, mai patch FE |
+| us-v3 docs/dev-guide/adding-a-service.mdx:113-119 | namespace derivato `/{part_of}/{code}`, collassa a `/crm/**` quando partOf===code | il contratto documentato prevede UN namespace — `/system/crm` era un eccesso da playground; la deletion riporta crm DENTRO il contratto |
+| us-v3 docs/dev-guide/adding-a-service.mdx:129-141 | component_url esm-mount serviti dal chunk del servizio via module-assets | PipelinePage muore nel chunk crm-pages; resta CustomerCreatePage come unica remote page |
+| fe-v3 docs/dev-guide/app-shell.mdx (receipt TOC icone) | sidebar root-scoped | nessuna foglia pipeline = niente sparizione contesto — problema risolto alla radice |
+| fe-v3 src/routes/(app)/[...path]/+page.svelte:77-81 | not-found → error(404) → ErrorPage data-testid error-page | la prova end-user positiva della morte: /system/crm/pipeline → error-page 404 |
+| jobs-pages.spec.ts:24-26 | remote-page machinery esercitato tramite il veicolo pipeline (job non ha remote PAGE) | ripple: re-vehicle su /crm/customers/create (stesso chunk, stesso machinery) |
+
+### INVENTARIO RIFERIMENTI (empirico, grep crm/pipeline|crm\.pipeline|PipelinePage)
+- us-v3/crm: nav-declaration.ts (leaf+route+prefix /system/crm), fe/src/index.ts (dispatch), fe/src/PipelinePage.svelte, src/index.ts (commenti), db-meta/patches/0003 (seed shipped — chiavi morte innocue, mai editare patch shipped), docs/user-guide/generated/pipeline.mdx (regenerato sparisce), docs/dev-guide/index.mdx (menzione)
+- fe-v3: jobs-pages.spec.ts (1 test failure-recovery — re-vehicle), lighthouse-a11y.spec.ts:52 (riga /crm/pipeline già stale — rimuovere), module-ownership.spec.ts:514 (solo commento, iterazione generica — niente cambio), modules-shell.test.ts + BE module-nav-meta/module-discovery tests (fixture SINTETICI del machinery multi-root — restano: testano il machinery, non la dichiarazione reale)
+- AppPageBreadcrumb.svelte:24 — solo commento esemplificativo
+
+### DECISIONI DI SCOPE
+- route_prefixes: rimuovere anche `/system/crm` (nessun'altra pagina lo usa) — ritorno al contratto documentato
+- chiavi crm.pipeline.* nel DB: morte, innocue — cleanup opzionale futuro, NON questo slice
+- Q2 ridimensionato: utente conferma che `local_` HA significato di dominio — i nomi tabella sono onesti; il caso per path semantici si riduce alla ripetizione `customer_` (decisione rimandata)
+
+### TOC — pipeline eliminata (2026-11-27 sera) — COMMIT pushati
+- us-v3 `58c5807` feat(crm): delete the fake pipeline page forever (feature/sequence-revive-docs)
+- fe-v3 `26ea43f` test(e2e): pin pipeline deletion truth — re-vehicle (feature/sequence-revive-docs)
+- RED dimostrato: payload con leaf pipeline presente → implementazione → GREEN 11/11 a stack reale
+- Rimossi: leaf+route+prefix in nav-declaration, PipelinePage.svelte, dispatch chunk (rebuild fe/dist), menzioni in index.ts/dev-guide; generated pipeline.mdx sparito da solo alla rigenerazione (i docs seguono il wire)
+- Re-vehicle jobs-pages.spec: remote-PAGE failure recovery ora su /crm/customers/create (stesso chunk, stesso machinery) — test verde 1/1
+- lighthouse-a11y: rimossa riga /crm/pipeline (già stale)
+- Prova del 9 DB: service_registry crm — zero pipeline, prefixes=["/crm"]
+- Fixture sintetici BE/FE (modules-shell, module-nav-meta, module-discovery) NON toccati: testano il machinery multi-root, non la dichiarazione reale
+- ANOMALIA riportata (non fixata — utente: "in pratica non devi fare niente"): rotte sconosciute non producono la superficie 404 — /crm/unknown risolve breadcrumb CRM senza errore, /system/unknown resta in loading. Mai verificata da nessuna spec. Comportamento shell preesistente, fuori scope; candidata a task futuro se l'utente la ratifica
+- CORREZIONE DI ROTTA in esecuzione: il primo test 7 pretendeva il 404 — contratto mai esistito, scope creep. Sostituito con la verità onesta: dead is dead, nessun contenuto remote monta
+
 ## TOC — icone + path + label auto-wire eseguito (2026-11-27 sera)
 
 ### Esito e commit (pushati)
