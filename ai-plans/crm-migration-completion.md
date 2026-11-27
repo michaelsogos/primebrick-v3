@@ -251,7 +251,7 @@ The pattern recognizes them; no ad-hoc decision needed.
 - Settings sibling: customer_types/customer_link_types dict DERIVATE + sequences builtin appended last ✅
 - Docs emit ha generato automaticamente le pagine user-guide di ogni entità derivata (account_kinds.mdx, *-create.mdx…) — la documentazione segue lo stesso wire
 
-**Spec E2E permanente scritta:** `primebrick-fe-v3/src/e2e/nav-derive-crm.spec.ts` — sidebar/raggiungibilità/archetipi/bridge-assenza/consent-list-only. NON ancora eseguita (FE down al momento del lancio — restart in corso).
+**Spec E2E permanente scritta:** `primebrick-fe-v3/src/e2e/nav-derive-crm.spec.ts` — sidebar/raggiungibilità/archetipi/bridge-assenza/consent-list-only. **ESEGUITA 4/4 VERDI** (la prima red era una falsa asserzione mia: la dict archetype è anatomia inline-rows, mai un `<table>` — spec corretta).
 
 **APERTO — ordine dei prossimi slice:**
 1. Eseguire nav-derive-crm.spec.ts a stack su — chiude la verifica TOC (5)
