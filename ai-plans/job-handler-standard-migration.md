@@ -196,3 +196,36 @@ raggiunge sessionStorage entro 10s manco dopo toggle reale. PROSSIMO PASSO UNICO
 useEntityList viene istanziato per le entity table (NON in entity-table-page/*) e leggere le opts
 persist/storageKeyPrefix reali — grep `useEntityList` in tutto src/lib + EntityTablePage:294-310.
 Poi il fix test è asserire sul medium effettivo. Fine budget sessione — continuazione automatica.
+
+## PROGRESSIONE rot-repair (sessione continuata)
+- `:611` RISOLTO alla radice: la chiave storage reale è `pb:job-job_run:list:visibleKeys`
+  (derivazione BuiltinEntityListPage:48 `pb:${service}-${entity}:list:`) — il test pinnava
+  `pb:jobs:runs:*` chiave morta da refactor prefix. Gli header passavano per coincidenza coi
+  default. Riparata chiave + flusso end-user completo (toggle ON run_as + OFF status) +
+  semantica v3 corretta: shown=intent non-default, hidden=default nascoste dall'utente.
+  Shape finale provata: {"v":3,"shown":["uuid","run_as"],"hidden":["status"]} — trappola
+  bigint ext-json gestita (Number() nell'assertion)
+- `:958` VERDE (11.6s): hook reale `entity-form-field-<key>` (EntityFormSurface:655) —
+  i record-sheet-field-* erano drift completo, mai esistiti in produzione
+- `:564` riparato su hook reale `ref-cell-error_code-text` (CellAffordance, TableCell:511) —
+  la vecchia anatomia td>button era drift del refactor affordance
+- `:1140` sonda API auto-diagnosticante dentro il test: il messaggio dirà se la riga orfana
+  è servita (join regression app) o no — run in corso
+
+## ROT-REPAIR: 4/5 VERDI — `:564` è FEATURE MANCANTE, decisione utente
+VERDI confermati in run seriali questa sessione:
+- `:1048` system:api (search) · `:958` lazyref (hook entity-form-field-*) · `:611` visibleKeys
+  (chiave reale pb:job-job_run:list:visibleKeys + semantica v3 + bigint fix) · `:1140` orphan
+  (crawl paginazione — la riga è servita e trovata, 15.2s verde)
+`:564` error_code — VERDETTO DEFINITIVO con evidenza codice:
+- il badge error_code RENDERIZZA come Badge colorato non cliccabile (TableCell.svelte:341-350,
+  branch column.badge?.values — zero onclick, zero button, zero drill)
+- la meta dichiara INTENTO: job.meta.ts:437 "the run-detail sheet is its surface" — il drill
+  badge→job.runDetail è design voluto ma MAI implementato (o morto in refactor): nessun canale
+  meta dichiara il target di drill, nessun wiring FE lo apre
+- la remote sheet job.runDetail ESISTE ed è viva (nav-declaration:102, RunDetailSheet.svelte)
+- NON è test rot: è una feature mancante/regredita. Opzioni per l'utente:
+  1. implementare il drill (slice feature: canale meta badge.drill + wiring FE openSheet
+     job.runDetail con context row uuid) — il test è già la spec RED perfetta
+  2. la superficie canonica entity.record ha sostituito runDetail per design → riscrivere il
+     test sul contratto reale (row click / ref drill) o ritirarlo
