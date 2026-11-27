@@ -116,3 +116,50 @@ E2E verification of user-visible reachability.
    explicitly on the decl (`nav: false` + reason) — enforcement by construction.
 3. Label keys: seed `crm.settings.nav.<table>` translations for all tables
    (patch) — keys already conventional.
+
+---
+
+## 2026-11-27 TIC-2 — ENTITY CENSUS (user doctrine ratified)
+
+### Ratified doctrine (user, verbatim)
+
+- ALL entities in their archetypes are visible BY DEFAULT; opt-out on the
+  nav leaf only (does not impact the route).
+- UPDATE/DELETE are NEVER nav leaves; CREATE and LIST are.
+- DICT/derived/standard entities: leaf by default.
+- Bridge / extended tables (audit trails, N-N bridges): NO leaf, not
+  directly consultable — explicit exclusion class.
+
+### Census — 16 module entities + builtins (evidence: entity classes, entities-route.ts)
+
+**CLASS A — vocabularies (dict archetype → settings leaves) — 10**
+customer_type ✓in-nav, customer_link_type ✓in-nav, company_dimension,
+legal_form, qualification, marketing_qualification, contact_type,
+account_kind, consent_type, local_address_type
+
+**CLASS B — standard operational (list+create leaves) — 1**
+customer ✓in-nav (list + create-stub already declared)
+
+**CLASS C — dependent operational 1-N (customer sub-data) — THE FORK — 4**
+customer_account (customer_uuid+legal_form+kind), customer_contact
+(customer_uuid+contact_type), customer_consent (customer_uuid+consent_type —
+read/audit-only wire, domain-written with seal), local_address
+(customer_uuid+type_uuid). Evidence: FK columns in the entity classes.
+
+**CLASS D — bridge N-N — NO leaf per doctrine — 1**
+customer_link — declared `@Relation` edge (parent_customer_uuid,
+child_customer_uuid, type_uuid): "the identity is the composite, the
+relation facet owns the display" (customer_link_entity.ts header).
+NOTE: the entity CRUD route exists with full create/update/delete
+permissions (entities-route.ts) — doctrine says "not directly
+consultable" — open question whether route stays API-only or restricts.
+
+**CLASS E — builtin/internal (never leaf-authored)**
+sequence (builtin, auto-wired via mergeBuiltinNav), sequence_counters
+(internal), config_entries (config standard), translations (gateway-owned).
+
+### Open questions for ratification (see chat — explained)
+
+Q1 dependent-operational class: leaf-or-not + is it the "tabella estesa"
+exclusion class? Q2 consent list-only leaf (no create exists)? Q3 bridge
+route scope: API-only consultable vs restricted?
