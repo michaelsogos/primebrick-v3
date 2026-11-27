@@ -51,3 +51,19 @@ Open question the user must answer or the audit must close: the ex-novo
 creation inventory (task 2) — is there a list of planned-but-never-created
 CRM entities? No master campaign plan file was found in ai-plans — if it
 exists elsewhere, link it here.
+
+---
+
+## 2026-11-27 — THE REAL GAP (user correction: entities are MISSING = unreachable)
+
+Lazy-audit verdict reversed: route existence is NOT user reachability.
+`primebrick-us-v3/crm/src/nav-declaration.ts` declares exactly 2 dictDecl
+leaves (customer_types, customer_link_types) + customers + pipeline —
+while the service serves 16 entities. UNREACHABLE (served but no nav
+leaf): company_dimension, consent_type, contact_type, account_kind,
+customer_account, customer_consent, customer_contact, customer_link,
+legal_form, local_address, local_address_type, marketing_qualification,
+qualification. Sequences surface via builtinNavContributions (dal-pg) —
+verify separately. TASK 2 REDEFINED: nav completion IS the migration
+gap — every served entity needs its dictDecl leaf + label keys +
+E2E verification of user-visible reachability.
