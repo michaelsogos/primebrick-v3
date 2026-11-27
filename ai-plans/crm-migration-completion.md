@@ -257,10 +257,10 @@ The pattern recognizes them; no ad-hoc decision needed.
 **Spec E2E permanente scritta:** `primebrick-fe-v3/src/e2e/nav-derive-crm.spec.ts` — sidebar/raggiungibilità/archetipi/bridge-assenza/consent-list-only. **ESEGUITA 4/4 VERDI** (la prima red era una falsa asserzione mia: la dict archetype è anatomia inline-rows, mai un `<table>` — spec corretta).
 
 **APERTO — ordine dei prossimi slice:**
-1. Eseguire nav-derive-crm.spec.ts a stack su — chiude la verifica TOC (5)
-2. Migrazione 8 vocabolari a DictEntityBase (meccanica — TOC 1) → le loro foglie si spostano da root-standard a settings-dict automaticamente
-3. Seed label `crm.<table>.nav` + `crm.settings.nav.<table>` mancanti (TOC 4) — oggi le foglie renderizzano chiavi raw
-4. Verificare la forma del create derivato nel browser (entity_form archetype con fields generati)
+1. ~~Eseguire nav-derive-crm.spec.ts a stack su~~ — CHIUSO 2026-11-27 sera: 8/8 green a stack reale
+2. ~~Migrazione 8 vocabolari a DictEntityBase~~ — CHIUSO 2026-11-27 sera: us-v3 `d919254`, flip automatico a settings-dict
+3. ~~Seed label `crm.<table>.nav` + `crm.settings.nav.<table>` mancanti~~ — CHIUSO DIVERSAMENTE: i seed esistevano già; la root cause era la derivazione placement-dependent (sdk `cdcd908`). Vedi ROOT CAUSE 3 nel TOC sotto
+4. Verificare la forma del create derivato nel browser (entity_form archetype con fields generati) — ANCORA APERTO
 
 
 ---
@@ -326,3 +326,48 @@ contact_type, account_kind, consent_type, local_address_type):
 Entrambi attraverso il wire: la migrazione DictEntityBase e il canale icone/path
 nella derivazione sono un unico workstream. La spec nav-derive-crm.spec.ts
 certifica ogni flip. Stop.
+
+## TOC — icone + path + label auto-wire eseguito (2026-11-27 sera)
+
+### Esito e commit (pushati)
+- sdk `cdcd908` fix(nav): entity-canonical label keys — never placement-dependent (feature/nav-derive-entity)
+- us-v3 `d919254` feat(crm): migrate 8 vocabularies to DictEntityBase — nav auto-wires (feature/sequence-revive-docs, branch target deciso dall utente)
+- fe-v3 `5d68f64` test(e2e): pin nav auto-wire truth — icons, canonical labels, breadcrumb (feature/sequence-revive-docs)
+
+### Verdetta direttiva 1 (icone) — SPEC GREEN, prova visiva utente PENDENTE
+- nav-derive-crm.spec.ts 8/8 green a stack reale: glyph table-dictionary (path M10.5 3v18,
+  positivo — mai bare "not table-2") su sidebar E breadcrumb, per tutti e 10 i vocabolari
+- icone authored vincono (users-round, git-branch, sequence-numeric-right), table-2 resta
+  il default list corretto per le standard
+- la prova del 9 visiva dell utente resta dovuta: browser preview aperto su /crm/settings
+
+### Verdetta direttiva 2 (path) — FATTO via auto-wire
+- gli 8 vocabolari sono flippati a /crm/settings/<table> esclusivamente per effetto
+  della migrazione DictEntityBase — zero foglie authored, zero patch manuali
+- db-meta diff rigenerato vuoto: stesso layout colonne, nessuna migration dati
+- root nav ora tiene solo operational (più le authored customers/pipeline)
+
+### ROOT CAUSE 3 — NUOVA, trovata in esecuzione: label keys placement-dependent
+- la derivazione emetteva crm.settings.nav.<table> per le foglie dict e crm.<table>.nav
+  per le standard — la STESSA entità cambiava chiave spostandosi. I seed duplicati
+  crm.settings.nav.customer_types/customer_link_types erano la patch manuale di quella
+  divergenza (l anti-pattern proibito)
+- utente: "devono essere auto wired, perchè differiscono" — corretto alla fonte:
+  una chiave canonica per entità ovunque; i seed crm.<table>.nav esistevano GIÀ per
+  tutte le entità → zero lavoro seed, label risolte ovunque. Il task seed-labels del
+  ledger era diagnosticato sul sintomo sbagliato: non mancavano traduzioni, era la
+  derivazione a puntare altrove
+- spec RED dimostrato (payload crm.settings.nav.customer_types) → fix sdk → GREEN:
+  payload canonico + label tradotte nel DOM, mai raw keys
+- RESIDUO: chiavi morte crm.settings.nav.{customer_types,customer_link_types,sequences?}
+  nel DB da patch shipped — innocue, cleanup opzionale (sequences è authored e legit)
+
+### Note aperte (non questo slice)
+- spec serializzata per costruzione: worker paralleli fanno race sul login Edge
+  condiviso — artifact del harness, documentato nel file
+- docs/ai/icon-conventions.md:29-35 dice dict → list, il codice dice table-dictionary:
+  divergenza doc-vs-code DA correggere lato doc (proporre, non silent rewrite)
+- generated user-guide dei vocabolari ora minimale: il generatore non conosce ancora
+  l archetype dict inline — gap del docs-generator, task separato
+- Q1/Q2/Q3/Q4 del TIC restano da ratificare (icon channel per-entity, semantic paths,
+  pipeline placement, ordering)
