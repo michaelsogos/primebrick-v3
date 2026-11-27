@@ -258,3 +258,41 @@ The pattern recognizes them; no ad-hoc decision needed.
 2. Migrazione 8 vocabolari a DictEntityBase (meccanica — TOC 1) → le loro foglie si spostano da root-standard a settings-dict automaticamente
 3. Seed label `crm.<table>.nav` + `crm.settings.nav.<table>` mancanti (TOC 4) — oggi le foglie renderizzano chiavi raw
 4. Verificare la forma del create derivato nel browser (entity_form archetype con fields generati)
+
+
+---
+
+## TIC — nav paths/leaf/icons fix (2026-11-27, approfondimento ratificato)
+
+### DOC RECEIPTS
+| doc:line | what it says | how it applies |
+|---|---|---|
+| fe-v3 docs/ai/icon-conventions.md:8 | icon defaults emission-materialized per kind; authored icon always wins | derived leaves carry no icon → all mass-default |
+| fe-v3 docs/ai/icon-conventions.md:13 | entity list icons UNIQUE per entity family — collisions make record sheets indistinguishable | VIOLATED: every derived leaf gets table-2 |
+| fe-v3 docs/dev-guide/app-shell.mdx | sidebar root-scoped: under /system/crm/* only pages below /system/crm render | pipeline disappearance EXPLAINED — by design |
+| be-v3 module-discovery.service.ts:149-176 | materializeRouteIcons/materializeNavIcons: leaf icon = icon of the route the href points at, else file-box | the pipeline exists and works — derivation bypasses authorship |
+| fe-v3 src/lib/breadcrumb/module-breadcrumb.ts | breadcrumb reads the SAME payload, longest-match on leaf hrefs, root-scoped | moving leaves = breadcrumb follows automatically; impact bounded |
+
+### EVIDENCE (service_registry, empirico)
+- Root nav: 13 leaves — customers (icon users-round, authored) + pipeline (git-branch, authored, href /system/crm/pipeline) + 11 derived leaves ALL WITHOUT ICON
+- 8 vocabolari alla root: company_dimensions, legal_forms, local_address_types, qualifications, marketing_qualifications, contact_types, account_kinds, consent_types — classi senza @Dict
+- Settings sibling CORRECT for the 2 migrated: customer_types, customer_link_types kind=dict → THE WIRE WORKS where the marker exists
+- sequences: builtin contribution carries custom icon sequence-numeric-right — the authorship pattern exists
+
+### ROOT CAUSES (verificati, non ipotesi)
+1. ICONS: EntityRouteDecl has NO icon channel — derivation cannot pass per-entity icons because there is nowhere to author them. Mass table-2 collision violates rule 13.
+2. PLACEMENT: 8 vocabolari lack @Dict on their entity classes — structural recognition impossible, they derive as standard. Fix = migration (already planned), no derivation change needed.
+3. PATHS: derivation uses raw table names — schema noise in URLs (local_addresses for "Addresses", customer_ prefix repetition). No authored-override channel exists.
+4. PIPELINE: NOT a bug — root-scoping by design. It renders under the System app context. Open UX question: pipeline is operational CRM — arguably belongs at /crm/pipeline.
+5. ORDERING: declaration order in entities.ts — vocabularies first because declared first. No designed ordering.
+
+### BREADCRUMB IMPACT (bounded, verified mechanically)
+- Breadcrumb consumes the same discovery payload — leaf moves are auto-consistent
+- Longest-match: /crm/<t>/create and /crm/<t>/<uuid> resolve through the list leaf as long as paths nest
+- Verification surface post-fix: page-segment dropdown shortens; create/detail breadcrumbs resolve
+
+### DESIGN QUESTIONS FOR RATIFICATION
+Q1 icon channel: add `icon` to EntityRouteDecl (authored in the service entities.ts next to the route wiring) — derivation passes through; absence = kind default. Alternative: decorator on entity class (dal-pg) — heavier, cross-repo.
+Q2 paths: keep table-derived + authored override per decl (`nav_path`?), or semantic derivation from entityName? Table-derived is honest; override is the escape.
+Q3 pipeline: move to /crm/pipeline (operational, root-scoped with the rest) or leave under /system/crm?
+Q4 ordering: declaration order (status quo) or designed ordering (operational before vocabulary is automatic post-migration — root keeps only operational)?
