@@ -460,3 +460,95 @@ by-design, ma va seedato); prova del 9 visiva popover con utente reale da rifini
 - create route default icon = file-plus (user-ratified); spec assertion GREEN 3/3 in sessione.
 
 - create leaf label = app.common.new (stessa chiave del page title — niente seed necessari); pairing create-immediatamente-prima-della-list nel popover, strutturale per href mai per label; spec GREEN con posizioni+icone.
+
+---
+
+# ══ SESSION HANDOFF 2026-11-27 (sera) — create-leaf nav labels: seed patch awaiting signature ══
+
+## Objective of the open slice
+Create nav leaves in the popover must show the COMPOSED label "Nuovo {entity singular}" /
+"New {entity singular}" (user-ratified verbatim: «meglio "Nuovo"»). Currently they render
+the RAW KEY `crm.<table>.nav.create` because the translation rows don't exist yet.
+
+## Ratified contract chain (all user-verbatim, never re-ask)
+1. CREATE and LIST are nav leaves; UPDATE/DELETE never are (plan doctrine :131).
+2. The create leaf follows the route's fate: no route ⇒ no leaf; route→RPC ⇒ leaf→RPC;
+   explicit leaf-only suppression possible, never impacting the route.
+3. Creates visible ONLY in the popover — sidebar stays FLAT single-level («non ho mai
+   chiesto multilivello»). Mechanism: `ModuleNavLink.sidebar?: boolean` in core
+   page-route.ts; derivation emits creates as flat siblings with `sidebar: false`.
+   NEVER use `nav_hidden` for this: it is the server's per-user access-denied reveal
+   list (module-discovery filterNavLinks), NOT a declarable channel.
+4. Ordering: create leaf sits IMMEDIATELY BEFORE its list leaf in the flat popover
+   projection — pairing structural by href (`<listHref>/create` → anchored to list),
+   helper `pairCreatesBeforeLists` in fe `src/lib/shell/nav-ordering.ts`.
+5. Wired icon defaults: create = `file-plus` (core `DEFAULT_ROUTE_ICONS`), detail =
+   `text-cursor-input`, list = `table-2`, fallback `file-box`. Materialization in
+   be-v3 `module-discovery.service.ts` `materializeNavIcons` — a leaf with href is
+   ALWAYS a page (parents-with-children must still materialize; regression fixed).
+6. Label: per-entity key `crm.<table>.nav.create` — composition lives in SEEDS
+   (canonical `<action> <singular>` construction, cf. RestoreDialog), NOT runtime.
+7. Popover icons bumped one step: rows 16px, app-root 16/18px.
+
+## Established mechanism facts (verified — do NOT re-investigate)
+- `meta.columns` is `MetaColumn[]` (array) — iterate with `.filter(c => ...)` using
+  `c.key`; `Object.entries` yields numeric index keys (the 'field 18' crash). Fixed.
+- Create form fields exclude: audited, managed, kind, hidden, uid, version
+  (canonical predicate in sdk entity-router bulkSetAllowlist minus immutable).
+- Translations live per-service: `crm.translations` (key, language, value + audit
+  columns). NO `translations_audit` twin exists → seed-audit-trail rule NOT applicable.
+- Languages: de-DE, en-GB, en-US, es-ES, fr-FR, it-IT, pt-PT.
+- Entity singular keys: `crm.entities.<entity>.singular` exist for en-GB/en-US/it-IT
+  only (de/fr/es/pt missing — separate debt).
+- Translation seeds ship as SQL patches in `crm/db-meta/patches/` — NEVER edit a
+  shipped patch; MANIFEST.json is Ed25519-SIGNED (keyring db-meta/keys.json);
+  unsigned/tampered manifest = engine aborts (fail-closed by design).
+- Patch authoring flow (dal docs/dev-guide/migrations.mdx): write patch → refresh
+  unsigned manifest entries → `primebrick-db sign --db-meta db-meta --key <b64|@file>
+  --key-id dev-micha-3` seals it → `pnpm db:migrate` (script in crm package.json)
+  applies. Engine also runs at service startup.
+- dev-hot re-registers nav payload on sdk rebuild; verify via
+  `service_registry` query (`endpoints->'nav'`).
+
+## Exact current state
+- ALL repos clean+pushed EXCEPT: untracked `primebrick-us-v3/crm/db-meta/patches/
+  20261127200000_nav_create_labels.sql` — the seed patch, WRITTEN, awaiting signature.
+  Content: 21 rows = 3 entities (customer_accounts, customer_contacts, local_addresses)
+  × 7 languages; en/it composed from real singulars ("Nuovo Account cliente",
+  "New Customer Account", …), other languages fall back to en composition.
+  ids start at 5801 (max was 5772). MANIFEST.json untouched (signed state intact).
+- Live payload already carries create leaves with `sidebar:false` + correct keys.
+- Spec `primebrick-fe-v3/src/e2e/nav-popover-creates.spec.ts` GREEN (popover rows,
+  pairing positions, file-plus icons). It currently accepts `/^New$|^Nuovo$/` labels —
+  MUST be updated to assert composed labels ("New Address" etc.) after seeds land.
+- E2E canon (fe-v3 docs/ai/e2e-browser-session.md): final specs only, headed always,
+  Edge shared CDP:9333, 5s evidence slots, loginAsTestAdmin helper.
+
+## REMAINING STEPS (in order — the wrapper)
+1. USER or agent-with-key signs: `cd primebrick-us-v3/crm && primebrick-db sign
+   --db-meta db-meta --key @<dev-key-file> --key-id dev-micha-3`
+   (key is the user's personal dev key, printed once at keygen — agent must NOT
+   hunt for it uninvited; ask the user for the path).
+2. `DATABASE_URL=postgres://primebrick:primebrick_dev@127.0.0.1:5432/primebrick pnpm db:migrate`
+3. Verify rows: `SELECT key,language,value FROM crm.translations WHERE key LIKE '%nav.create'`.
+4. Update spec assertions to composed labels; run GREEN in-session.
+5. Prova del 9: popover CRM shows "New…" rows paired before their lists, sidebar clean.
+6. Commit us-v3 (patch + signed MANIFEST) + ledger + push.
+
+## OPEN QUESTIONS FOR THE USER (do not guess)
+- Q-key: where is the dev signing key / may the agent use it? (security boundary)
+- Q-gender: Italian gender agreement for future entities (Nuovo/Nuova) — auto-compose
+  can't infer; acceptable to fix per-entity in seeds when wrong?
+- Q-debt: entity singulars missing for de-DE/fr-FR/es-ES/pt-PT — seed them (separate slice)?
+- Q1 (plan-level, still open): per-entity icon channel — derivation currently emits no
+  icon for list leaves (they resolve to table-2 via route kind). Ratify whether entity
+  decl may override.
+- Open plan items: Q2 customer_ prefix, icon-conventions doc divergence, docs-generator
+  dict archetype, unknown-route/404 anomaly, vendor-plane doc page missing.
+
+## Process violations ledger (honesty — do not repeat)
+- Implemented before spec RED; committed before prova del 9; probe specs written and
+  deleted (doc violation); invented design (nav_hidden channel, toggle rejection)
+  instead of verifying; scope drifted to wrong surface (sidebar vs popover).
+- Correct chain demonstrated working at the end: evidence first, spec in canonical
+  location, user ratifies BEFORE implementation.
