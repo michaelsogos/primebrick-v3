@@ -29,6 +29,7 @@ Every turn, in this order, NO EXCEPTIONS:
 | 2026-11-27 | GREEN run 1 | ANOMALIA risolta | "Cannot convert a BigInt value to a number" — il codec ext-json bigint-safe consegna order come BigInt; coercion al consumer boundary + test wire-bigint aggiunto. Lezione: ogni int di contratto va trattato come potenziale BigInt nel consumer FE | rerun |
 | 2026-11-27 | query service_registry | payload aggiornato | customers order:1, sequences order:1000000, resto unpinned — dev-hot ha ri-registrato senza restart manuali | GREEN |
 | 2026-11-27 | playwright nav-leaf-ordering.spec.ts (post-fix) | GREEN 2/2 | settings: unpinned A-Z + sequences ultimo; root: customers primo + resto A-Z — sullo stack reale | prova del 9 |
+| 2026-11-27 | playwright launcher surface | GREEN 3/3 | previewPages ordinava raw payload — user-caught; ora sortNavLeaves condiviso. Lezione: l'ordinamento è proprietà delle foglie, mai di un componente — la spec deve coprire OGNI superficie che elenca foglie |
 | 2026-11-27 | core/dal/sdk build+test | verdi | core 255+1skip, dal 903/903, sdk typecheck pulito | commit |
 
 ## Status: 🟢 GREEN — Plan date: 2026-11-27 / sera
@@ -42,7 +43,7 @@ Every turn, in this order, NO EXCEPTIONS:
 | 5 | fe: sort render-time — pinned per order poi unpinned alfabetici per label tradotta (locale app) | ✅ done | 2026-11-27 | sortNavLeaves + AppSidebar; BigInt coercion al boundary |
 | 6 | us-v3 crm: customers pinned order 1 in nav-declaration | ✅ done | 2026-11-27 | payload live verificato |
 | 7 | Spec GREEN eseguita in sessione | ✅ done | 2026-11-27 | 2/2 stack reale |
-| 8 | Prova del 9 end-user browser reale | ⏳ not done | — | preview aperta all'utente |
+| 8 | Prova del 9 — l'utente ha colto incoerenza reale: launcher non ordinato | ✅ done | 2026-11-27 | fix SidebarAppLauncher + spec launcher 3/3 GREEN — una regola, ogni superficie |
 | 9 | Ledger + commit + push (core, sdk, dal, fe-v3, us-v3, workspace) | ⏳ in corso | — | |
 
 <!-- Status values: ✅ done · ⏳ not done · ⏳ partial · 🚫 dropped.
