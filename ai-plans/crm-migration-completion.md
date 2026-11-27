@@ -236,3 +236,25 @@ The pattern recognizes them; no ad-hoc decision needed.
 4. **CRM**: rimosse le 2 dict scritte a mano (niente di speciale — la derivazione le possiede); restano customers (default+icon+create remota) e pipeline.
 5. Seed label `crm.settings.nav.<table>` mancanti + `crm.<table>.nav` — task separato nel piano.
 6. E2E browser: visibilità/raggiungibilità/archetipo per ogni entità.
+
+### 2026-11-27 — WIRE IMPLEMENTATO E VERIFICATO RUNTIME ✅
+
+**Commit:**
+- dal-v3 `feature/sequence-revive-docs` — `DomainService.tableName` getter (derivato da getEntityPersistenceMeta, mai ridichiarato)
+- v3-sdk `feature/nav-derive-entity` (NUOVA branch — develop è merge-only, gitflow enforced) — `src/http/derive-entity-nav.ts` + wire in create-microservice.ts + `EntityServiceLike.tableName` + `EntityRouterConfig.nav?:false` + export index
+- us-v3 `feature/sequence-revive-docs` — CRM adotta: rimosse le 2 dict scritte a mano, test riscritto sul contratto derivato (9/9 verdi)
+
+**Verifica runtime (service_registry.endpoints.nav dopo re-registration):**
+- Root nav: customers+pipeline (authored) + 12 foglie DERIVATE (8 vocabolari non migrati come standard — temporaneo fino a migrazione DictEntityBase; class C customer_accounts/contacts + local_addresses list+create)
+- `customer_consents` — SOLO list, niente create (no create permission) ✅ per costruzione
+- `customer_link` — ASSENTE ovunque (@Relation soppresso) ✅
+- Settings sibling: customer_types/customer_link_types dict DERIVATE + sequences builtin appended last ✅
+- Docs emit ha generato automaticamente le pagine user-guide di ogni entità derivata (account_kinds.mdx, *-create.mdx…) — la documentazione segue lo stesso wire
+
+**Spec E2E permanente scritta:** `primebrick-fe-v3/src/e2e/nav-derive-crm.spec.ts` — sidebar/raggiungibilità/archetipi/bridge-assenza/consent-list-only. NON ancora eseguita (FE down al momento del lancio — restart in corso).
+
+**APERTO — ordine dei prossimi slice:**
+1. Eseguire nav-derive-crm.spec.ts a stack su — chiude la verifica TOC (5)
+2. Migrazione 8 vocabolari a DictEntityBase (meccanica — TOC 1) → le loro foglie si spostano da root-standard a settings-dict automaticamente
+3. Seed label `crm.<table>.nav` + `crm.settings.nav.<table>` mancanti (TOC 4) — oggi le foglie renderizzano chiavi raw
+4. Verificare la forma del create derivato nel browser (entity_form archetype con fields generati)
