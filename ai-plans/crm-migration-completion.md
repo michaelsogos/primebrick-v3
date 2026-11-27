@@ -315,3 +315,14 @@ contact_type, account_kind, consent_type, local_address_type):
 5. la spec nav-derive-crm.spec.ts certifica il flip — aggiornare le 2 asserzioni pinning corrente
    (customer_accounts table-2 resta; aggiungere flip assertions per gli 8)
 6. attenzione ripple: seed, test unitari crm, customer_link_type fatto = reference
+
+## DIRETTIVE UTENTE 2026-11-27 — ordine di esecuzione ratificato (sovraordina tutto)
+
+1. PRIMO: sistemare le icone — devono vedersi come dovrebbero nel browser reale,
+   testato anche dall utente (prova del 9 visiva sua, non solo spec)
+2. SECONDO: sistemare i path — oppure insieme al primo — MA deve essere frutto
+   dell auto-wire (derivazione), mai patch authored a mano
+
+Entrambi attraverso il wire: la migrazione DictEntityBase e il canale icone/path
+nella derivazione sono un unico workstream. La spec nav-derive-crm.spec.ts
+certifica ogni flip. Stop.
