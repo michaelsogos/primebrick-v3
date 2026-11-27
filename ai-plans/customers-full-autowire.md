@@ -90,3 +90,14 @@ derivati. Lo stub remote CustomerCreatePage muore con la sua rotta authored.
   (c) si perde — form minimale derivata
 - emailsender: stessa migrazione da applicare dopo JH (providers/templates custom paths)
 - impatto tests: jobs-pages.spec naviga i vecchi path ovunque — codemod necessario
+
+## PRECISEZIONE SCOPE utente (2026-11-27) — labels/icone nelle leaf, NON le pagine
+La decisione riguarda SOLO le leaf nav (popover/sidebar/tutte le navs): le 3 leaf standard
+derivate devono portare le LABELS e ICONE authored (job.jobs.nav_* tradotte + list-checks/
+list-clock/play). Nello screenshot: 3 authored corrette + 3 standard con label raw-key e
+icone sbagliate — lo stato finale è UN SET di leaf ai path standard con cosmetici authored.
+Meccanica: migrando i path authored ai canonici table-snake, gli href coincidono → il merge
+cosmetico per href (già nel SDK) trasferisce label_key+icon sulle leaf derivate, duplicati
+impossibili. Le raw-key shadow muoiono coi path custom. La form trigger NON era in scope:
+la rotta create/detail authored vince il suo href esatto (merge rotte già implementato) —
+TRIGGER_FORM sopravvive senza eccezioni né canali nuovi. Domanda form: RITIRATA.
