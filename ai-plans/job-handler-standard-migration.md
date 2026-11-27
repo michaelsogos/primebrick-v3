@@ -166,3 +166,15 @@ REGOLA OBTORTO COLLO: mai run playwright in parallelo; letture output ≤30s; ni
 - `:611` fix deciso: toggle colonna end-user (columns-toggle) per innescare il persist — onesto
   a prescindere dal guard: "first persist rewrites" richiede un persist, che è azione utente.
 - `:564` sonda pendente: grep button nel yaml snapshot completo della pagina.
+
+## `:611` — PROVA DEL 9 DECISIVA: candidato BUG APP reale, non test rot
+Interazione end-user inserita nel test (columns-toggle-run_as click — il toggle era visibile e
+cliccato, il test fallisce DOPO sul predicato). RISULTATO: anche dopo un persist reale la chiave
+`pb:jobs:runs:visibleKeys` resta il bare v1 array `["uuid","name","status"]` per 10s interi.
+IPOTESI FORTE: il write path persiste su una CHIAVE DIVERSA da quella letta dal restore (key
+mismatch) — il restore legge la legacy key (per questo il seed si applica agli header) ma
+persistState scrive altrove, così la legacy non viene mai riscritta. OPPURE storageSet fallisce
+silenzioso. PROSSIMO PASSO: leggere la derivazione di skVisibleKeys e storageSet/storageGet in
+useEntityList.svelte.ts (righe 190-200 e 372-376) e confrontarle con la chiave del test —
+poi leggere deriveVisibleKeyPrefs in @primebrick/ui. Se mismatch confermato → FIX APP, non test.
+Il test con l'interazione inserita è già la spec finale corretta: non toccarlo più, riparare l'app.
