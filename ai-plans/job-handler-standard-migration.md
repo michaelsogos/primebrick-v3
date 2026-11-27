@@ -188,3 +188,11 @@ volta, persisti sul nuovo medium". FIX TEST (già corretto il resto): asserire l
 PERSIST MEDIUM (localStorage?) non su sessionStorage. Il seed resta su sessionStorage per provare
 il percorso di migrazione legacy→nuovo. Tutto il resto del test è già a posto (interazione
 columns-toggle inserita). NESSUN BUG APP — il comportamento è by-design: medium migration.
+
+## `:611` medium-verità finale (useEntityList:128-130)
+persistMedium default 'session', legacyMedium default 'local'. Quindi persist scrive SESSION per
+default — la medium theory regge SOLO se il caller passa persist:'local'. Di fatto: nessuna write
+raggiunge sessionStorage entro 10s manco dopo toggle reale. PROSSIMO PASSO UNICO: trovare dove
+useEntityList viene istanziato per le entity table (NON in entity-table-page/*) e leggere le opts
+persist/storageKeyPrefix reali — grep `useEntityList` in tutto src/lib + EntityTablePage:294-310.
+Poi il fix test è asserire sul medium effettivo. Fine budget sessione — continuazione automatica.
