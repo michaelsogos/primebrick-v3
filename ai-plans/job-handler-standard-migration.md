@@ -238,3 +238,25 @@ VERDI confermati in run seriali questa sessione:
 - migrazione JH COMPLETA: path canonici, leaf uniche con cosmetici authored, ordine workflow
   pinnato, create leaf popover seedata ×7, rot-repair 4/4, ogni prova end-user sullo stack reale
 - resta in coda: emailsender slice (stessa ricetta), cleanup fe/ crm (decisione utente registrata)
+
+## Slice closeout A — morte vera dei legacy path (route-death)
+Doc receipts:
+- `fe-v3/src/routes/(app)/[...path]/+page.svelte:55-62` — catch-all: resolvePageForPath →
+  kind not-found → error(404): la morte end-user di un path senza census è il 404, mai una tabella
+- `fe-v3/src/routes/(app)/system/job/triggers|runs|job-schedules/+page.svelte` — filesystem route
+  legacy complete: SvelteKit preferisce route concrete al catch-all → i vecchi URL SERVONO ancora
+  (censimento sfuggito nella migrazione — layer orfano scoperto in closeout)
+- end-state ratificato (questo piano, turno migrazione): "i vecchi path non portano più da nessuna parte"
+RED atteso: la spec fallisce perché /system/job/triggers renderizza una table viva oggi.
+Implementazione: deletion delle 3 directory legacy (git-recoverable). GREEN: zero table sui
+legacy path + table intatta sui canonici.
+
+### Closeout A — outcome (2026-11-27)
+- RED dimostrato: /system/job/triggers serviva table viva (run pre-deletion)
+- Implementazione: deletion 3 directory route legacy + fix lint import residui
+  (nav-derive-crm, nav-popover-creates — bloccavano il boot del dev server)
+- GREEN 5/5 job-nav-standard in sessione dopo restart FE
+- ANOMALIA risolta: SvelteKit dev cacha il route manifest all'avvio — la deletion
+  di route filesystem richiede restart vite, altrimenti i path morti rispondono
+  ancora in modo incoerente. In produzione non si pone (rotte bake-ate a build)
+- Prova del 9 end-user: verifica browser utente superata ("procedi")
