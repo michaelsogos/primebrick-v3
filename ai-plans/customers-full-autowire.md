@@ -101,3 +101,78 @@ cosmetico per href (già nel SDK) trasferisce label_key+icon sulle leaf derivate
 impossibili. Le raw-key shadow muoiono coi path custom. La form trigger NON era in scope:
 la rotta create/detail authored vince il suo href esatto (merge rotte già implementato) —
 TRIGGER_FORM sopravvive senza eccezioni né canali nuovi. Domanda form: RITIRATA.
+
+## Slice closeout B — CRM perfect closure (2026-11-27)
+Doc receipts:
+- `us-v3/crm/src/nav-declaration.ts:44-48` — NO authored routes, derivation total:
+  /crm/customers/create risolve come entity_form standard host-rendered → il chunk
+  remoto crm-pages non è referenziato da nessuna rotta del census
+- `us-v3/crm/fe/src/index.ts` — il chunk monta solo CustomerCreatePage per
+  /crm/customers/create: morto per costruzione dopo la migrazione standard
+- `us-v3/crm/package.json` — prebuild include `pnpm fe:build` + script fe:build/fe:check:
+  la deletion del chunk DEVE includere lo scabio degli script o il build si rompe
+- `us-v3/crm/src/controllers/http/module-assets-route.ts` — serving infra generica
+  per tutti i moduli: RESTA, non è debito crm-specifico
+- `fe-v3/src/lib/entity-form/EntityFormPage.svelte:113-117` — onsaved create → goto(listHref):
+  la prova end-user del submit è la riga visibile nella lista dopo il redirect
+- `fe-v3/src/lib/entity-form/EntityFormPage.svelte:182` — hook submit `entity-form-submit`;
+  campi `entity-form-field-<key>` (EntityFormSurface:655)
+RED atteso: mai provato prima — se il submit loop è rotto la spec è RED e si implementa;
+se passa al primo colpo è la prova che la feature era già sana e il closeout è solo deletion.
+
+### STOP-ANOMALIA 2026-11-27 — sequence validation blocca il designed auto-allocate path
+Evidenza a tenaglia (screenshot + codice):
+1. design contract in DUE posti indipendenti: sequence-input.svelte header
+   ("''/undefined while untouched — omitted on create = the column's default
+   sequence allocates in the write tx") + EntityFormSurface.svelte:272-275
+   (payload builder: sequence vuota → omessa dal payload, mai null-written)
+2. il placeholder stesso promette all'utente: "Generated automatically from customers.code"
+3. MA la validazione zod blocca: build-entity-form-schema.ts:186 — required =
+   nullable===false → code è required → fieldSpecToZod sequence branch
+   (z.unknown().superRefine(emitIssues)) passa '' a checkFieldValue che risponde
+   "Expected a sequence directive" → form invalid → updateForm.valid false →
+   il payload builder corretto NON viene mai raggiunto
+4. risultato end-user reale: il bottone Create resta disabled con code vuoto —
+   l'unico path possibile è l'assist popover (select/generate directive manualmente)
+Stato test: display_name fill OK, status select OK (Active chip), submit disabled
+su code vuoto. La spec create-e2e in crm-customers-autowire.spec.ts è il RED vivo.
+Domanda aperta per l'utente: fix validazione (sequence vuota valida in create
+sempre — required è meaningless perché il server alloca) vs design cambiato.
+
+## TIC — system_generated design analysis (2026-11-27, user-ratified direction)
+Doc receipts:
+- `core/src/entity-meta.ts:568-573` — `managed`: DB-filled identity keys ONLY,
+  derived-never-authored, never client-supplied. MA `EntityFormSurface.svelte:148-149`:
+  managed è ESCLUSO dalle form per contratto (synthesizeFormDecl) → viola il
+  requisito visibilità. NON riusabile
+- `core/src/entity-meta.ts:577-581` — `immutable`: editable in create, disabled in
+  update — esattamente il 50% che l'utente ha identificato (update giusta, create sbagliata)
+- `core/src/entity-meta.ts:683-700` — `seq` prop: uuid DERIVED del bound default
+  (`<table>.<field>` deterministico) — la PRESENZA di seq+uuid È il segnale di
+  rilevamento: quella colonna sarà auto-generata in create
+- `crm/src/domain/entities/customer_entity.ts:49` — `@SequenceField({pattern:"CUST-{seq:5}"})`:
+  il binding è dichiarativo a livello entity, il default materializza lazily
+- forecast già esistente: `emitted_next` nelle righe registry + endpoint
+  sequence-forecast (sequence-input.svelte header:30-36) — la preview NON alloca,
+  il valore reale si stacca al save nella write tx (user-verbatim)
+Risposta alle domande utente:
+- bool esistenti: hidden (invisibile — no), immutable (50%), managed (escluso dalle
+  form — no), audited (escluso — no). SystemGenerated NON ESISTE — gap vero nel vocabolario meta
+- autowire: il rilevamento è banale (format sequence + seq.uuid bound) — la proposta
+  è derivare il bool come `managed` (withColumnConstraints, authors MUST NOT set it)
+
+### TOC step 1 DONE (2026-11-27) — doc-first: entity-meta.mdx full reference
+`core/docs/dev-guide/entity-meta.mdx` esteso (111→246 righe): matrice bool a due
+assi (visibility vs ownership — overlap hidden/managed dissolto), contratto
+system_generated completo (4 punti: create disabled+preview, update come immutable,
+mai required, payload omesso), reference di tutte le ~40 props con impatti BE/FE.
+system_generated nasce specificato QUI — il codice segue la doc.
+PROSSIMO SLICE (implementazione, 4 layer):
+1. core/entity-meta.ts — bool system_generated + commento canonico
+2. dal-pg/withColumnConstraints — derivazione (format sequence + seq.uuid presente)
+3. ui/sequence-input — modo disabled-create: ghost preview forecast in-field + hint,
+   zero assist chrome; update invariato (readonly existing)
+4. fe-v3/build-entity-form-schema.ts — esenzione required come managed + exclusion
+   da synthesizeFormDecl NO: il campo RESTA nelle form (visibile) ma exempt required
+5. spec RED viva in crm-customers-autowire.spec.ts aggiornata al contratto nuovo
+   (code disabled visibile + submit enabled) → GREEN → prova browser → fe/ deletion
