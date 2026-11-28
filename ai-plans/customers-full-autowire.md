@@ -208,3 +208,36 @@ PROSSIMO SLICE (implementazione, 4 layer):
 | ts | command | verdict | evidence | next step |
 |---|---|---|---|---|
 | 2026-11-28 14:00 UTC | doc re-read workflow+piano+docs canonici | ✅ done | receipts table above | audit git/status, poi spec RED prima degli edit implementativi |
+| 2026-11-28 14:10 UTC | `npx playwright test src/e2e/crm-customers-autowire.spec.ts --workers=1` | ✅ RED atteso | 3/4 pass; create e2e fallisce perché `code` è enabled/readonly invece che disabled — contratto `system_generated` non ancora implementato | implementare core+DAL+UI+FE |
+| 2026-11-28 14:22 UTC | typecheck/build core, DAL, UI, FE | ✅ pass | `tsc`/`svelte-check` verdi dopo implementazione dei 4 layer | E2E GREEN |
+| 2026-11-28 14:23 UTC | `npx playwright test src/e2e/crm-customers-autowire.spec.ts --workers=1` | ✅ GREEN pre-cleanup | 4/4 pass (37.7s); DB proof `CUST-00272` / `E2E Customer 1795875784814` allocato in write tx | deletion `crm/fe` + verifica CRM |
+| 2026-11-28 14:28 UTC | `pnpm test` in `primebrick-us-v3/crm` | ✅ pass | typecheck clean; standards clean; vendor-drift clean (`no fe/dist`); docs-check fresh emit match; 24/24 unit test | risolvere docs generation senza remote chunk |
+| 2026-11-28 14:28 UTC | SDK docs-gen typecheck+tests | ✅ pass | fix minimo: pagine standard generate da `src/` anche senza `fe/src`; `system_generated` non required in user docs; docs-gen tests 8/8 | rigenerare docs CRM |
+| 2026-11-28 14:29 UTC | `pnpm generate:docs && pnpm docs:check` in CRM | ✅ pass | 20 pagine emesse; `customers-create` ora required solo **Status**, `Code` optional + “generated automatically when you save”; check pulito | E2E finale post-deletion |
+| 2026-11-28 14:30 UTC | prima rerun post-deletion | ⚠️ transitorio | create alloca `CUST-00273`, ma lista va 500 durante hot-reload/restart multiplo CRM; debug isolato successivo mostra meta+list+tabella sane | rerun a stack stabilizzato |
+| 2026-11-28 14:32 UTC | `npx playwright test src/e2e/crm-customers-autowire.spec.ts --workers=1` | ✅ GREEN finale post-cleanup | 4/4 pass (33.9s); popover pairing, form standard, code visible-disabled+ghost preview, submit enabled, redirect lista, riga allocata | ledger + commit multi-repo |
+| 2026-11-28 14:33 UTC | DB read `crm.customers` | ✅ pass | latest rows: `CUST-00274` (run finale), `CUST-00273` (run transitorio), `CUST-00272` (primo GREEN) — allocation server-side ripetuta e monotona | commit |
+
+## Slice closeout C — system_generated + remote chunk death (2026-11-28)
+
+Implementato il contratto user-ratificato end-to-end:
+
+- core: vocabolario `MetaColumn.system_generated` documentato come derived-never-authored.
+- DAL: `withColumnConstraints` deriva/enforza `system_generated` dalla coppia fisica
+  `format:"sequence"` + identità bound `seq.uuid`; authored override rifiutato.
+- UI: `sequence-input` ha modo generated-preview: campo visibile ma disabled in create,
+  ghost forecast in-field, zero assist chrome; update resta literal readonly.
+- FE: validazione esenta i generated untouched dal required fisico; il payload omette
+  il campo untouched. Fix correlato: nullable refs mai toccate restano omesse; `null` è
+  scritto solo quando l'utente svuota un valore preesistente.
+- CRM: `crm/fe` eliminato (stub create remoto morto); `package.json` ripulito dal
+  veicolo remote; test nav aggiornati alla semantica authored-cosmetic/derived-routes.
+- SDK docs-gen: deletion `fe/` ha rivelato un gap infrastrutturale — le pagine standard
+  non devono dipendere da `fe/src`. Ora la generazione pagine si ancora alla sorgente
+  `src/` del servizio; `fe/src` resta solo extraction dei remote facts. Renderer docs
+  allineato: `system_generated` non è required e viene spiegato come generated at save.
+
+Evidenza finale: spec `crm-customers-autowire.spec.ts` GREEN 4/4 dopo cleanup;
+DB proof `CUST-00274` allocato dal write transaction nella run finale.
+
+Post-closeout dependency cleanup: removing the dead CRM remote build chain exposed a second docs-gen coupling — the Svelte compiler was loaded even when no `fe/src` existed. SDK now loads DB/TS drivers separately and resolves the Svelte compiler only for remote-fact extraction. Final CRM verification after dependency removal: `pnpm test` GREEN (standards + vendor-drift + docs:check + 24/24 unit).
